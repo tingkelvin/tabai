@@ -1,199 +1,101 @@
-// ContentApp.jsx - FINAL CLEANED UP VERSION
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import TerminalIcon from './TerminalIcon';
-import { useUrlTracking } from './hooks/useUrlTracking';
-import { usePosition } from './hooks/usePosition';
-import { useDragAndResize } from './hooks/useDragAndResize';
-import { useChat } from './hooks/useChat';
-import { calculateInitialPositions } from './utils/helpers';
-import { WIDGET_CONFIG, RESIZE_TYPES } from './utils/constants';
+// hooks/useChat.js - Updated for longer input
+import { useState, useCallback } from 'react';
+import { MESSAGE_TYPES } from '../utils/constants';
 
-const ContentApp = () => {
-  const [isMinimized, setIsMinimized] = useState(true);
+export const useChat = () => {
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState([]);
+  const [isTyping, setIsTyping] = useState(false);
 
-  // URL tracking
-  const currentUrl = useUrlTracking();
-
-  // Calculate initial positions
-  const { widgetPosition: initialWidgetPos, iconPosition: initialIconPos } = calculateInitialPositions();
-  
-  // Position management
-  const [widgetPosition, updateWidgetPosition, constrainWidgetPosition] = usePosition(initialWidgetPos);
-  const [iconPosition, updateIconPosition, constrainIconPosition] = usePosition(initialIconPos);
-
-  // Size state for the widget
-  const [widgetSize, setWidgetSize] = useState({
-    width: WIDGET_CONFIG.DEFAULT_WIDTH,
-    height: WIDGET_CONFIG.DEFAULT_HEIGHT
-  });
-
-  // Chat functionality
-  const { chatInput, chatMessages, isTyping, handleInputChange, handleKeyPress } = useChat();
-
-  // Drag and resize functionality
-  const { dragging, hasDragged, startDrag, startResize } = useDragAndResize(
-    widgetSize, 
-    widgetPosition, 
-    iconPosition, 
-    isMinimized,
-    setWidgetSize, 
-    updateWidgetPosition, 
-    updateIconPosition
-  );
-
-  // Refs
-  const chatInputRef = useRef(null);
-  const chatMessagesRef = useRef(null);
-
-  // Auto-scroll chat messages
-  useEffect(() => {
-    if (chatMessagesRef.current) {
-      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
-    }
-  }, [chatMessages, isTyping]);
-
-  const handleClose = useCallback(() => {
-    const container = document.getElementById('react-extension-root');
-    if (container) container.remove();
+  const generateAIResponse = useCallback((userMessage) => {
+    // This could be replaced with actual AI API call
+    return "That's a great question! I'd be happy to help explain the process or provide step-by-step guidance. Could you be more specific about what you'd like to know? Interesting question! I can provide information and explanations. What specifically would you like to know more about?";
   }, []);
 
-  const handleMinimize = useCallback(() => {
-    if (!isMinimized) {
-      // Calculate icon position based on widget's top-right corner
-      const iconTop = widgetPosition.top;
-      const iconLeft = widgetPosition.left + widgetSize.width - WIDGET_CONFIG.ICON_SIZE;
-      updateIconPosition({ top: iconTop, left: iconLeft });
-    }
-    setIsMinimized(true);
-  }, [isMinimized, widgetPosition, widgetSize, updateIconPosition]);
+  const sendMessage = useCallback(async () => {
+    if (!chatInput.trim()) return;
 
-  const handleExpand = useCallback(() => {
-    // Only expand if we haven't been dragging
-    if (hasDragged) return;
-    
-    if (isMinimized) {
-      // Calculate widget position based on icon position
-      const widgetTop = iconPosition.top;
-      const widgetLeft = iconPosition.left - widgetSize.width + WIDGET_CONFIG.ICON_SIZE;
-      
-      // Ensure widget doesn't go off-screen
-      const constrainedPosition = constrainWidgetPosition(
-        { top: widgetTop, left: widgetLeft },
-        { elementWidth: widgetSize.width, elementHeight: widgetSize.height }
-      );
-      
-      updateWidgetPosition(constrainedPosition);
-    }
-    setIsMinimized(false);
-    
-    // Focus the chat input when expanding
+    const userMessage = {
+      id: Date.now(),
+      type: MESSAGE_TYPES.USER,
+      content: chatInput.trim(),
+      timestamp: new Date()
+    };
+
+    setChatMessages(prev => [...prev, userMessage]);
+    setChatInput('');
+    setIsTyping(true);
+
+    // Simulate AI response delay
     setTimeout(() => {
-      if (chatInputRef.current) {
-        chatInputRef.current.focus();
-      }
-    }, 100);
-  }, [hasDragged, isMinimized, iconPosition, widgetSize, constrainWidgetPosition, updateWidgetPosition]);
+      const aiResponse = {
+        id: Date.now() + 1,
+        type: MESSAGE_TYPES.ASSISTANT,
+        content: generateAIResponse(userMessage.content),
+        timestamp: new Date()
+      };
+      
+      setChatMessages(prev => [...prev, aiResponse]);
+      setIsTyping(false);
+    }, 800 + Math.random() * 1200);
+  }, [chatInput, generateAIResponse]);
 
-  if (isMinimized) {
-    return (
-      <div
-        className={`extension-widget minimized ${dragging ? 'dragging' : ''}`}
-        style={{
-          top: iconPosition.top,
-          left: iconPosition.left,
-        }}
-        onMouseDown={(e) => startDrag(e, true)}
-      >
-        <TerminalIcon onClick={handleExpand} />
-      </div>
-    );
-  }
+  const handleInputChange = useCallback((e) => {
+    setChatInput(e.target.value);
+    
+    // Auto-resize logic for longer input
+    const textarea = e.target;
+    
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = 'auto';
+    
+    // Calculate the content height
+    const scrollHeight = textarea.scrollHeight;
+    const lineHeight = parseInt(getComputedStyle(textarea).lineHeight) || 20;
+    const minHeight = 40; // Updated minimum height
+    const maxHeight = 400; // Updated maximum height
+    
+    // Calculate number of lines
+    const lines = Math.floor(scrollHeight / lineHeight);
+    
+    if (lines <= 1) {
+      // Single line - keep minimum height
+      textarea.style.height = `${minHeight}px`;
+    } else {
+      // Multiple lines - expand up to maxHeight
+      const newHeight = Math.min(scrollHeight, maxHeight);
+      textarea.style.height = `${newHeight}px`;
+    }
+    
+    // Enable/disable scrolling based on content
+    if (scrollHeight > maxHeight) {
+      textarea.style.overflowY = 'auto';
+    } else {
+      textarea.style.overflowY = 'hidden';
+    }
+  }, []);
 
-  return (
-    <div
-      className="extension-widget expanded"
-      style={{
-        top: widgetPosition.top,
-        left: widgetPosition.left,
-        width: widgetSize.width,
-        height: widgetSize.height,
-      }}
-    >
-      <div
-        className={`extension-header ${dragging ? 'dragging' : ''}`}
-        onMouseDown={startDrag}
-      >
-        <div className="extension-controls">
-          <button
-            className="minimize-btn"
-            onClick={handleMinimize}
-            title="Minimize"
-          />
-          <button
-            className="close-btn"
-            onClick={handleClose}
-            title="Close"
-          />
-        </div>
-        <h3>AI Chat — {currentUrl}</h3>
-      </div>
+  const handleKeyPress = useCallback((e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+      
+      // Reset textarea height after sending
+      setTimeout(() => {
+        if (e.target) {
+          e.target.style.height = '40px'; // Updated reset height
+          e.target.style.overflowY = 'hidden';
+        }
+      }, 0);
+    }
+  }, [sendMessage]);
 
-      <div className="extension-content">
-        <div className="chat-section">
-          <div className="chat-messages" ref={chatMessagesRef}>
-            {chatMessages.map((message) => (
-              <div key={message.id} className={`chat-message ${message.type}`}>
-                <div className="message-content">
-                  <div className="message-text">
-                    {message.content.split('\n').map((line, index) => (
-                      <div key={index}>
-                        {line}
-                        {index < message.content.split('\n').length - 1 && <br />}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-            
-            {isTyping && (
-              <div className="chat-message assistant typing">
-                <div className="message-content">
-                  <div className="typing-indicator">
-                    <div className="typing-dot"></div>
-                    <div className="typing-dot"></div>
-                    <div className="typing-dot"></div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <textarea
-            ref={chatInputRef}
-            className="chat-input"
-            value={chatInput}
-            onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
-            placeholder="Ask me anything..."
-            rows="1"
-            autoComplete="off"
-            spellCheck="false"
-          />
-        </div>
-      </div>
-
-      {/* Resize Handles - 4 Corners */}
-      {Object.values(RESIZE_TYPES).map(type => (
-        <div 
-          key={type}
-          className={`resize-handle ${type}`} 
-          onMouseDown={(e) => startResize(e, type)}
-          title="Resize"
-        />
-      ))}
-    </div>
-  );
+  return {
+    chatInput,
+    chatMessages,
+    isTyping,
+    handleInputChange,
+    handleKeyPress,
+    sendMessage
+  };
 };
-
-export default ContentApp;

@@ -1,3 +1,8 @@
+/* ====================================
+   1. BASE WIDGET STYLES
+   ==================================== */
+
+/* Main widget container */
 .extension-widget {
   position: fixed;
   z-index: 2147483647;
@@ -7,6 +12,7 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Widget states */
 .extension-widget.expanded {
   width: 480px;
   height: 320px;
@@ -19,6 +25,19 @@
   width: 32px;
   height: 29px;
 }
+
+/* Drag states */
+.extension-widget.minimized.dragging {
+  cursor: grabbing;
+}
+
+.extension-widget.expanded.dragging {
+  cursor: grabbing;
+}
+
+/* ====================================
+   2. TERMINAL ICON STYLES
+   ==================================== */
 
 .terminal-icon {
   width: 32px;
@@ -66,13 +85,9 @@
   z-index: 1;
 }
 
-.extension-widget.minimized.dragging {
-  cursor: grabbing;
-}
-
-.extension-widget.expanded.dragging {
-  cursor: grabbing;
-}
+/* ====================================
+   3. HEADER STYLES
+   ==================================== */
 
 .extension-header {
   display: flex;
@@ -100,6 +115,10 @@
   transform: translateX(-50%);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
+
+/* ====================================
+   4. CONTROL BUTTONS
+   ==================================== */
 
 .extension-controls {
   display: flex;
@@ -142,6 +161,10 @@
   color: #8b4513;
 }
 
+/* ====================================
+   5. MAIN CONTENT AREA
+   ==================================== */
+
 .extension-content {
   height: calc(100% - 49px);
   background: #1e1e1e;
@@ -151,7 +174,10 @@
   line-height: 1.4;
 }
 
-/* Chat Section */
+/* ====================================
+   6. CHAT SECTION LAYOUT
+   ==================================== */
+
 .chat-section {
   flex: 1;
   display: flex;
@@ -168,46 +194,71 @@
   gap: 12px;
 }
 
+/* ====================================
+   7. CHAT MESSAGE STYLES
+   ==================================== */
+
 .chat-message {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
   animation: messageSlideIn 0.3s ease-out;
+  width: 100%;
 }
 
 .chat-message.user {
-  flex-direction: row-reverse;
+  justify-content: flex-end; /* Align user messages to the right */
+}
+
+.chat-message.assistant {
+  justify-content: flex-start; /* Align assistant messages to the left */
 }
 
 .message-content {
-  max-width: 280px;
+  width: 100%; /* Full width instead of max-width */
   display: flex;
   flex-direction: column;
 }
 
 .message-text {
-  padding: 8px 12px;
-  border-radius: 12px;
-  font-size: 11px;
-  line-height: 1.4;
+  padding: 10px 14px; /* Increased padding for larger text */
+  font-size: 13px; /* Increased from 11px */
+  line-height: 1.5; /* Increased from 1.4 for better readability */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  word-wrap: break-word;
+  width: 100%;
+  box-sizing: border-box;
 }
 
+/* User messages - keep bubble style, align right */
 .chat-message.user .message-text {
   background: #3b82f6;
   color: white;
+  border-radius: 14px; /* Slightly larger radius to match bigger text */
   border-bottom-right-radius: 4px;
+  max-width: 80%; /* Limit width for user messages */
+  margin-left: auto; /* Push to right */
 }
 
+/* Assistant messages - no bubble, full width, align left */
 .chat-message.assistant .message-text {
-  background: #374151;
+  background: transparent; /* Remove background */
   color: #e5e7eb;
-  border-bottom-left-radius: 4px;
+  border-radius: 0; /* Remove border radius */
+  border: none; /* Remove any borders */
+  padding: 6px 0; /* Increased minimal padding for larger text */
+  max-width: 100%; /* Full width */
+  margin-right: auto; /* Align to left */
 }
 
-/* Typing indicator */
+/* ====================================
+   8. TYPING INDICATOR
+   ==================================== */
+
 .chat-message.typing .message-text {
-  padding: 8px 12px;
+  background: transparent;
+  padding: 8px 0;
+  width: auto;
+  max-width: 60px;
 }
 
 .typing-indicator {
@@ -228,20 +279,30 @@
 .typing-dot:nth-child(2) { animation-delay: -0.16s; }
 .typing-dot:nth-child(3) { animation-delay: 0s; }
 
+/* ====================================
+   9. CHAT INPUT
+   ==================================== */
+
 .chat-input {
   background: rgba(55, 65, 81, 0.3);
   border: 1px solid #374151;
   border-radius: 12px;
   color: #e5e7eb;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 11px;
-  flex: 1;
+  font-size: 13px; /* Increased from 11px to match chat text */
+  line-height: 22px; /* Increased from 20px for better proportion */
   resize: none;
-  min-height: 20px;
-  max-height: 80px;
-  padding: 8px 12px;
+  min-height: 44px; /* Increased from 40px to accommodate larger text */
+  max-height: 400px; /* Updated to match your hook */
+  height: 44px; /* Increased starting height */
+  padding: 11px 14px; /* Increased padding to match message padding */
+  margin: 0 16px 16px 16px;
   outline: none;
   transition: all 0.2s ease;
+  width: calc(100% - 32px);
+  box-sizing: border-box;
+  overflow-y: hidden;
+  vertical-align: top;
 }
 
 .chat-input:focus {
@@ -251,27 +312,38 @@
 
 .chat-input::placeholder {
   color: #6b7280;
+  line-height: 22px; /* Updated to match new line height */
 }
 
-/* Scrollbars */
-.chat-messages::-webkit-scrollbar {
+/* ====================================
+   10. SCROLLBAR STYLES
+   ==================================== */
+
+.chat-messages::-webkit-scrollbar,
+.chat-input::-webkit-scrollbar {
   width: 4px;
 }
 
-.chat-messages::-webkit-scrollbar-track {
+.chat-messages::-webkit-scrollbar-track,
+.chat-input::-webkit-scrollbar-track {
   background: #1e1e1e;
 }
 
-.chat-messages::-webkit-scrollbar-thumb {
+.chat-messages::-webkit-scrollbar-thumb,
+.chat-input::-webkit-scrollbar-thumb {
   background: #374151;
   border-radius: 2px;
 }
 
-.chat-messages::-webkit-scrollbar-thumb:hover {
+.chat-messages::-webkit-scrollbar-thumb:hover,
+.chat-input::-webkit-scrollbar-thumb:hover {
   background: #4b5563;
 }
 
-/* Resize handles */
+/* ====================================
+   11. RESIZE HANDLES
+   ==================================== */
+
 .resize-handle {
   position: absolute;
   background: transparent;
@@ -320,7 +392,10 @@
   opacity: 0.8;
 }
 
-/* Animations */
+/* ====================================
+   12. ANIMATIONS
+   ==================================== */
+
 @keyframes messageSlideIn {
   from {
     opacity: 0;
