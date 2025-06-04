@@ -1,28 +1,24 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import TerminalIcon from './TerminalIcon';
 // Import CSS: import './terminal-widget.css';
 
-const TerminalIcon = ({ onClick }) => (
-  <div className="terminal-icon" onClick={onClick}>
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2">
-      <polyline points="4,17 10,11 4,5" />
-      <line x1="12" y1="19" x2="20" y2="19" />
-    </svg>
-  </div>
-);
-
 const ContentApp = () => {
-  const [count, setCount] = useState(0);
   const [isMinimized, setIsMinimized] = useState(true);
   const [currentUrl, setCurrentUrl] = useState('');
 
-  // Position state for the terminal (when expanded)
-  const [terminalPosition, setTerminalPosition] = useState({
+  // Chat state
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState([]);
+  const [isTyping, setIsTyping] = useState(false);
+
+  // Position state for the widget (when expanded)
+  const [widgetPosition, setWidgetPosition] = useState({
     top: 20,
     left: window.innerWidth - 480 - 20
   });
 
-  // Size state for the terminal
-  const [terminalSize, setTerminalSize] = useState({
+  // Size state for the widget
+  const [widgetSize, setWidgetSize] = useState({
     width: 480,
     height: 320
   });
@@ -41,6 +37,8 @@ const ContentApp = () => {
 
   const widgetRef = useRef(null);
   const iconRef = useRef(null);
+  const chatInputRef = useRef(null);
+  const chatMessagesRef = useRef(null);
 
   // URL State Management
   const updateUrlState = useCallback(() => {
@@ -85,9 +83,59 @@ const ContentApp = () => {
     };
   }, [updateUrlState]);
 
-  // Counter and Widget Control
-  const handleIncrement = () => setCount(prev => prev + 1);
-  const handleReset = () => setCount(0);
+  // Auto-scroll chat messages
+  useEffect(() => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
+  }, [chatMessages, isTyping]);
+
+  // Chat functionality
+  const generateAIResponse = (userMessage) => {
+    return "That\'s a great how question! I\'d be happy to help explain the process or provide step-by-step guidance. Could you be more specific about what you\'d like to know? Interesting question! I can provide information and explanations. What specifically would you like to know more about? Interesting question! I can provide information and explanations. What specifically would you like to know more about?"
+  };
+
+  const handleChatSend = async () => {
+    if (!chatInput.trim()) return;
+
+    const userMessage = {
+      id: Date.now(),
+      type: 'user',
+      content: chatInput.trim(),
+      timestamp: new Date()
+    };
+
+    setChatMessages(prev => [...prev, userMessage]);
+    setChatInput('');
+    setIsTyping(true);
+
+    // Simulate AI response delay
+    setTimeout(() => {
+      const aiResponse = {
+        id: Date.now() + 1,
+        type: 'assistant',
+        content: generateAIResponse(userMessage.content),
+        timestamp: new Date()
+      };
+      
+      setChatMessages(prev => [...prev, aiResponse]);
+      setIsTyping(false);
+    }, 800 + Math.random() * 1200);
+  };
+
+  const handleChatKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleChatSend();
+    }
+  };
+
+  const handleChatInputChange = (e) => {
+    setChatInput(e.target.value);
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+  };
 
   const handleClose = () => {
     const container = document.getElementById('react-extension-root');
@@ -96,9 +144,9 @@ const ContentApp = () => {
 
   const handleMinimize = () => {
     if (!isMinimized) {
-      // Calculate icon position based on terminal's top-right corner
-      const iconTop = terminalPosition.top;
-      const iconLeft = terminalPosition.left + terminalSize.width - 32; // Terminal width - icon width
+      // Calculate icon position based on widget's top-right corner
+      const iconTop = widgetPosition.top;
+      const iconLeft = widgetPosition.left + widgetSize.width - 32; // Widget width - icon width
       setIconPosition({ top: iconTop, left: iconLeft });
     }
     setIsMinimized(true);
@@ -109,20 +157,27 @@ const ContentApp = () => {
     if (hasDragged) return;
     
     if (isMinimized) {
-      // Calculate terminal position based on icon position (icon should be at top-right)
-      const terminalTop = iconPosition.top;
-      const terminalLeft = iconPosition.left - terminalSize.width + 32; // Icon left - terminal width + icon width
+      // Calculate widget position based on icon position (icon should be at top-right)
+      const widgetTop = iconPosition.top;
+      const widgetLeft = iconPosition.left - widgetSize.width + 32; // Icon left - widget width + icon width
       
-      // Ensure terminal doesn't go off-screen
-      const adjustedLeft = Math.max(0, Math.min(terminalLeft, window.innerWidth - terminalSize.width));
-      const adjustedTop = Math.max(0, Math.min(terminalTop, window.innerHeight - terminalSize.height));
+      // Ensure widget doesn't go off-screen
+      const adjustedLeft = Math.max(0, Math.min(widgetLeft, window.innerWidth - widgetSize.width));
+      const adjustedTop = Math.max(0, Math.min(widgetTop, window.innerHeight - widgetSize.height));
       
-      setTerminalPosition({ top: adjustedTop, left: adjustedLeft });
+      setWidgetPosition({ top: adjustedTop, left: adjustedLeft });
     }
     setIsMinimized(false);
+    
+    // Focus the chat input when expanding
+    setTimeout(() => {
+      if (chatInputRef.current) {
+        chatInputRef.current.focus();
+      }
+    }, 100);
   };
 
-  // Draggable Logic for Terminal Header
+  // Draggable Logic for Widget Header
   const handleHeaderMouseDown = (e) => {
     if (isMinimized) return;
     if (e.button !== 0) return;
@@ -147,6 +202,7 @@ const ContentApp = () => {
     e.preventDefault();
     e.stopPropagation();
   };
+
   // Draggable Logic for Icon
   const handleIconMouseDown = (e) => {
     if (!isMinimized) return;
@@ -169,7 +225,7 @@ const ContentApp = () => {
         const deltaX = e.clientX - rel.x;
         const deltaY = e.clientY - rel.y;
 
-        setTerminalSize(prevSize => {
+        setWidgetSize(prevSize => {
           let newWidth = prevSize.width;
           let newHeight = prevSize.height;
 
@@ -193,22 +249,22 @@ const ContentApp = () => {
               break;
           }
 
-          // Ensure terminal doesn't exceed viewport
-          newWidth = Math.min(newWidth, window.innerWidth - terminalPosition.left);
-          newHeight = Math.min(newHeight, window.innerHeight - terminalPosition.top);
+          // Ensure widget doesn't exceed viewport
+          newWidth = Math.min(newWidth, window.innerWidth - widgetPosition.left);
+          newHeight = Math.min(newHeight, window.innerHeight - widgetPosition.top);
 
           return { width: newWidth, height: newHeight };
         });
 
         // For NW and SW, we also need to adjust position when resizing
         if (resizeType === 'nw' || resizeType === 'sw') {
-          setTerminalPosition(prevPos => ({
+          setWidgetPosition(prevPos => ({
             ...prevPos,
             left: Math.max(0, prevPos.left + deltaX)
           }));
         }
         if (resizeType === 'nw' || resizeType === 'ne') {
-          setTerminalPosition(prevPos => ({
+          setWidgetPosition(prevPos => ({
             ...prevPos,
             top: Math.max(0, prevPos.top + deltaY)
           }));
@@ -229,10 +285,10 @@ const ContentApp = () => {
           newTop = Math.max(0, Math.min(newTop, window.innerHeight - 32));
           setIconPosition({ top: newTop, left: newLeft });
         } else {
-          // Dragging the terminal
-          newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - terminalSize.width));
-          newTop = Math.max(0, Math.min(newTop, window.innerHeight - terminalSize.height));
-          setTerminalPosition({ top: newTop, left: newLeft });
+          // Dragging the widget
+          newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - widgetSize.width));
+          newTop = Math.max(0, Math.min(newTop, window.innerHeight - widgetSize.height));
+          setWidgetPosition({ top: newTop, left: newLeft });
         }
       }
     };
@@ -254,7 +310,7 @@ const ContentApp = () => {
       window.removeEventListener('mouseup', handleMouseUp);
       document.body.style.userSelect = '';
     };
-  }, [dragging, resizing, resizeType, rel, isMinimized, terminalPosition, terminalSize]);
+  }, [dragging, resizing, resizeType, rel, isMinimized, widgetPosition, widgetSize]);
 
   if (isMinimized) {
     return (
@@ -277,10 +333,10 @@ const ContentApp = () => {
       ref={widgetRef}
       className={`extension-widget expanded`}
       style={{
-        top: terminalPosition.top,
-        left: terminalPosition.left,
-        width: terminalSize.width,
-        height: terminalSize.height,
+        top: widgetPosition.top,
+        left: widgetPosition.left,
+        width: widgetSize.width,
+        height: widgetSize.height,
       }}
     >
       <div
@@ -299,27 +355,54 @@ const ContentApp = () => {
             title="Close"
           />
         </div>
-        <h3>Terminal — {currentUrl}</h3>
+        <h3>AI Chat — {currentUrl}</h3>
       </div>
 
       <div className="extension-content">
-        <div className="counter-section">
-          <div className="counter-display">count: {count}</div>
-          <div className="button-group">
-            <button className="action-btn primary" onClick={handleIncrement}>
-              increment
-            </button>
-            <button className="action-btn secondary" onClick={handleReset}>
-              reset
-            </button>
+        {/* Chat Section */}
+        <div className="chat-section">
+          <div className="chat-messages" ref={chatMessagesRef}>
+            {chatMessages.map((message) => (
+              <div key={message.id} className={`chat-message ${message.type}`}>
+                <div className="message-content">
+                  <div className="message-text">
+                    {message.content.split('\n').map((line, index) => (
+                      <div key={index}>
+                        {line}
+                        {index < message.content.split('\n').length - 1 && <br />}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))
+          }
+            
+          {/* Typing indicator */}
+          {isTyping && (
+            <div className="chat-message assistant typing">
+              <div className="message-content">
+                <div className="typing-indicator">
+                  <div className="typing-dot"></div>
+                  <div className="typing-dot"></div>
+                  <div className="typing-dot"></div>
+                </div>
+              </div>
+            </div>
+          )}
           </div>
-        </div>
 
-        <div className="info-section">
-          <div className="url-info">
-            <strong>pwd</strong>
-            <span className="url-text">{currentUrl || 'localhost'}</span>
-          </div>
+          <textarea
+            ref={chatInputRef}
+            className="chat-input"
+            value={chatInput}
+            onChange={handleChatInputChange}
+            onKeyPress={handleChatKeyPress}
+            placeholder="Ask me anything..."
+            rows="1"
+            autoComplete="off"
+            spellCheck="false"
+          />
         </div>
       </div>
 
