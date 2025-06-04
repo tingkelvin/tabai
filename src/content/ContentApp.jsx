@@ -1,4 +1,4 @@
-// ContentApp.jsx - FINAL CLEANED UP VERSION
+// ContentApp.jsx - Modified to accept custom chat hook
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TerminalIcon from './TerminalIcon';
 import { useUrlTracking } from './hooks/useUrlTracking';
@@ -8,7 +8,8 @@ import { useChat } from './hooks/useChat';
 import { calculateInitialPositions } from './utils/helpers';
 import { WIDGET_CONFIG, RESIZE_TYPES } from './utils/constants';
 
-const ContentApp = () => {
+// CHANGED: Accept useCustomChat prop
+const ContentApp = ({ useCustomChat }) => {
   const [isMinimized, setIsMinimized] = useState(true);
 
   // URL tracking
@@ -27,8 +28,9 @@ const ContentApp = () => {
     height: WIDGET_CONFIG.DEFAULT_HEIGHT
   });
 
-  // Chat functionality
-  const { chatInput, chatMessages, isTyping, handleInputChange, handleKeyPress } = useChat();
+  // CHANGED: Use custom chat hook if provided, otherwise use default
+  const { chatInput, chatMessages, isTyping, handleInputChange, handleKeyPress, sendMessage } = 
+    useCustomChat ? useCustomChat() : useChat();
 
   // Drag and resize functionality
   const { dragging, hasDragged, startDrag, startResize } = useDragAndResize(
