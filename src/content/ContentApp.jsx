@@ -36,61 +36,62 @@ const ContentApp = () => {
       updateUrlState();
     };
     
-    // Method 2: Listen for pushstate/replacestate (programmatic navigation)
-    const originalPushState = history.pushState;
-    const originalReplaceState = history.replaceState;
+    // // Method 2: Listen for pushstate/replacestate (programmatic navigation)
+    // const originalPushState = history.pushState;
+    // const originalReplaceState = history.replaceState;
     
-    history.pushState = function(...args) {
-      originalPushState.apply(history, args);
-      console.log('PushState detected');
-      setTimeout(updateUrlState, 100); // Small delay to ensure DOM is updated
-    };
+    // history.pushState = function(...args) {
+    //   originalPushState.apply(history, args);
+    //   console.log('PushState detected');
+    //   setTimeout(updateUrlState, 100); // Small delay to ensure DOM is updated
+    // };
     
-    history.replaceState = function(...args) {
-      originalReplaceState.apply(history, args);
-      console.log('ReplaceState detected');
-      setTimeout(updateUrlState, 100);
-    };
+    // history.replaceState = function(...args) {
+    //   originalReplaceState.apply(history, args);
+    //   console.log('ReplaceState detected');
+    //   setTimeout(updateUrlState, 100);
+    // };
     
     // Method 3: Periodically check for URL changes (fallback)
-    const urlCheckInterval = setInterval(() => {
-      const currentHref = window.location.href;
-      if (currentHref !== window.lastCheckedUrl) {
-        console.log('URL change detected via polling');
-        window.lastCheckedUrl = currentHref;
-        updateUrlState();
-      }
-    }, 1000);
+    // const urlCheckInterval = setInterval(() => {
+    //   const currentHref = window.location.href;
+    //   if (currentHref !== window.lastCheckedUrl) {
+    //     console.log('URL change detected via polling');
+    //     window.lastCheckedUrl = currentHref;
+    //     updateUrlState();
+    //   }
+    // }, 1000);
     
     // Method 4: Listen for hashchange
-    const handleHashChange = () => {
-      console.log('Hash change detected');
-      updateUrlState();
-    };
+    // const handleHashChange = () => {
+    //   console.log('Hash change detected');
+    //   updateUrlState();
+    // };
     
     // Add event listeners
-    window.addEventListener('popstate', handlePopState);
-    window.addEventListener('hashchange', handleHashChange);
+    // window.addEventListener('popstate', handlePopState);
+    // window.addEventListener('hashchange', handleHashChange);
     
-    // Store initial URL for polling comparison
-    window.lastCheckedUrl = window.location.href;
+    // // Store initial URL for polling comparison
+    // window.lastCheckedUrl = window.location.href;
     
-    // Cleanup function
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('hashchange', handleHashChange);
-      clearInterval(urlCheckInterval);
+    // // Cleanup function
+    // return () => {
+    //   window.removeEventListener('popstate', handlePopState);
+    //   window.removeEventListener('hashchange', handleHashChange);
+    //   clearInterval(urlCheckInterval);
       
-      // Restore original methods
-      history.pushState = originalPushState;
-      history.replaceState = originalReplaceState;
-    };
+    //   // Restore original methods
+    //   history.pushState = originalPushState;
+    //   history.replaceState = originalReplaceState;
+    // };
   }, []);
 
   // Separate useEffect for YouTube-specific setup
   useEffect(() => {
     if (isYoutube) {
       checkYouTubePlayState();
+      getYouTubeTranscript();
       
       // Set up interval to check play state
       const interval = setInterval(checkYouTubePlayState, 1000);
@@ -129,74 +130,39 @@ const ContentApp = () => {
   const getYouTubeTranscript = async () => {
     setIsLoadingTranscript(true);
     try {
-      // Get video ID from URL
-      const url = window.location.href;
-      const videoId = url.match(/(?:v=|\/)([\w-]{11})(?:\?|&|\/|$)/)?.[1];
+      const transcriptButton = document.querySelector('[aria-label*="transcript" i], [aria-label*="Show transcript" i]');
       
-      if (!videoId) {
-        throw new Error('Could not find video ID');
-      }
-
-      // Get the innertube API context from YouTube's window object
-      const ytInitialData = window.ytInitialData;
-      const innertubeApiKey = ytInitialData?.INNERTUBE_API_KEY || window.ytcfg?.get('INNERTUBE_API_KEY');
-      const clientVersion = ytInitialData?.INNERTUBE_CLIENT_VERSION || window.ytcfg?.get('INNERTUBE_CLIENT_VERSION');
-      const clientName = ytInitialData?.INNERTUBE_CLIENT_NAME || window.ytcfg?.get('INNERTUBE_CLIENT_NAME');
-      
-      if (!innertubeApiKey) {
-        throw new Error('Could not find YouTube API key');
-      }
-
-      // Make request to YouTube's transcript endpoint
-      const response = await fetch(`https://www.youtube.com/youtubei/v1/get_transcript?key=${innertubeApiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          context: {
-            client: {
-              clientName: clientName || 'WEB',
-              clientVersion: clientVersion || '2.20240304.00.00',
-            },
-          },
-          params: btoa(JSON.stringify({ videoId })),
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch transcript data');
-      }
-
-      const data = await response.json();
-      
-      // Parse the transcript data
-      const transcriptData = [];
-      const cues = data?.actions?.[0]?.updateEngagementPanelAction?.content?.transcriptRenderer?.content?.transcriptSearchPanelRenderer?.body?.transcriptSegmentListRenderer?.initialSegments || [];
-      
-      for (const cue of cues) {
-        const snippet = cue?.transcriptSegmentRenderer;
-        if (snippet?.snippet?.text && snippet?.startTimeText?.simpleText) {
-          transcriptData.push({
-            time: snippet.startTimeText.simpleText,
-            text: snippet.snippet.text
-          });
+      if (transcriptButton) {
+        transcriptButton.click();
+        
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const transcriptItems = document.querySelectorAll(
+          'ytd-transcript-segment-renderer, .ytd-transcript-segment-renderer'
+        );
+        
+        if (transcriptItems.length > 0) {
+          const transcriptData = Array.from(transcriptItems).map(item => {
+            const timeElement = item.querySelector('.segment-timestamp, [class*="timestamp"]');
+            const textElement = item.querySelector('.segment-text, [class*="text"]');
+            
+            return {
+              time: timeElement ? timeElement.textContent.trim() : '0:00',
+              text: textElement ? textElement.textContent.trim() : ''
+            };
+          }).filter(item => item.text);
+          
+          setTranscript(transcriptData);
+          await closeTranscriptPanel();
+          return transcriptData;
         }
       }
-
-      if (transcriptData.length === 0) {
-        throw new Error('No transcript data found in response');
-      }
-
-      setTranscript(transcriptData);
-      return transcriptData;
-
+    
+      throw new Error('No transcript found');
+      
     } catch (error) {
       console.error('Failed to get transcript:', error);
-      setTranscript([{ 
-        time: '0:00', 
-        text: `Transcript not available: ${error.message}` 
-      }]);
+      setTranscript([{ time: '0:00', text: 'Transcript not available for this video' }]);
     } finally {
       setIsLoadingTranscript(false);
     }
