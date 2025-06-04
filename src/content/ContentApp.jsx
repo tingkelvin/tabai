@@ -1,234 +1,218 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+// Import CSS: import './terminal-widget.css';
+
+const TerminalIcon = ({ onClick }) => (
+  <div className="terminal-icon" onClick={onClick}>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2">
+      <polyline points="4,17 10,11 4,5" />
+      <line x1="12" y1="19" x2="20" y2="19" />
+    </svg>
+  </div>
+);
 
 const ContentApp = () => {
   const [count, setCount] = useState(0);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(true);
   const [currentUrl, setCurrentUrl] = useState('');
-  const [isYoutube, setIsYoutube] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [transcript, setTranscript] = useState([]);
-  const [showTranscript, setShowTranscript] = useState(false);
-  const [isLoadingTranscript, setIsLoadingTranscript] = useState(false);
 
-  // Function to update URL state
-  const updateUrlState = () => {
+  // Position state for the terminal (when expanded)
+  const [terminalPosition, setTerminalPosition] = useState({
+    top: 20,
+    left: window.innerWidth - 480 - 20
+  });
+
+  // Position state for the icon (when minimized)
+  const [iconPosition, setIconPosition] = useState({
+    top: 20,
+    left: window.innerWidth - 32 - 20 // Icon width + margin
+  });
+
+  const [dragging, setDragging] = useState(false);
+  const [rel, setRel] = useState({ x: 0, y: 0 });
+
+  const widgetRef = useRef(null);
+  const iconRef = useRef(null);
+
+  // URL State Management
+  const updateUrlState = useCallback(() => {
     const hostname = window.location.hostname;
-    const fullUrl = window.location.href;
-    
     setCurrentUrl(hostname);
-    setIsYoutube(hostname.includes('youtube.com') || hostname.includes('youtu.be'));
-    
-    // Reset transcript when URL changes
-    setTranscript([]);
-    setShowTranscript(false);
-    setIsLoadingTranscript(false);
-    
-    console.log('URL changed to:', fullUrl);
-  };
-
-  useEffect(() => {
-    // Initial setup
-    updateUrlState();
-    
-    // Method 1: Listen for popstate (back/forward buttons)
-    const handlePopState = () => {
-      console.log('Popstate detected');
-      updateUrlState();
-    };
-    
-    // // Method 2: Listen for pushstate/replacestate (programmatic navigation)
-    // const originalPushState = history.pushState;
-    // const originalReplaceState = history.replaceState;
-    
-    // history.pushState = function(...args) {
-    //   originalPushState.apply(history, args);
-    //   console.log('PushState detected');
-    //   setTimeout(updateUrlState, 100); // Small delay to ensure DOM is updated
-    // };
-    
-    // history.replaceState = function(...args) {
-    //   originalReplaceState.apply(history, args);
-    //   console.log('ReplaceState detected');
-    //   setTimeout(updateUrlState, 100);
-    // };
-    
-    // Method 3: Periodically check for URL changes (fallback)
-    // const urlCheckInterval = setInterval(() => {
-    //   const currentHref = window.location.href;
-    //   if (currentHref !== window.lastCheckedUrl) {
-    //     console.log('URL change detected via polling');
-    //     window.lastCheckedUrl = currentHref;
-    //     updateUrlState();
-    //   }
-    // }, 1000);
-    
-    // Method 4: Listen for hashchange
-    // const handleHashChange = () => {
-    //   console.log('Hash change detected');
-    //   updateUrlState();
-    // };
-    
-    // Add event listeners
-    // window.addEventListener('popstate', handlePopState);
-    // window.addEventListener('hashchange', handleHashChange);
-    
-    // // Store initial URL for polling comparison
-    // window.lastCheckedUrl = window.location.href;
-    
-    // // Cleanup function
-    // return () => {
-    //   window.removeEventListener('popstate', handlePopState);
-    //   window.removeEventListener('hashchange', handleHashChange);
-    //   clearInterval(urlCheckInterval);
-      
-    //   // Restore original methods
-    //   history.pushState = originalPushState;
-    //   history.replaceState = originalReplaceState;
-    // };
   }, []);
 
-  // Separate useEffect for YouTube-specific setup
   useEffect(() => {
-    if (isYoutube) {
-      checkYouTubePlayState();
-      getYouTubeTranscript();
-      
-      // Set up interval to check play state
-      const interval = setInterval(checkYouTubePlayState, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [isYoutube, currentUrl]); // Re-run when URL changes
+    updateUrlState();
 
-  const checkYouTubePlayState = () => {
-    const video = document.querySelector('video');
-    if (video) {
-      setIsPlaying(!video.paused);
-    }
-  };
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
 
-  const closeTranscriptPanel = async () => {
-    const closeButton = document.querySelector('button[aria-label*="Close transcript" i]');
-    if (closeButton) {
-      console.log('Clicking close button');
-      closeButton.click();
-      await new Promise(resolve => setTimeout(resolve, 300));
-      return true;
-    }
-    
-    // If no close button found, try clicking the transcript button again to toggle it closed
-    const transcriptButton = document.querySelector('[aria-label*="transcript" i], [aria-label*="Show transcript" i]');
-    if (transcriptButton) {
-      console.log('Toggling transcript button to close');
-      transcriptButton.click();
-      return true;
-    }
-    
-    console.warn('Could not find close button for transcript panel');
-    return false;
-  };
+    history.pushState = function(...args) {
+      originalPushState.apply(history, args);
+      setTimeout(updateUrlState, 50);
+    };
 
-  const getYouTubeTranscript = async () => {
-    setIsLoadingTranscript(true);
-    try {
-      const transcriptButton = document.querySelector('[aria-label*="transcript" i], [aria-label*="Show transcript" i]');
-      
-      if (transcriptButton) {
-        transcriptButton.click();
-        
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const transcriptItems = document.querySelectorAll(
-          'ytd-transcript-segment-renderer, .ytd-transcript-segment-renderer'
-        );
-        
-        if (transcriptItems.length > 0) {
-          const transcriptData = Array.from(transcriptItems).map(item => {
-            const timeElement = item.querySelector('.segment-timestamp, [class*="timestamp"]');
-            const textElement = item.querySelector('.segment-text, [class*="text"]');
-            
-            return {
-              time: timeElement ? timeElement.textContent.trim() : '0:00',
-              text: textElement ? textElement.textContent.trim() : ''
-            };
-          }).filter(item => item.text);
-          
-          setTranscript(transcriptData);
-          await closeTranscriptPanel();
-          return transcriptData;
-        }
+    history.replaceState = function(...args) {
+      originalReplaceState.apply(history, args);
+      setTimeout(updateUrlState, 50);
+    };
+
+    window.addEventListener('popstate', updateUrlState);
+    window.addEventListener('hashchange', updateUrlState);
+
+    let lastCheckedUrl = window.location.href;
+    const urlCheckInterval = setInterval(() => {
+      const currentHref = window.location.href;
+      if (currentHref !== lastCheckedUrl) {
+        lastCheckedUrl = currentHref;
+        updateUrlState();
       }
-    
-      throw new Error('No transcript found');
-      
-    } catch (error) {
-      console.error('Failed to get transcript:', error);
-      setTranscript([{ time: '0:00', text: 'Transcript not available for this video' }]);
-    } finally {
-      setIsLoadingTranscript(false);
-    }
-  };
+    }, 1000);
 
-  const handleYouTubeToggle = () => {
-    const video = document.querySelector('video');
-    if (video) {
-      if (video.paused) {
-        video.play();
-        setIsPlaying(true);
-      } else {
-        video.pause();
-        setIsPlaying(false);
-      }
-    } else {
-      const spaceKeyEvent = new KeyboardEvent('keydown', {
-        key: ' ',
-        code: 'Space',
-        keyCode: 32,
-        which: 32,
-        bubbles: true
-      });
-      document.dispatchEvent(spaceKeyEvent);
-      
-      setTimeout(checkYouTubePlayState, 100);
-    }
-  };
+    return () => {
+      window.removeEventListener('popstate', updateUrlState);
+      window.removeEventListener('hashchange', updateUrlState);
+      clearInterval(urlCheckInterval);
+      history.pushState = originalPushState;
+      history.replaceState = originalReplaceState;
+    };
+  }, [updateUrlState]);
 
-  const handleIncrement = () => {
-    setCount(prev => prev + 1);
-  };
-
-  const handleReset = () => {
-    setCount(0);
-  };
+  // Counter and Widget Control
+  const handleIncrement = () => setCount(prev => prev + 1);
+  const handleReset = () => setCount(0);
 
   const handleClose = () => {
     const container = document.getElementById('react-extension-root');
-    if (container) {
-      container.remove();
-    }
+    if (container) container.remove();
   };
 
+  const handleMinimize = () => {
+    if (!isMinimized) {
+      // Calculate icon position based on terminal's top-right corner
+      const iconTop = terminalPosition.top;
+      const iconLeft = terminalPosition.left + 480 - 32; // Terminal width - icon width
+      setIconPosition({ top: iconTop, left: iconLeft });
+    }
+    setIsMinimized(true);
+  };
+
+  const handleExpand = () => {
+    if (isMinimized) {
+      // Calculate terminal position based on icon position (icon should be at top-right)
+      const terminalTop = iconPosition.top;
+      const terminalLeft = iconPosition.left - 480 + 32; // Icon left - terminal width + icon width
+      
+      // Ensure terminal doesn't go off-screen
+      const adjustedLeft = Math.max(0, Math.min(terminalLeft, window.innerWidth - 480));
+      const adjustedTop = Math.max(0, Math.min(terminalTop, window.innerHeight - 320));
+      
+      setTerminalPosition({ top: adjustedTop, left: adjustedLeft });
+    }
+    setIsMinimized(false);
+  };
+
+  // Draggable Logic for Terminal Header
+  const handleHeaderMouseDown = (e) => {
+    if (isMinimized) return;
+    if (e.button !== 0) return;
+
+    const widget = e.currentTarget.closest('.extension-widget');
+    if (!widget) return;
+
+    const rect = widget.getBoundingClientRect();
+    setDragging(true);
+    setRel({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    e.preventDefault();
+  };
+
+  // Draggable Logic for Icon
+  const handleIconMouseDown = (e) => {
+    if (!isMinimized) return;
+    if (e.button !== 0) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDragging(true);
+    setRel({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    e.preventDefault();
+    e.stopPropagation(); // Prevent expand from triggering
+  };
+
+  useEffect(() => {
+    if (!dragging) return;
+
+    const handleMouseMove = (e) => {
+      let newLeft = e.clientX - rel.x;
+      let newTop = e.clientY - rel.y;
+
+      if (isMinimized) {
+        // Dragging the icon
+        newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - 32));
+        newTop = Math.max(0, Math.min(newTop, window.innerHeight - 29));
+        setIconPosition({ top: newTop, left: newLeft });
+      } else {
+        // Dragging the terminal
+        newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - 480));
+        newTop = Math.max(0, Math.min(newTop, window.innerHeight - 320));
+        setTerminalPosition({ top: newTop, left: newLeft });
+      }
+    };
+
+    const handleMouseUp = () => setDragging(false);
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    document.body.style.userSelect = 'none';
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = '';
+    };
+  }, [dragging, rel, isMinimized]);
+
+  if (isMinimized) {
+    return (
+      <div
+        ref={iconRef}
+        className={`extension-widget minimized ${dragging ? 'dragging' : ''}`}
+        style={{
+          top: iconPosition.top,
+          left: iconPosition.left,
+        }}
+        onMouseDown={handleIconMouseDown}
+      >
+        <TerminalIcon onClick={handleExpand} />
+      </div>
+    );
+  }
+
   return (
-    <div className={`extension-widget ${isMinimized ? 'minimized' : ''}`}>
-      <div className="extension-header">
+    <div
+      ref={widgetRef}
+      className={`extension-widget expanded`}
+      style={{
+        top: terminalPosition.top,
+        left: terminalPosition.left,
+      }}
+    >
+      <div
+        className={`extension-header ${dragging ? 'dragging' : ''}`}
+        onMouseDown={handleHeaderMouseDown}
+      >
         <div className="extension-controls">
-          <button 
+          <button
+            className="minimize-btn"
+            onClick={handleMinimize}
+            title="Minimize"
+          />
+          <button
             className="close-btn"
             onClick={handleClose}
             title="Close"
-          >
-            ×
-          </button>
-          <button 
-            className="minimize-btn"
-            onClick={() => setIsMinimized(!isMinimized)}
-            title={isMinimized ? 'Expand' : 'Minimize'}
-          >
-            {isMinimized ? '□' : '−'}
-          </button>
+          />
         </div>
         <h3>Terminal — {currentUrl}</h3>
       </div>
-      
+
       <div className="extension-content">
         <div className="counter-section">
           <div className="counter-display">count: {count}</div>
@@ -239,60 +223,13 @@ const ContentApp = () => {
             <button className="action-btn secondary" onClick={handleReset}>
               reset
             </button>
-            {isYoutube && (
-              <button className="action-btn youtube" onClick={handleYouTubeToggle}>
-                {isPlaying ? 'pause' : 'play'}
-              </button>
-            )}
-            {isYoutube && (
-              <button 
-                className="action-btn transcript" 
-                onClick={() => {
-                  if (!showTranscript && transcript.length === 0) {
-                    getYouTubeTranscript();
-                  }
-                  setShowTranscript(!showTranscript);
-                }}
-                disabled={isLoadingTranscript}
-              >
-                {isLoadingTranscript ? 'loading...' : (showTranscript ? 'hide-txt' : 'transcript')}
-              </button>
-            )}
           </div>
         </div>
-        
-        {showTranscript && isYoutube && (
-          <div className="transcript-section">
-            <div className="transcript-header">
-              <span className="prompt">$</span> transcript output:
-            </div>
-            <div className="transcript-content">
-              {transcript.length > 0 ? (
-                transcript.map((item, index) => (
-                  <div key={index} className="transcript-line">
-                    <span className="transcript-time">[{item.time}]</span>
-                    <span className="transcript-text">{item.text}</span>
-                  </div>
-                ))
-              ) : (
-                <div className="transcript-loading">
-                  {isLoadingTranscript ? 'Loading transcript...' : 'No transcript available'}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        
+
         <div className="info-section">
           <div className="url-info">
             <strong>pwd</strong>
             <span className="url-text">{currentUrl || 'localhost'}</span>
-            {isYoutube && (
-              <div style={{ marginTop: '8px' }}>
-                <strong>media</strong>
-                <span className="url-text">{isPlaying ? 'playing ▶️' : 'paused ⏸️'}</span>
-              </div>
-            )}
           </div>
         </div>
       </div>
