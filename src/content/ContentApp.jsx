@@ -41,11 +41,6 @@ const ContentApp = ({
     sendMessage
   } = chatHook;
 
-  const handleSend = useCallback((e) =>{
-    sendMessage(e);
-    handleKeyPress(e);
-  })
-
   // Drag and resize functionality
   const { dragging, hasDragged, startDrag, startResize } = useDragAndResize(
     widgetSize, 
@@ -211,7 +206,7 @@ const ContentApp = ({
               className="chat-input"
               value={chatInput}
               onChange={handleInputChange}
-              onKeyPress={handleSend}
+              onKeyPress={handleKeyPress}
               placeholder="Ask me anything..."
               rows="1"
               autoComplete="off"

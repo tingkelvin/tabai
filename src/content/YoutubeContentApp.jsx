@@ -55,16 +55,27 @@ const YouTubeContentApp = () => {
       chatHook.handleInputChange(e);
     };
 
-    const sendMessage = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            setShowResumeButton(true);
+    // Enhanced key press handler that includes video controls
+    const handleKeyPress = (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        // Set up video controls before sending message
+        setShowResumeButton(true);
+        
+        // Pause video when message is sent
+        if (!isVideoPaused()) {
+          pauseVideo();
+          wasPlayingBeforeTyping.current = true;
         }
+      }
+      
+      // Call original handler which will prevent default and send message
+      chatHook.handleKeyPress(e);
     };
 
     return {
       ...chatHook,
       handleInputChange,
-      sendMessage
+      handleKeyPress
     };
   };
 
