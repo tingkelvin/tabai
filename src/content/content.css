@@ -209,9 +209,7 @@
   justify-content: flex-end; /* Align user messages to the right */
 }
 
-.chat-message.assistant {
-  justify-content: flex-start; /* Align assistant messages to the left */
-}
+
 
 .message-content {
   width: 100%; /* Full width instead of max-width */
@@ -229,26 +227,26 @@
   box-sizing: border-box;
 }
 
-/* User messages - keep bubble style, align right */
+/* CHANGED: User messages now have dark background instead of blue */
 .chat-message.user .message-text {
-  background: #3b82f6;
-  color: white;
-  border-radius: 14px; /* Slightly larger radius to match bigger text */
-  border-bottom-right-radius: 4px;
-  max-width: 80%; /* Limit width for user messages */
-  margin-left: auto; /* Push to right */
+  background: #2d3748; /* CHANGED: from #374151 - darker blue-gray for better distinction */
+  color: #f7fafc; /* CHANGED: from #e5e7eb - brighter white for better readability */
+  border-radius: 14px;
+  margin-right: auto;
+  max-width: fit-content;
+  width: auto;
 }
-
 /* Assistant messages - no bubble, full width, align left */
 .chat-message.assistant .message-text {
-  background: transparent; /* Remove background */
-  color: #e5e7eb;
-  border-radius: 0; /* Remove border radius */
-  border: none; /* Remove any borders */
-  padding: 6px 0; /* Increased minimal padding for larger text */
-  max-width: 100%; /* Full width */
-  margin-right: auto; /* Align to left */
+  background: transparent;
+  color: #e2e8f0; /* CHANGED: from #e5e7eb - slightly cooler tone to distinguish from user */
+  border-radius: 0;
+  border: none;
+  padding: 6px 0;
+  max-width: 100%;
+  margin-right: auto;
 }
+
 
 /* ====================================
    8. TYPING INDICATOR
@@ -279,23 +277,20 @@
 .typing-dot:nth-child(2) { animation-delay: -0.16s; }
 .typing-dot:nth-child(3) { animation-delay: 0s; }
 
-/* ====================================
-   9. CHAT INPUT
-   ==================================== */
 
 .chat-input {
-  background: rgba(55, 65, 81, 0.3);
-  border: 1px solid #374151;
+  background: rgba(45, 55, 72, 0.2); /* CHANGED: from rgba(55, 65, 81, 0.3) - matches user message tone but transparent */
+  border: 1px solid #4a5568; /* CHANGED: from #374151 - slightly lighter border for better visibility */
   border-radius: 12px;
-  color: #e5e7eb;
+  color: #f7fafc; /* CHANGED: from #e5e7eb - matches user message text color */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 13px; /* Increased from 11px to match chat text */
-  line-height: 22px; /* Increased from 20px for better proportion */
+  font-size: 13px;
+  line-height: 22px;
   resize: none;
-  min-height: 44px; /* Increased from 40px to accommodate larger text */
-  max-height: 400px; /* Updated to match your hook */
-  height: 44px; /* Increased starting height */
-  padding: 11px 14px; /* Increased padding to match message padding */
+  min-height: 44px;
+  max-height: 400px;
+  height: 44px;
+  padding: 11px 14px;
   margin: 0 16px 16px 16px;
   outline: none;
   transition: all 0.2s ease;
