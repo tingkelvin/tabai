@@ -1,9 +1,10 @@
-// ContentApp.jsx - CLEANED UP VERSION
+// ContentApp.jsx - FINAL CLEANED UP VERSION
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TerminalIcon from './TerminalIcon';
 import { useUrlTracking } from './hooks/useUrlTracking';
 import { usePosition } from './hooks/usePosition';
 import { useDragAndResize } from './hooks/useDragAndResize';
+import { useChat } from './hooks/useChat';
 import { calculateInitialPositions } from './utils/helpers';
 import { WIDGET_CONFIG, RESIZE_TYPES } from './utils/constants';
 
@@ -20,16 +21,14 @@ const ContentApp = () => {
   const [widgetPosition, updateWidgetPosition, constrainWidgetPosition] = usePosition(initialWidgetPos);
   const [iconPosition, updateIconPosition, constrainIconPosition] = usePosition(initialIconPos);
 
-  // Chat state
-  const [chatInput, setChatInput] = useState('');
-  const [chatMessages, setChatMessages] = useState([]);
-  const [isTyping, setIsTyping] = useState(false);
-
   // Size state for the widget
   const [widgetSize, setWidgetSize] = useState({
     width: WIDGET_CONFIG.DEFAULT_WIDTH,
     height: WIDGET_CONFIG.DEFAULT_HEIGHT
   });
+
+  // Chat functionality
+  const { chatInput, chatMessages, isTyping, handleInputChange, handleKeyPress } = useChat();
 
   // Drag and resize functionality
   const { dragging, hasDragged, startDrag, startResize } = useDragAndResize(
@@ -52,53 +51,6 @@ const ContentApp = () => {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
   }, [chatMessages, isTyping]);
-
-  // Chat functionality
-  const generateAIResponse = useCallback((userMessage) => {
-    return "That's a great question! I'd be happy to help explain the process or provide step-by-step guidance. Could you be more specific about what you'd like to know? Interesting question! I can provide information and explanations. What specifically would you like to know more about?";
-  }, []);
-
-  const handleChatSend = useCallback(async () => {
-    if (!chatInput.trim()) return;
-
-    const userMessage = {
-      id: Date.now(),
-      type: 'user',
-      content: chatInput.trim(),
-      timestamp: new Date()
-    };
-
-    setChatMessages(prev => [...prev, userMessage]);
-    setChatInput('');
-    setIsTyping(true);
-
-    // Simulate AI response delay
-    setTimeout(() => {
-      const aiResponse = {
-        id: Date.now() + 1,
-        type: 'assistant',
-        content: generateAIResponse(userMessage.content),
-        timestamp: new Date()
-      };
-      
-      setChatMessages(prev => [...prev, aiResponse]);
-      setIsTyping(false);
-    }, 800 + Math.random() * 1200);
-  }, [chatInput, generateAIResponse]);
-
-  const handleChatKeyPress = useCallback((e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleChatSend();
-    }
-  }, [handleChatSend]);
-
-  const handleChatInputChange = useCallback((e) => {
-    setChatInput(e.target.value);
-    const textarea = e.target;
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
-  }, []);
 
   const handleClose = useCallback(() => {
     const container = document.getElementById('react-extension-root');
@@ -221,8 +173,8 @@ const ContentApp = () => {
             ref={chatInputRef}
             className="chat-input"
             value={chatInput}
-            onChange={handleChatInputChange}
-            onKeyPress={handleChatKeyPress}
+            onChange={handleInputChange}
+            onKeyPress={handleKeyPress}
             placeholder="Ask me anything..."
             rows="1"
             autoComplete="off"
