@@ -1,13 +1,36 @@
 // YouTubeContentApp.jsx - Fixed version
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ContentApp from './ContentApp';
 import { useYoutubeControl } from './hooks/useYoutubeControl';
-import { useChat } from './hooks/useChat'; // ADDED: Missing import
+import { useChat } from './hooks/useChat';
 
 const YouTubeContentApp = () => {
   const { pauseVideo, resumeVideo, isVideoPaused } = useYoutubeControl();
   const typingTimeoutRef = useRef(null);
   const wasPlayingBeforeTyping = useRef(false);
+  const [showResumeButton, setShowResumeButton] = useState(false); // ADDED: Missing state
+
+  // Handle resume video action
+  const handleResumeVideo = () => {
+    if (wasPlayingBeforeTyping.current) {
+      resumeVideo();
+      wasPlayingBeforeTyping.current = false;
+      setShowResumeButton(false);
+    }
+  };
+
+  // Define custom actions for YouTube
+  const youtubeActions = [
+    {
+      id: 'resume-video',
+      label: 'Resume',
+      icon: '',
+      onClick: handleResumeVideo,
+      isVisible: () => showResumeButton,
+      className: 'resume-video-action',
+      title: 'Resume the paused YouTube video'
+    }
+  ];
 
   // Enhanced chat hook that handles YouTube video pausing
   const useYouTubeChat = () => {
@@ -23,7 +46,7 @@ const YouTubeContentApp = () => {
           pauseVideo();
         }
       } else {
-        if (wasPlayingBeforeTyping.current && isVideoPaused){
+        if (isVideoPaused() && wasPlayingBeforeTyping.current){
             wasPlayingBeforeTyping.current = false;
             resumeVideo();
         }
@@ -32,20 +55,10 @@ const YouTubeContentApp = () => {
       chatHook.handleInputChange(e);
     };
 
-    const sendMessage = async () => {
-      // Resume video when message is sent
-      if (wasPlayingBeforeTyping.current) {
-        resumeVideo();
-        wasPlayingBeforeTyping.current = false;
-      }
-      
-      // Clear timeout
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-      
-      // Call original send message
-      await chatHook.sendMessage();
+    const sendMessage = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            setShowResumeButton(true);
+        }
     };
 
     return {
@@ -64,7 +77,12 @@ const YouTubeContentApp = () => {
     };
   }, []);
 
-  return <ContentApp useCustomChat={useYouTubeChat} />;
+  return (
+    <ContentApp 
+      useCustomChat={useYouTubeChat} 
+      customActions={youtubeActions}
+    />
+  );
 };
 
 export default YouTubeContentApp;

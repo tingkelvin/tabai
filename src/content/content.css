@@ -279,10 +279,10 @@
 
 
 .chat-input {
-  background: rgba(45, 55, 72, 0.2); /* CHANGED: from rgba(55, 65, 81, 0.3) - matches user message tone but transparent */
-  border: 1px solid #4a5568; /* CHANGED: from #374151 - slightly lighter border for better visibility */
+  background: rgba(45, 55, 72, 0.2);
+  border: 1px solid #4a5568;
   border-radius: 12px;
-  color: #f7fafc; /* CHANGED: from #e5e7eb - matches user message text color */
+  color: #f7fafc;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 13px;
   line-height: 22px;
@@ -291,23 +291,113 @@
   max-height: 400px;
   height: 44px;
   padding: 11px 14px;
-  margin: 0 16px 16px 16px;
+  margin: 0;
   outline: none;
   transition: all 0.2s ease;
-  width: calc(100% - 32px);
+  width: 100%;
   box-sizing: border-box;
   overflow-y: hidden;
   vertical-align: top;
 }
 
 .chat-input:focus {
-  border-color: #4ade80;
-  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.2);
+  border-color: #4a5568; /* CHANGED: from #4ade80 - keeps same gray color when focused */
+  box-shadow: none; /* CHANGED: from green shadow - removes the green glow */
 }
 
 .chat-input::placeholder {
   color: #6b7280;
   line-height: 22px; /* Updated to match new line height */
+}
+
+/* Chat input container */
+.chat-input-container {
+  position: relative;
+  margin: 0 16px 16px 16px;
+}
+
+
+/* ====================================
+   10. action buttons
+   ==================================== */
+
+/* Custom actions container */
+.custom-actions-container {
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Base custom action button */
+.custom-action-btn {
+  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+  color: #f7fafc;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-height: 32px;
+}
+
+.custom-action-btn:hover {
+  background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.custom-action-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.custom-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.custom-action-btn:disabled:hover {
+  transform: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Action icon */
+.action-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Specific action styles */
+.resume-video-action {
+  background: #374151;
+  color: #f4f7f5;
+  box-shadow: none;
+  border: none; /* CHANGED: removed green border */
+}
+
+.resume-video-action:hover {
+  background: #4a5568; /* CHANGED: simple color change instead of gradient */
+  box-shadow: none; /* CHANGED: removed shadow */
+}
+
+.save-timestamp-action {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+}
+
+.save-timestamp-action:hover {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
 }
 
 /* ====================================
@@ -426,3 +516,4 @@
     opacity: 0;
   }
 }
+

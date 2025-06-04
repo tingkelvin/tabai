@@ -1,4 +1,4 @@
-// ContentApp.jsx - Modified to accept custom chat hook
+// ContentApp.jsx - Extensible version with custom actions
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TerminalIcon from './TerminalIcon';
 import { useUrlTracking } from './hooks/useUrlTracking';
@@ -8,8 +8,10 @@ import { useChat } from './hooks/useChat';
 import { calculateInitialPositions } from './utils/helpers';
 import { WIDGET_CONFIG, RESIZE_TYPES } from './utils/constants';
 
-// CHANGED: Accept useCustomChat prop
-const ContentApp = ({ useCustomChat }) => {
+const ContentApp = ({ 
+  useCustomChat,
+  customActions = [] // Array of custom action objects
+}) => {
   const [isMinimized, setIsMinimized] = useState(true);
 
   // URL tracking
@@ -28,9 +30,21 @@ const ContentApp = ({ useCustomChat }) => {
     height: WIDGET_CONFIG.DEFAULT_HEIGHT
   });
 
-  // CHANGED: Use custom chat hook if provided, otherwise use default
-  const { chatInput, chatMessages, isTyping, handleInputChange, handleKeyPress, sendMessage } = 
-    useCustomChat ? useCustomChat() : useChat();
+  // Use custom chat hook if provided, otherwise use default
+  const chatHook = useCustomChat ? useCustomChat() : useChat();
+  const { 
+    chatInput, 
+    chatMessages, 
+    isTyping, 
+    handleInputChange, 
+    handleKeyPress, 
+    sendMessage
+  } = chatHook;
+
+  const handleSend = useCallback((e) =>{
+    sendMessage(e);
+    handleKeyPress(e);
+  })
 
   // Drag and resize functionality
   const { dragging, hasDragged, startDrag, startResize } = useDragAndResize(
@@ -61,7 +75,6 @@ const ContentApp = ({ useCustomChat }) => {
 
   const handleMinimize = useCallback(() => {
     if (!isMinimized) {
-      // Calculate icon position based on widget's top-right corner
       const iconTop = widgetPosition.top;
       const iconLeft = widgetPosition.left + widgetSize.width - WIDGET_CONFIG.ICON_SIZE;
       updateIconPosition({ top: iconTop, left: iconLeft });
@@ -70,15 +83,12 @@ const ContentApp = ({ useCustomChat }) => {
   }, [isMinimized, widgetPosition, widgetSize, updateIconPosition]);
 
   const handleExpand = useCallback(() => {
-    // Only expand if we haven't been dragging
     if (hasDragged) return;
     
     if (isMinimized) {
-      // Calculate widget position based on icon position
       const widgetTop = iconPosition.top;
       const widgetLeft = iconPosition.left - widgetSize.width + WIDGET_CONFIG.ICON_SIZE;
       
-      // Ensure widget doesn't go off-screen
       const constrainedPosition = constrainWidgetPosition(
         { top: widgetTop, left: widgetLeft },
         { elementWidth: widgetSize.width, elementHeight: widgetSize.height }
@@ -88,13 +98,17 @@ const ContentApp = ({ useCustomChat }) => {
     }
     setIsMinimized(false);
     
-    // Focus the chat input when expanding
     setTimeout(() => {
       if (chatInputRef.current) {
         chatInputRef.current.focus();
       }
     }, 100);
   }, [hasDragged, isMinimized, iconPosition, widgetSize, constrainWidgetPosition, updateWidgetPosition]);
+
+  // Filter and render visible custom actions
+  const visibleActions = customActions.filter(action => 
+    typeof action.isVisible === 'function' ? action.isVisible() : action.isVisible !== false
+  );
 
   if (isMinimized) {
     return (
@@ -171,17 +185,39 @@ const ContentApp = ({ useCustomChat }) => {
             )}
           </div>
 
-          <textarea
-            ref={chatInputRef}
-            className="chat-input"
-            value={chatInput}
-            onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
-            placeholder="Ask me anything..."
-            rows="1"
-            autoComplete="off"
-            spellCheck="false"
-          />
+          {/* Chat input container with custom actions */}
+          <div className="chat-input-container">
+            {/* Render custom action buttons */}
+            {visibleActions.length > 0 && (
+              <div className="custom-actions-container">
+                {visibleActions.map((action, index) => (
+                  <button
+                    key={action.id || index}
+                    className={`custom-action-btn ${action.className || ''}`}
+                    onClick={action.onClick}
+                    title={action.title}
+                    disabled={action.disabled}
+                    style={action.style}
+                  >
+                    {action.icon && <span className="action-icon">{action.icon}</span>}
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            <textarea
+              ref={chatInputRef}
+              className="chat-input"
+              value={chatInput}
+              onChange={handleInputChange}
+              onKeyPress={handleSend}
+              placeholder="Ask me anything..."
+              rows="1"
+              autoComplete="off"
+              spellCheck="false"
+            />
+          </div>
         </div>
       </div>
 
