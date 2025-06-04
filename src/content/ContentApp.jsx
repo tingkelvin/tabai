@@ -6,7 +6,7 @@ import { usePosition } from './hooks/usePosition';
 import { useDragAndResize } from './hooks/useDragAndResize';
 import { useChat } from './hooks/useChat';
 import { calculateInitialPositions } from './utils/helpers';
-import { WIDGET_CONFIG, RESIZE_TYPES } from './utils/constants';
+import { WIDGET_CONFIG, RESIZE_TYPES, MESSAGE_TYPES } from './utils/constants';
 
 const ContentApp = ({ 
   useCustomChat,
@@ -15,7 +15,9 @@ const ContentApp = ({
   const [isMinimized, setIsMinimized] = useState(true);
 
   // URL tracking
+  // URL tracking
   const currentUrl = useUrlTracking();
+  const previousUrl = useRef(currentUrl);
 
   // Calculate initial positions
   const { widgetPosition: initialWidgetPos, iconPosition: initialIconPos } = calculateInitialPositions();
@@ -38,8 +40,31 @@ const ContentApp = ({
     isTyping, 
     handleInputChange, 
     handleKeyPress, 
-    sendMessage
+    sendMessage,
+    addMessage,
+    addMessages,
+    clearMessages,
+    removeMessage,
+    updateMessage,
+    setIsTyping
   } = chatHook;
+
+  // FIXED: Add URL change messages
+  useEffect(() => {
+    // Only add message if URL actually changed and we want to show URL messages
+    if (currentUrl !== previousUrl.current) {
+      addMessage({
+        content: `📍 Navigated to: ${currentUrl}`,
+        type: MESSAGE_TYPES.SYSTEM,
+        timestamp: new Date()
+      });
+    }
+    
+    // Always update previousUrl and call onUrlChange
+    if (currentUrl !== previousUrl.current) {
+      previousUrl.current = currentUrl;
+    }
+  }, [currentUrl, addMessage]); // FIXED: Include all dependencies
 
   // Drag and resize functionality
   const { dragging, hasDragged, startDrag, startResize } = useDragAndResize(

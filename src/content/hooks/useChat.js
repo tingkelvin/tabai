@@ -79,12 +79,63 @@ export const useChat = () => {
     }
   }, [sendMessage]);
 
+  // Method to directly add messages to the chat
+  const addMessage = useCallback((message) => {
+    const newMessage = {
+      id: message.id || Date.now(),
+      type: message.type || MESSAGE_TYPES.ASSISTANT,
+      content: message.content,
+      timestamp: message.timestamp || new Date(),
+      ...message // Allow overriding any properties
+    };
+
+    setChatMessages(prev => [...prev, newMessage]);
+  }, []);
+
+  // Method to add multiple messages at once
+  const addMessages = useCallback((messages) => {
+    const newMessages = messages.map((message, index) => ({
+      id: message.id || Date.now() + index,
+      type: message.type || MESSAGE_TYPES.ASSISTANT,
+      content: message.content,
+      timestamp: message.timestamp || new Date(),
+      ...message
+    }));
+
+    setChatMessages(prev => [...prev, ...newMessages]);
+  }, []);
+
+  // Method to clear all messages
+  const clearMessages = useCallback(() => {
+    setChatMessages([]);
+  }, []);
+
+  // Method to remove a specific message by ID
+  const removeMessage = useCallback((messageId) => {
+    setChatMessages(prev => prev.filter(msg => msg.id !== messageId));
+  }, []);
+
+  // Method to update a specific message
+  const updateMessage = useCallback((messageId, updates) => {
+    setChatMessages(prev => 
+      prev.map(msg => 
+        msg.id === messageId ? { ...msg, ...updates } : msg
+      )
+    );
+  }, []);
+
   return {
     chatInput,
     chatMessages,
     isTyping,
     handleInputChange,
     handleKeyPress,
-    sendMessage
+    sendMessage,
+    addMessage,
+    addMessages,
+    clearMessages,
+    removeMessage,
+    updateMessage,
+    setIsTyping
   };
 };

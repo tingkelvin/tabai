@@ -6,7 +6,6 @@ import { useChat } from './hooks/useChat';
 
 const YouTubeContentApp = () => {
   const { pauseVideo, resumeVideo, isVideoPaused } = useYoutubeControl();
-  const typingTimeoutRef = useRef(null);
   const wasPlayingBeforeTyping = useRef(false);
   const [showResumeButton, setShowResumeButton] = useState(false); // ADDED: Missing state
 
@@ -78,15 +77,6 @@ const YouTubeContentApp = () => {
       handleKeyPress
     };
   };
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
-  }, []);
 
   return (
     <ContentApp 
