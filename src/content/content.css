@@ -55,6 +55,25 @@
   overflow: hidden;
 }
 
+.terminal-icon::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(74, 222, 128, 0.3),
+    rgba(74, 222, 128, 0.6),
+    rgba(74, 222, 128, 0.3),
+    transparent
+  );
+  animation: shine 2s infinite;
+  border-radius: 50%;
+}
+
 .terminal-icon svg {
   position: relative;
   border-radius: 50%;
@@ -523,5 +542,19 @@
   40% {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+@keyframes shine {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+    opacity: 0;
   }
 }

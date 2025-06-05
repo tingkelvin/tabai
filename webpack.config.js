@@ -61,8 +61,8 @@ module.exports = {
           to: 'manifest.json'
         },
         {
-          from: 'public/icon.png',
-          to: 'icon.png'
+          from: 'public/icons/',
+          to: 'icons/'
         }
       ]
     }),

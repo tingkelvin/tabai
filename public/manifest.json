@@ -1,8 +1,8 @@
 {
-    "name": "React Content Script Extension",
+    "name": "Tab",
     "version": "1.0.0",
     "manifest_version": 3,
-    "description": "A modern Chrome extension with React content scripts built with Webpack",
+    "description": "Tab your life to the future1",
     "permissions": [
       "activeTab",
       "scripting"
@@ -25,5 +25,10 @@
         "resources": ["*.js", "*.css"],
         "matches": ["<all_urls>"]
       }
-    ]
+    ],
+    "icons": {
+      "16": "icons/16x16.png",
+      "48": "icons/48x48.png",
+      "128": "icons/128x128.png"
+    }
   }
