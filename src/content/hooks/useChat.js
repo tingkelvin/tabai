@@ -37,6 +37,7 @@ export const useChat = () => {
       
       setChatMessages(prev => [...prev, response]);
     } catch (error) {
+      console.log(error.data)
       const errorResponse = {
         id: Date.now() + 1,
         type: MESSAGE_TYPES.ASSISTANT,

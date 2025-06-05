@@ -7,7 +7,7 @@ const PopupApp = () => {
   const [currentTab, setCurrentTab] = useState(null);
   const [isActive, setIsActive] = useState(true);
   
-  // Use the auth hook instead of direct AuthManager calls
+  // Use the enhanced auth hook that coordinates with background script
   const { 
     user, 
     isAuthenticated, 
@@ -22,11 +22,14 @@ const PopupApp = () => {
     initializePopup();
   }, []);
 
-  // Disable extension when user logs out
+  // Sync extension state with authentication status
   useEffect(() => {
     if (!isAuthenticated && !isAuthenticating) {
-      // User has logged out, disable the extension
+      // User has logged out or is not authenticated, disable the extension
       disableExtensionOnLogout();
+    } else if (isAuthenticated) {
+      // User is authenticated, check if extension should be enabled
+      syncExtensionState();
     }
   }, [isAuthenticated, isAuthenticating]);
 
@@ -39,66 +42,127 @@ const PopupApp = () => {
         }
       });
 
-      // Get extension state from storage
+      // Get extension state from storage - but only set it if user is authenticated
+      // The useAuth hook will determine authentication status
       const result = await chrome.storage.sync.get(['extensionEnabled']);
-      setIsActive(result.extensionEnabled !== false);
+      
+      // Only set as active if the stored value is explicitly true and user will be authenticated
+      setIsActive(result.extensionEnabled === true);
 
     } catch (error) {
       console.error('Error initializing popup:', error);
     }
   };
 
+  const syncExtensionState = async () => {
+    try {
+      // When user is authenticated, check the stored extension state
+      const result = await chrome.storage.sync.get(['extensionEnabled']);
+      const storedState = result.extensionEnabled;
+      
+      // If no stored state, default to true for authenticated users
+      const shouldBeActive = storedState !== false;
+      setIsActive(shouldBeActive);
+      
+      // Ensure storage reflects the current state
+      if (storedState === undefined) {
+        await chrome.storage.sync.set({ extensionEnabled: shouldBeActive });
+      }
+    } catch (error) {
+      console.error('Error syncing extension state:', error);
+    }
+  };
+
   const handleGoogleLogin = async () => {
-    await login();
+    const result = await login();
+    
+    // If login successful, optionally enable extension by default
+    if (result && result.success) {
+      setIsActive(true);
+      await chrome.storage.sync.set({ extensionEnabled: true });
+      await notifyContentScript('TOGGLE_EXTENSION', { enabled: true });
+    }
   };
 
   const handleLogout = async () => {
-    await logout();
+    const result = await logout();
+    
+    // After successful logout, the useEffect will handle disabling the extension
+    if (result && result.success) {
+      console.log('Logout successful');
+    }
   };
 
   const disableExtensionOnLogout = async () => {
     try {
       setIsActive(false);
       await chrome.storage.sync.set({ extensionEnabled: false });
-      
-      if (currentTab) {
-        try {
-          await chrome.tabs.sendMessage(currentTab.id, {
-            type: 'TOGGLE_EXTENSION',
-            enabled: false
-          });
-        } catch (error) {
-          console.log('Could not send message to content script:', error);
-        }
-      }
+      await notifyContentScript('TOGGLE_EXTENSION', { enabled: false });
     } catch (error) {
       console.error('Error disabling extension on logout:', error);
     }
   };
 
   const openSettings = () => {
+    // TODO: Open settings page or modal
     console.log('Opening Settings...');
+    
+    // You could open a new tab with settings page:
+    // chrome.tabs.create({ url: chrome.runtime.getURL('settings.html') });
+    
+    // Or send a message to background script to handle settings
+    // sendMessageToBackground('OPEN_SETTINGS');
   };
 
   const toggleExtension = async () => {
+    // Only allow toggling if user is authenticated
+    if (!isAuthenticated) {
+      console.warn('User must be authenticated to toggle extension');
+      return;
+    }
+
     try {
       const newState = !isActive;
       setIsActive(newState);
       
       await chrome.storage.sync.set({ extensionEnabled: newState });
+      await notifyContentScript('TOGGLE_EXTENSION', { enabled: newState });
       
-      if (currentTab) {
-        try {
-          await chrome.tabs.sendMessage(currentTab.id, {
-            type: 'TOGGLE_EXTENSION',
-            enabled: newState
-          });
-        } catch (error) {
-          console.log('Could not send message to content script:', error);
-        }
-      }
+      // Also notify background script about the state change
+      await sendMessageToBackground('EXTENSION_TOGGLED', { enabled: newState });
+      
     } catch (error) {
       console.error('Error toggling extension:', error);
+      // Revert state on error
+      setIsActive(!isActive);
+    }
+  };
+
+  // Helper function to send messages to content script
+  const notifyContentScript = async (type, data = {}) => {
+    if (currentTab) {
+      try {
+        await chrome.tabs.sendMessage(currentTab.id, { type, ...data });
+      } catch (error) {
+        console.log('Could not send message to content script:', error);
+      }
+    }
+  };
+
+  // Helper function to send messages to background script
+  const sendMessageToBackground = async (type, data = {}) => {
+    try {
+      return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ type, data }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(response);
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Error sending message to background:', error);
     }
   };
 
@@ -114,10 +178,22 @@ const PopupApp = () => {
       icon: 'bg-slate-400',
       text: 'Stopped',
       gradient: 'from-slate-400 to-slate-500'
+    },
+    unauthenticated: {
+      color: 'amber',
+      icon: 'bg-amber-500',
+      text: 'Sign in required',
+      gradient: 'from-amber-500 to-orange-500'
     }
   };
 
-  const currentStatus = isActive ? statusConfig.running : statusConfig.stopped;
+  // Determine current status based on auth and extension state
+  const getCurrentStatus = () => {
+    if (!isAuthenticated) return statusConfig.unauthenticated;
+    return isActive ? statusConfig.running : statusConfig.stopped;
+  };
+
+  const currentStatus = getCurrentStatus();
 
   return (
     <div className="w-96 bg-gradient-to-br from-slate-50 to-white shadow-2xl rounded-2xl overflow-hidden border border-slate-200/50">
@@ -127,7 +203,6 @@ const PopupApp = () => {
         
         <div className="relative flex items-center gap-4 mb-4">
           <div className={`w-12 h-12 bg-gradient-to-br ${currentStatus.gradient} rounded-2xl flex items-center justify-center shadow-lg`}>
-            {/* Replace Brain icon with CustomIcon */}
             <CustomIcon className="w-6 h-6" color="white" />
           </div>
           
@@ -206,7 +281,7 @@ const PopupApp = () => {
           <div className="space-y-4">
             <div className="text-center">
               <p className="text-sm text-slate-600 mb-1">Welcome Tabber</p>
-              <p className="text-xs text-slate-500">Sign in to tab</p>
+              <p className="text-xs text-slate-500">Sign in to start tabbing</p>
             </div>
             
             <button 
@@ -240,7 +315,8 @@ const PopupApp = () => {
             <div className="space-y-3">
               <button 
                 onClick={toggleExtension}
-                className={`w-full p-4 rounded-xl border-2 transition-all duration-300 flex items-center gap-4 group shadow-sm hover:shadow-md ${
+                disabled={!isAuthenticated}
+                className={`w-full p-4 rounded-xl border-2 transition-all duration-300 flex items-center gap-4 group shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${
                   isActive 
                     ? 'border-red-200 bg-gradient-to-r from-red-50 to-rose-50 text-red-700 hover:from-red-100 hover:to-rose-100' 
                     : 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 hover:from-emerald-100 hover:to-teal-100'
@@ -267,14 +343,15 @@ const PopupApp = () => {
 
               <button 
                 onClick={openSettings}
-                className="w-full p-4 rounded-xl border-2 border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 text-slate-700 hover:from-slate-100 hover:to-slate-200 transition-all duration-300 flex items-center gap-4 group shadow-sm hover:shadow-md"
+                disabled={!isAuthenticated}
+                className="w-full p-4 rounded-xl border-2 border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 text-slate-700 hover:from-slate-100 hover:to-slate-200 transition-all duration-300 flex items-center gap-4 group shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center shadow-sm">
                   <Settings className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
                 </div>
                 <div className="flex-1 text-left">
                   <p className="text-sm font-semibold">Settings</p>
-                  <p className="text-xs text-slate-600">Comming soon...</p>
+                  <p className="text-xs text-slate-600">Coming soon...</p>
                 </div>
               </button>
             </div>
