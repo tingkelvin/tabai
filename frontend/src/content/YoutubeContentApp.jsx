@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import ContentApp from './ContentApp';
 import { useYoutubeControl } from './hooks/useYoutubeControl';
 import { useChat } from './hooks/useChat';
-import {parseTimeToSeconds, getTranscriptRangeBinary} from './utils/helpers';
+import {parseTimeToSeconds, getTranscriptRangeBinary, isRealSpeech} from './utils/helpers';
 
 const YouTubeContentApp = () => {
   const { pauseVideo, resumeVideo, isVideoPaused, getCurrentTime } = useYoutubeControl();
@@ -12,6 +12,8 @@ const YouTubeContentApp = () => {
   const [transcript, setTranscript] = useState([]);
   const [isLoadingTranscript, setIsLoadingTranscript] = useState(false);
   const [currentVideoId, setCurrentVideoId] = useState(null);
+
+  const chatHook = useChat();
 
   // Helper function to extract video ID from URL
   const extractVideoId = (url) => {
@@ -33,7 +35,7 @@ const YouTubeContentApp = () => {
 
   // Improved URL change handler
   const handleUrlChange = (newUrl) => {
-    // console.log('URL changed to:', newUrl);
+    console.log('URL changed to:', newUrl);
     
     const videoId = extractVideoId(newUrl);
     
@@ -41,7 +43,7 @@ const YouTubeContentApp = () => {
       // We're on a YouTube video page
       if (videoId !== currentVideoId) {
         // New video detected
-        // console.log('New video detected:', videoId);
+        console.log('New video detected:', videoId);
         setCurrentVideoId(videoId);
         
         // Clear previous transcript
@@ -55,7 +57,7 @@ const YouTubeContentApp = () => {
     } else {
       // Not on a video page or not YouTube
       if (currentVideoId) {
-        // console.log('Left video page');
+        console.log('Left video page');
         setCurrentVideoId(null);
         setTranscript([]);
       }
@@ -64,12 +66,12 @@ const YouTubeContentApp = () => {
 
   const getYouTubeTranscript = async () => {
     if (isLoadingTranscript) {
-      // console.log('Already loading transcript, skipping...');
+      console.log('Already loading transcript, skipping...');
       return;
     }
 
     setIsLoadingTranscript(true);
-    // console.log("Getting transcript...");
+    console.log("Getting transcript...");
     
     try {
       // Wait for page to fully load
@@ -83,7 +85,7 @@ const YouTubeContentApp = () => {
         
         if (!isTranscriptOpen) {
           transcriptButton.click();
-          // console.log('Clicked transcript button');
+          console.log('Clicked transcript button');
           
           // Wait for transcript panel to load
           await waitForElement('ytd-transcript-segment-renderer, .ytd-transcript-segment-renderer', 3000);
@@ -106,12 +108,12 @@ const YouTubeContentApp = () => {
               text: text,
               timeInSeconds: parseTimeToSeconds(timeText) // Parse immediately
             };
-          }).filter(item => item.text);
+          }).filter(item => item.text && isRealSpeech(item.text));
     
-          // console.log(`Found ${transcriptData.length} transcript segments`);
+          console.log(`Found ${transcriptData.length} transcript segments`);
           
           setTranscript(transcriptData); // Now contains pre-parsed timeInSeconds
-          // console.log(transcriptData);
+          console.log(transcriptData);
           
           // Close transcript panel after getting data
           await closeTranscriptPanel();
@@ -165,10 +167,35 @@ const YouTubeContentApp = () => {
       const closeButton = document.querySelector('[aria-label*="close transcript" i], [aria-label*="Close transcript" i]');
       if (closeButton) {
         closeButton.click();
-        // console.log('Closed transcript panel');
+        console.log('Closed transcript panel');
       }
     } catch (error) {
       console.error('Error closing transcript panel:', error);
+    }
+  };
+
+  const generateSummary = async () => {
+    if (!transcript.length) return;
+    console.log(transcript);
+
+    const fullTranscriptText = transcript.map(item => item.text.replace(/\n/g, ' ').trim()).join(' ');
+  
+    // If transcript is very long, chunk it
+    const maxLength = 10000; // Adjust based on your AI model's limits
+    const chunks = [];
+    
+    if (fullTranscriptText.length > maxLength) {
+      for (let i = 0; i < fullTranscriptText.length; i += maxLength) {
+        chunks.push(fullTranscriptText.slice(i, i + maxLength));
+      }
+
+      
+      const summaryPrompt = `Please provide a concise summary of this video transcript (presented in chunks):\n\nChunk 1/${chunks.length}:\n${chunks[0]}`;
+      console.log(summaryPrompt)
+      chatHook.sendMessage(summaryPrompt);
+    } else {
+      const summaryPrompt = `Please provide a concise summary of this video transcript:\n\n${fullTranscriptText}`;
+      chatHook.sendMessage(summaryPrompt);
     }
   };
 
@@ -182,6 +209,15 @@ const YouTubeContentApp = () => {
       isVisible: () => showResumeButton,
       className: 'resume-video-action',
       title: 'Resume the paused YouTube video'
+    },
+    {
+      id: 'generate-summary',
+      label: 'Summary',
+      icon: '📋',
+      onClick: generateSummary,
+      isVisible: () => transcript.length > 0 && !isLoadingTranscript,
+      className: 'summary-action',
+      title: 'Generate a summary of the entire video'
     }
   ];
 
@@ -193,7 +229,7 @@ const YouTubeContentApp = () => {
 
   // Enhanced chat hook that handles YouTube video pausing
   const useYouTubeChat = () => {
-    const chatHook = useChat();
+    
     const handleInputChange = (e) => {
       const isTyping = e.target.value.length > 0;
       

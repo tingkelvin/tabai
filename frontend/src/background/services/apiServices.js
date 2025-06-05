@@ -5,7 +5,7 @@ export const chatWithLlm = async(message, appToken) => {
     message: message,
   };
 
-  // console.log('🔄 Calling chat API with payload:', payload);
+  console.log('🔄 Calling chat API with payload:', payload);
 
   const response = await fetch(`${API_BASE_URL}/chat-with-llm`, {
     method: "POST",
@@ -17,7 +17,7 @@ export const chatWithLlm = async(message, appToken) => {
     body: JSON.stringify(payload),
   });
 
-  // console.log('📡 API response status:', response.status);
+  console.log('📡 API response status:', response.status);
 
   // Just throw with status info - let handler decide what to do
   if (!response.ok) {
@@ -28,7 +28,7 @@ export const chatWithLlm = async(message, appToken) => {
   }
 
   const data = await response.json();
-  // console.log('📦 API response data:', data);
+  console.log('📦 API response data:', data);
   
   if (!data || !data.reply) {
     const error = new Error("No response from API");
@@ -56,7 +56,7 @@ export const verifyGoogleToken = async (idToken) => {
 };
 
 export const verifyGoogleAccessToken = async (token) => {
-  // console.log(`${API_BASE_URL}/auth/google/verify-access-token`)
+  console.log(`${API_BASE_URL}/auth/google/verify-access-token`)
   const payload = { access_token: token };
   const response = await fetch(`${API_BASE_URL}/auth/google/verify-access-token`, {
     method: "POST",
@@ -66,14 +66,14 @@ export const verifyGoogleAccessToken = async (token) => {
     body: JSON.stringify(payload),
   });
 
-  // console.log("Response status:", response.status);
-  // console.log("Response status text:", response.statusText);
-  // console.log("Response ok:", response.ok);
-  // console.log("Response headers:", Object.fromEntries(response.headers));
+  console.log("Response status:", response.status);
+  console.log("Response status text:", response.statusText);
+  console.log("Response ok:", response.ok);
+  console.log("Response headers:", Object.fromEntries(response.headers));
   
   const data = await response.json();
-  // console.log("Response data:", data);
-  // console.log("=== End Debug ===");
+  console.log("Response data:", data);
+  console.log("=== End Debug ===");
   
   if (!response.ok || !data.user || !data.appSessionToken) {
     console.error("Error details:", {

@@ -72,7 +72,6 @@ export const getTranscriptRangeBinary = (startSeconds, endSeconds, parsedTranscr
   // Slice, clean, and filter text - O(k) where k = result size
   return parsedTranscript.slice(startIndex, endIndex + 1)
     .map(item => item.text.replace(/\n/g, ' ').trim())
-    .filter(text => isRealSpeech(text));
 };
 
 const binarySearchStart = (arr, target) => {

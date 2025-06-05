@@ -4,16 +4,16 @@ import { notificationService } from '../services/NotificationService.js';
 
 export const extensionLifecycleManager = {
   handleInstalled: async (details) => {
-    // console.log('📦 Extension installed/updated:', details.reason);
+    console.log('📦 Extension installed/updated:', details.reason);
     
     if (AuthManager) {
       const authStatus = await AuthManager.checkAuthStatus();
-      // console.log('🔍 Initial auth status:', authStatus);
+      console.log('🔍 Initial auth status:', authStatus);
     }
   },
 
   handleStartup: async () => {
-    // console.log('🔄 Extension starting up');
+    console.log('🔄 Extension starting up');
     
     if (AuthManager) {
       const authStatus = await AuthManager.checkAuthStatus();
@@ -29,7 +29,7 @@ export const extensionLifecycleManager = {
       const hasAuthChanges = authKeys.some(key => changes[key]);
       
       if (hasAuthChanges) {
-        // console.log('🔄 Auth state changed in storage');
+        console.log('🔄 Auth state changed in storage');
         notificationService.notifyExtensionParts('AUTH_STATE_CHANGED');
         
         if (AuthManager) {

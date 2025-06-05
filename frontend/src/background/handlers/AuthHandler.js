@@ -5,7 +5,7 @@ import { notificationService } from '../services/NotificationService.js';
 export const authHandler = {
   checkAuth: async (sendResponse) => {
     try {
-      // console.log('🔍 Checking auth status...');
+      console.log('🔍 Checking auth status...');
       
       if (!AuthManager) {
         sendResponse({
@@ -17,7 +17,7 @@ export const authHandler = {
       }
 
       const authStatus = await AuthManager.checkAuthStatus();
-      // console.log('✅ Auth status:', authStatus);
+      console.log('✅ Auth status:', authStatus);
       sendResponse(authStatus);
     } catch (error) {
       console.error('❌ Auth check error:', error);
@@ -31,7 +31,7 @@ export const authHandler = {
 
   authenticate: async (sendResponse) => {
     try {
-      // console.log('🔐 Authentication requested...');
+      console.log('🔐 Authentication requested...');
       
       if (!AuthManager) {
         sendResponse({
@@ -76,7 +76,7 @@ export const authHandler = {
 
   logout: async (sendResponse) => {
     try {
-      // console.log('👋 Logout requested...');
+      console.log('👋 Logout requested...');
       
       if (!AuthManager) {
         sendResponse({
@@ -114,7 +114,7 @@ export const authHandler = {
 
   refreshToken: async (sendResponse) => {
     try {
-      // console.log('🔄 Token refresh requested...');
+      console.log('🔄 Token refresh requested...');
       
       if (!AuthManager) {
         sendResponse({ success: false, error: 'AuthManager not available' });

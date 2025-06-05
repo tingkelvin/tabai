@@ -7,18 +7,21 @@ export const useChat = () => {
   const [chatMessages, setChatMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
 
-  const sendMessage = useCallback(async (context) => {
-    if (!chatInput.trim()) return;
+  const sendMessage = useCallback(async (context = null) => {
+    if (!chatInput.trim() && context == null) return;
 
-    const userMessage = {
-      id: Date.now(),
-      type: MESSAGE_TYPES.USER,
-      content: chatInput.trim(),
-      timestamp: new Date()
-    };
 
-    setChatMessages(prev => [...prev, userMessage]);
-    setChatInput('');
+    if (chatInput.trim()){
+      const userMessage = {
+        id: Date.now(),
+        type: MESSAGE_TYPES.USER,
+        content: chatInput.trim(),
+        timestamp: new Date()
+      };
+      setChatMessages(prev => [...prev, userMessage]);
+      setChatInput('');
+    }
+    
     setIsTyping(true);
 
     try {

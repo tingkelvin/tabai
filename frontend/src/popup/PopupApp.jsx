@@ -89,7 +89,7 @@ const PopupApp = () => {
     
     // After successful logout, the useEffect will handle disabling the extension
     if (result && result.success) {
-      // console.log('Logout successful');
+      console.log('Logout successful');
     }
   };
 
@@ -105,7 +105,7 @@ const PopupApp = () => {
 
   const openSettings = () => {
     // TODO: Open settings page or modal
-    // console.log('Opening Settings...');
+    console.log('Opening Settings...');
     
     // You could open a new tab with settings page:
     // chrome.tabs.create({ url: chrome.runtime.getURL('settings.html') });
@@ -144,7 +144,7 @@ const PopupApp = () => {
       try {
         await chrome.tabs.sendMessage(currentTab.id, { type, ...data });
       } catch (error) {
-        // console.log('Could not send message to content script:', error);
+        console.log('Could not send message to content script:', error);
       }
     }
   };
