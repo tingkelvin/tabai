@@ -4,10 +4,15 @@
     "manifest_version": 3,
     "description": "Tab your life to the future1",
     "permissions": [
+      "identity",
       "activeTab",
       "scripting",
       "storage"
     ],
+    "oauth2": {
+      "client_id": "234898757030-nrqj20cp1hv10tle91prieqsqocjjdqh.apps.googleusercontent.com",
+      "scopes": ["openid", "email", "profile"]
+    },
     "content_scripts": [
       {
         "matches": ["<all_urls>"],

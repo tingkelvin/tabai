@@ -1,18 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
 // Simple terminal icon as SVG
-const TerminalIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    style={{ display: 'block' }}
-  >
-    <path d="M2 3h20c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2H2c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2zm0 2v14h20V5H2zm2 2l4 4-4 4v-2l2-2-2-2V7zm6 6h8v2H10v-2z"/>
-  </svg>
-);
-
 const ContentApp = () => {
   const [count, setCount] = useState(0);
   const [isMinimized, setIsMinimized] = useState(false);
