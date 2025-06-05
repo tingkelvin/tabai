@@ -5,7 +5,8 @@
     "description": "Tab your life to the future1",
     "permissions": [
       "activeTab",
-      "scripting"
+      "scripting",
+      "storage"
     ],
     "content_scripts": [
       {

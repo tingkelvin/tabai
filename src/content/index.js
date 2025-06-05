@@ -1,25 +1,89 @@
-// content.js - Fixed version
+// content.js - With toggle functionality
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import ContentApp from './ContentApp';
-import YouTubeContentApp from './YoutubeContentApp'; // Make sure this matches your actual filename
+import YouTubeContentApp from './YoutubeContentApp';
 import './content.css';
 
-// Create container for React app
-const container = document.createElement('div');
-container.id = 'react-extension-root';
-document.body.appendChild(container);
+let container = null;
+let root = null;
+let isExtensionEnabled = true;
 
-// Create React root and render app
-const root = createRoot(container);
+// Function to create and show the extension
+function showExtension() {
+  if (container) return; // Already visible
+  
+  // Create container for React app
+  container = document.createElement('div');
+  container.id = 'react-extension-root';
+  document.body.appendChild(container);
 
-// Check if we're on YouTube and render appropriate component
-const isYouTube = window.location.hostname.includes('youtube.com');
+  // Create React root and render app
+  root = createRoot(container);
 
-if (isYouTube) {
-  root.render(<YouTubeContentApp />);
-} else {
-  root.render(<ContentApp />);
+  // Check if we're on YouTube and render appropriate component
+  const isYouTube = window.location.hostname.includes('youtube.com');
+
+  if (isYouTube) {
+    root.render(<YouTubeContentApp />);
+  } else {
+    root.render(<ContentApp />);
+  }
+
+  console.log(`React Chrome Extension loaded on ${isYouTube ? 'YouTube' : 'other site'}!`);
 }
 
-console.log(`React Chrome Extension loaded on ${isYouTube ? 'YouTube' : 'other site'}!`);
+// Function to hide and cleanup the extension
+function hideExtension() {
+  if (!container) return; // Already hidden
+  
+  // Unmount React app
+  if (root) {
+    root.unmount();
+    root = null;
+  }
+  
+  // Remove container from DOM
+  if (container && container.parentNode) {
+    container.parentNode.removeChild(container);
+  }
+  container = null;
+  
+  console.log('React Chrome Extension hidden!');
+}
+
+// Function to toggle extension visibility
+function toggleExtension(enabled) {
+  isExtensionEnabled = enabled;
+  
+  if (enabled) {
+    showExtension();
+  } else {
+    hideExtension();
+  }
+}
+
+// Listen for messages from popup/background script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'TOGGLE_EXTENSION') {
+    toggleExtension(message.enabled);
+    sendResponse({ success: true });
+  }
+  
+  if (message.type === 'GET_EXTENSION_STATE') {
+    sendResponse({ enabled: isExtensionEnabled });
+  }
+});
+
+// Get initial state from storage and show extension if enabled
+chrome.storage.sync.get(['extensionEnabled'], (result) => {
+  const enabled = result.extensionEnabled !== false; // Default to true
+  toggleExtension(enabled);
+});
+
+// Listen for storage changes (if settings are changed in other tabs)
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'sync' && changes.extensionEnabled) {
+    toggleExtension(changes.extensionEnabled.newValue);
+  }
+});
