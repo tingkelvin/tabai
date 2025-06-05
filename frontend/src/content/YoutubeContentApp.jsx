@@ -3,9 +3,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import ContentApp from './ContentApp';
 import { useYoutubeControl } from './hooks/useYoutubeControl';
 import { useChat } from './hooks/useChat';
+import {parseTimeToSeconds, getTranscriptRangeBinary} from './utils/helpers';
 
 const YouTubeContentApp = () => {
-  const { pauseVideo, resumeVideo, isVideoPaused } = useYoutubeControl();
+  const { pauseVideo, resumeVideo, isVideoPaused, getCurrentTime } = useYoutubeControl();
   const wasPlayingBeforeTyping = useRef(false);
   const [showResumeButton, setShowResumeButton] = useState(false);
   const [transcript, setTranscript] = useState([]);
@@ -32,7 +33,7 @@ const YouTubeContentApp = () => {
 
   // Improved URL change handler
   const handleUrlChange = (newUrl) => {
-    console.log('URL changed to:', newUrl);
+    // console.log('URL changed to:', newUrl);
     
     const videoId = extractVideoId(newUrl);
     
@@ -40,7 +41,7 @@ const YouTubeContentApp = () => {
       // We're on a YouTube video page
       if (videoId !== currentVideoId) {
         // New video detected
-        console.log('New video detected:', videoId);
+        // console.log('New video detected:', videoId);
         setCurrentVideoId(videoId);
         
         // Clear previous transcript
@@ -54,7 +55,7 @@ const YouTubeContentApp = () => {
     } else {
       // Not on a video page or not YouTube
       if (currentVideoId) {
-        console.log('Left video page');
+        // console.log('Left video page');
         setCurrentVideoId(null);
         setTranscript([]);
       }
@@ -63,48 +64,54 @@ const YouTubeContentApp = () => {
 
   const getYouTubeTranscript = async () => {
     if (isLoadingTranscript) {
-      console.log('Already loading transcript, skipping...');
+      // console.log('Already loading transcript, skipping...');
       return;
     }
 
     setIsLoadingTranscript(true);
-    console.log("Getting transcript...");
+    // console.log("Getting transcript...");
     
     try {
       // Wait for page to fully load
       await waitForElement('[aria-label*="transcript" i], [aria-label*="Show transcript" i]', 5000);
       
       const transcriptButton = document.querySelector('[aria-label*="transcript" i], [aria-label*="Show transcript" i]');
-
+    
       if (transcriptButton) {
         // Check if transcript panel is already open
         const isTranscriptOpen = document.querySelector('.ytd-transcript-renderer, ytd-transcript-renderer');
         
         if (!isTranscriptOpen) {
           transcriptButton.click();
-          console.log('Clicked transcript button');
+          // console.log('Clicked transcript button');
           
           // Wait for transcript panel to load
           await waitForElement('ytd-transcript-segment-renderer, .ytd-transcript-segment-renderer', 3000);
         }
-
+    
         const transcriptItems = document.querySelectorAll(
-          'ytd-transcript-segment-renderer, .ytd-transcript-segment-renderer'
+          'ytd-transcript-segment-renderer'
         );
-
+    
         if (transcriptItems.length > 0) {
           const transcriptData = Array.from(transcriptItems).map(item => {
             const timeElement = item.querySelector('.segment-timestamp, [class*="timestamp"]');
             const textElement = item.querySelector('.segment-text, [class*="text"]');
-
+            
+            const timeText = timeElement ? timeElement.textContent.trim() : '0:00';
+            const text = textElement ? textElement.textContent.trim() : '';
+    
             return {
-              time: timeElement ? timeElement.textContent.trim() : '0:00',
-              text: textElement ? textElement.textContent.trim() : ''
+              time: timeText,
+              text: text,
+              timeInSeconds: parseTimeToSeconds(timeText) // Parse immediately
             };
           }).filter(item => item.text);
-
-          console.log(`Found ${transcriptData.length} transcript segments`);
-          setTranscript(transcriptData);
+    
+          // console.log(`Found ${transcriptData.length} transcript segments`);
+          
+          setTranscript(transcriptData); // Now contains pre-parsed timeInSeconds
+          // console.log(transcriptData);
           
           // Close transcript panel after getting data
           await closeTranscriptPanel();
@@ -112,10 +119,7 @@ const YouTubeContentApp = () => {
         } else {
           throw new Error('No transcript segments found');
         }
-      } else {
-        throw new Error('Transcript button not found');
       }
-
     } catch (error) {
       console.error('Failed to get transcript:', error);
       setTranscript([{ 
@@ -161,7 +165,7 @@ const YouTubeContentApp = () => {
       const closeButton = document.querySelector('[aria-label*="close transcript" i], [aria-label*="Close transcript" i]');
       if (closeButton) {
         closeButton.click();
-        console.log('Closed transcript panel');
+        // console.log('Closed transcript panel');
       }
     } catch (error) {
       console.error('Error closing transcript panel:', error);
@@ -181,10 +185,15 @@ const YouTubeContentApp = () => {
     }
   ];
 
+  const getCurrentTranscript = () => {
+    const currentTime = getCurrentTime()
+    const queryTranscript = getTranscriptRangeBinary(Math.max(0, currentTime-60), currentTime, transcript).join(' ');
+    return queryTranscript
+  }
+
   // Enhanced chat hook that handles YouTube video pausing
   const useYouTubeChat = () => {
     const chatHook = useChat();
-    
     const handleInputChange = (e) => {
       const isTyping = e.target.value.length > 0;
       
@@ -207,20 +216,33 @@ const YouTubeContentApp = () => {
     // Enhanced key press handler that includes video controls
     const handleKeyPress = (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
-        // Set up video controls before sending message
-        setShowResumeButton(true);
+        e.preventDefault();
         
-        // Pause video when message is sent
+        const userMessage = e.target.value.trim();
+        if (!userMessage) return;
+        
+        const currentTranscript = getCurrentTranscript();
+        chatHook.sendMessage(currentTranscript);
+        // Clear input properly
+        setTimeout(() => {
+          if (e.target) {
+            e.target.style.height = '44px';
+            e.target.style.overflowY = 'hidden';
+          }
+        }, 0);
+        
+        setShowResumeButton(true);
         if (!isVideoPaused()) {
           pauseVideo();
           wasPlayingBeforeTyping.current = true;
         }
+        
+        return;
       }
       
-      // Call original handler which will prevent default and send message
       chatHook.handleKeyPress(e);
     };
-
+  
     return {
       ...chatHook,
       handleInputChange,

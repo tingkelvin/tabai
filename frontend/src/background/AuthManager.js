@@ -63,7 +63,7 @@ const AuthManager = (() => {
    */
   const authenticateWithGoogle = async () => {
     try {
-      console.log('🔐 Starting Google authentication...');
+      // console.log('🔐 Starting Google authentication...');
       
       // Get Google OAuth token using Chrome Identity API
       const tokenData = await chrome.identity.getAuthToken({
@@ -75,7 +75,7 @@ const AuthManager = (() => {
         throw new Error('Failed to get Google access token');
       }
 
-      console.log('✅ Got Google token');
+      // console.log('✅ Got Google token');
 
 
       const data = await verifyGoogleAccessToken(tokenData.token);
@@ -110,7 +110,7 @@ const AuthManager = (() => {
       if (decoded && decoded.exp) {
         // JWT exp is in seconds, convert to milliseconds
         tokenExpiry = decoded.exp * 1000;
-        console.log('Token expires at:', new Date(tokenExpiry));
+        // console.log('Token expires at:', new Date(tokenExpiry));
         
         // Check if token is already expired
         if (Date.now() >= tokenExpiry) {
@@ -128,7 +128,7 @@ const AuthManager = (() => {
         [STORAGE_KEYS.TOKEN_EXPIRY]: tokenExpiry
       });
 
-      console.log('✅ Authentication successful:', userInfo);
+      // console.log('✅ Authentication successful:', userInfo);
       return { success: true, user: userInfo, error: null };
 
     } catch (error) {
@@ -150,7 +150,7 @@ const AuthManager = (() => {
    */
   const logout = async () => {
     try {
-      console.log('👋 Logging out...');
+      // console.log('👋 Logging out...');
       
       // Get current token for potential backend logout call
       const result = await chrome.storage.local.get([STORAGE_KEYS.BEARER_TOKEN]);
@@ -158,7 +158,7 @@ const AuthManager = (() => {
 
       // TODO: Add actual backend logout call here
       if (bearerToken) {
-        console.log('🔄 Would call backend logout with token:', bearerToken.substring(0, 10) + '...');
+        // console.log('🔄 Would call backend logout with token:', bearerToken.substring(0, 10) + '...');
       }
 
       // Clear stored authentication data
@@ -167,7 +167,7 @@ const AuthManager = (() => {
       // Revoke Google tokens
       await chrome.identity.clearAllCachedAuthTokens();
 
-      console.log('✅ Logout successful');
+      // console.log('✅ Logout successful');
       return true;
 
     } catch (error) {
@@ -237,7 +237,7 @@ const AuthManager = (() => {
       }
 
       // Mock refresh response for development
-      console.log('🔄 Refreshing token...');
+      // console.log('🔄 Refreshing token...');
       
       const newBearerToken = 'refreshed_token_' + Date.now();
       const tokenExpiry = Date.now() + (3600 * 1000); // 1 hour from now
@@ -247,7 +247,7 @@ const AuthManager = (() => {
         [STORAGE_KEYS.TOKEN_EXPIRY]: tokenExpiry
       });
 
-      console.log('✅ Token refreshed');
+      // console.log('✅ Token refreshed');
       return true;
 
     } catch (error) {
@@ -266,7 +266,7 @@ const AuthManager = (() => {
         STORAGE_KEYS.USER_INFO,
         STORAGE_KEYS.TOKEN_EXPIRY
       ]);
-      console.log('🧹 Auth data cleared');
+      // console.log('🧹 Auth data cleared');
     } catch (error) {
       console.error('Error clearing auth data:', error);
     }
@@ -286,11 +286,11 @@ const AuthManager = (() => {
         });
       }
     } catch (error) {
-      console.log('Could not notify content scripts:', error);
+      // console.log('Could not notify content scripts:', error);
     }
   };
 
-  console.log('✅ AuthManager loaded successfully');
+  // console.log('✅ AuthManager loaded successfully');
 
   // Return public API
   return {

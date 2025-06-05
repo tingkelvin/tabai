@@ -6,7 +6,7 @@ import { createErrorResponse } from '../utils/errorUtils.js';
 export const chatHandler = {
   handleMessage: async (data, sendResponse) => {
     try {
-      console.log('💬 Processing chat message:', data.message);
+      // console.log('💬 Processing chat message:', data.message);
       
       // Check if AuthManager is available
       if (!AuthManager) {
@@ -44,7 +44,6 @@ export const chatHandler = {
       // Call API
       const apiResponse = await chatWithLlm(
         data.message, 
-        data.transcriptContext || '', 
         bearerToken
       );
 

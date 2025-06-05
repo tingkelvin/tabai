@@ -1,5 +1,6 @@
 // hooks/useYoutubeControl.js
 import { useCallback, useEffect, useState } from 'react';
+import { parseTimeToSeconds } from '../utils/helpers';
 
 export const useYoutubeControl = () => {
   const [videoElement, setVideoElement] = useState(null);
@@ -65,11 +66,16 @@ export const useYoutubeControl = () => {
     return videoElement ? !videoElement.paused : false;
   }, [videoElement]);
 
+  const getCurrentTime = () => {
+    return videoElement ? Math.floor(videoElement.currentTime) : 0;
+  };
+  
   return {
     pauseVideo,
     resumeVideo,
     isVideoPaused,
     isVideoPlaying,
-    hasVideo: !!videoElement
+    hasVideo: !!videoElement,
+    getCurrentTime
   };
 };

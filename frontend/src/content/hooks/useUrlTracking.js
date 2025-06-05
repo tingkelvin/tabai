@@ -9,14 +9,14 @@ export const useUrlTracking = () => {
     const newUrl = window.location.href;
     
     if (newUrl !== lastUrl.current) {
-      console.log("URL changed from:", lastUrl.current, "to:", newUrl);
+      // console.log("URL changed from:", lastUrl.current, "to:", newUrl);
       lastUrl.current = newUrl;
       setCurrentUrl(newUrl);
     }
   }, []);
 
   useEffect(() => {
-    console.log("useUrlTracking initialized");
+    // // console.log("useUrlTracking initialized");
     
     // Store original methods
     const originalPushState = history.pushState;

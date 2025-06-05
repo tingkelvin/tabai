@@ -7,7 +7,7 @@ export const useChat = () => {
   const [chatMessages, setChatMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
 
-  const sendMessage = useCallback(async () => {
+  const sendMessage = useCallback(async (context) => {
     if (!chatInput.trim()) return;
 
     const userMessage = {
@@ -25,7 +25,7 @@ export const useChat = () => {
       // Send directly to background script
       const reply = await chrome.runtime.sendMessage({
         type: 'CHAT_MESSAGE',
-        data: { message: userMessage.content }
+        data: { message: context ? `context:[${context}]\n message:[${chatInput}]` :  chatInput}
       });
       
       const response = {
@@ -37,7 +37,6 @@ export const useChat = () => {
       
       setChatMessages(prev => [...prev, response]);
     } catch (error) {
-      console.log(error.data)
       const errorResponse = {
         id: Date.now() + 1,
         type: MESSAGE_TYPES.ASSISTANT,
