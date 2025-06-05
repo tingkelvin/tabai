@@ -1,5 +1,5 @@
 /* ====================================
-   1. BASE WIDGET STYLES
+   1. BASE WIDGET STYLES (DARK THEME DEFAULT)
    ==================================== */
 
 /* Main widget container */
@@ -76,7 +76,7 @@
 
 .terminal-icon:hover {
   background-color: rgba(74, 222, 128, 0.1) !important;
-  border-radius: 50%
+  border-radius: 50%;
 }
 
 .terminal-icon svg {
@@ -195,7 +195,7 @@
 }
 
 /* ====================================
-   7. CHAT MESSAGE STYLES
+   7. CHAT MESSAGE STYLES (DARK THEME)
    ==================================== */
 
 .chat-message {
@@ -206,47 +206,45 @@
 }
 
 .chat-message.user {
-  justify-content: flex-end; /* Align user messages to the right */
+  justify-content: flex-end;
 }
 
-
-
 .message-content {
-  width: 100%; /* Full width instead of max-width */
+  width: 100%;
   display: flex;
   flex-direction: column;
 }
 
 .message-text {
-  padding: 10px 14px; /* Increased padding for larger text */
-  font-size: 13px; /* Increased from 11px */
-  line-height: 1.5; /* Increased from 1.4 for better readability */
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.5;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   word-wrap: break-word;
   width: 100%;
   box-sizing: border-box;
 }
 
-/* CHANGED: User messages now have dark background instead of blue */
+/* User messages */
 .chat-message.user .message-text {
-  background: #2d3748; /* CHANGED: from #374151 - darker blue-gray for better distinction */
-  color: #f7fafc; /* CHANGED: from #e5e7eb - brighter white for better readability */
+  background: #2d3748;
+  color: #f7fafc;
   border-radius: 14px;
   margin-right: auto;
   max-width: fit-content;
   width: auto;
 }
-/* Assistant messages - no bubble, full width, align left */
+
+/* Assistant messages */
 .chat-message.assistant .message-text {
   background: transparent;
-  color: #e2e8f0; /* CHANGED: from #e5e7eb - slightly cooler tone to distinguish from user */
+  color: #ffffff; /* Changed to pure white for better contrast */
   border-radius: 0;
   border: none;
   padding: 6px 0;
   max-width: 100%;
   margin-right: auto;
 }
-
 
 /* ====================================
    8. TYPING INDICATOR
@@ -277,10 +275,13 @@
 .typing-dot:nth-child(2) { animation-delay: -0.16s; }
 .typing-dot:nth-child(3) { animation-delay: 0s; }
 
+/* ====================================
+   9. CHAT INPUT
+   ==================================== */
 
 .chat-input {
   background: rgba(45, 55, 72, 0.2);
-  border: 1px solid #4a5568;
+  border: 1px solid #6b7280 !important;
   border-radius: 12px;
   color: #f7fafc;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -293,7 +294,7 @@
   padding: 11px 14px;
   margin: 0;
   outline: none;
-  transition: all 0.2s ease;
+  transition: none !important;
   width: 100%;
   box-sizing: border-box;
   overflow-y: hidden;
@@ -301,27 +302,24 @@
 }
 
 .chat-input:focus {
-  border-color: #4a5568; /* CHANGED: from #4ade80 - keeps same gray color when focused */
-  box-shadow: none; /* CHANGED: from green shadow - removes the green glow */
+  border-color: #6b7280 !important;
+  box-shadow: none !important;;
 }
 
 .chat-input::placeholder {
   color: #6b7280;
-  line-height: 22px; /* Updated to match new line height */
+  line-height: 22px;
 }
 
-/* Chat input container */
 .chat-input-container {
   position: relative;
   margin: 0 16px 16px 16px;
 }
 
-
 /* ====================================
-   10. action buttons
+   10. ACTION BUTTONS
    ==================================== */
 
-/* Custom actions container */
 .custom-actions-container {
   margin-bottom: 8px;
   display: flex;
@@ -330,7 +328,6 @@
   justify-content: center;
 }
 
-/* Base custom action button */
 .custom-action-btn {
   background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
   color: #f7fafc;
@@ -370,23 +367,21 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Action icon */
 .action-icon {
   font-size: 14px;
   line-height: 1;
 }
 
-/* Specific action styles */
 .resume-video-action {
   background: #374151;
   color: #f4f7f5;
   box-shadow: none;
-  border: none; /* CHANGED: removed green border */
+  border: none;
 }
 
 .resume-video-action:hover {
-  background: #4a5568; /* CHANGED: simple color change instead of gradient */
-  box-shadow: none; /* CHANGED: removed shadow */
+  background: #4a5568;
+  box-shadow: none;
 }
 
 .save-timestamp-action {
@@ -401,7 +396,7 @@
 }
 
 /* ====================================
-   10. SCROLLBAR STYLES
+   11. SCROLLBAR STYLES
    ==================================== */
 
 .chat-messages::-webkit-scrollbar,
@@ -426,7 +421,7 @@
 }
 
 /* ====================================
-   11. RESIZE HANDLES
+   12. RESIZE HANDLES
    ==================================== */
 
 .resize-handle {
@@ -478,7 +473,116 @@
 }
 
 /* ====================================
-   12. ANIMATIONS
+   13. LIGHT THEME (SYSTEM PREFERENCE)
+   ==================================== */
+
+@media (prefers-color-scheme: light) {
+  /* Main widget */
+  .extension-widget.expanded {
+    background: #ffffff;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Terminal icon */
+  .terminal-icon {
+    background-color: #f3f4f6;
+  }
+
+  .terminal-icon:hover {
+    background-color: rgba(34, 197, 94, 0.1) !important;
+  }
+
+  /* Header */
+  .extension-header {
+    background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .extension-header h3 {
+    color: #1f2937;
+    text-shadow: none;
+  }
+
+  /* Content area */
+  .extension-content {
+    background: #ffffff;
+  }
+
+  /* User messages */
+  .chat-message.user .message-text {
+    background: #3b82f6;
+    color: #ffffff;
+  }
+
+  /* Assistant messages */
+  .chat-message.assistant .message-text {
+    color: #1f2937; /* Dark text for light background */
+  }
+
+  /* Typing indicator */
+  .typing-dot {
+    background: #6b7280;
+  }
+
+  /* Chat input */
+  .chat-input {
+    background: rgba(243, 244, 246, 0.8);
+    border: 1px solid #d1d5db;
+    color: #1f2937;
+  }
+
+  .chat-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .chat-input::placeholder {
+    color: #9ca3af;
+  }
+
+  /* Action buttons */
+  .custom-action-btn {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    color: #1f2937;
+  }
+
+  .custom-action-btn:hover {
+    background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+  }
+
+  .resume-video-action {
+    background: #f3f4f6;
+    color: #1f2937;
+  }
+
+  .resume-video-action:hover {
+    background: #e5e7eb;
+  }
+
+  /* Scrollbar */
+  .chat-messages::-webkit-scrollbar-track,
+  .chat-input::-webkit-scrollbar-track {
+    background: #ffffff;
+  }
+
+  .chat-messages::-webkit-scrollbar-thumb,
+  .chat-input::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+  }
+
+  .chat-messages::-webkit-scrollbar-thumb:hover,
+  .chat-input::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+
+  /* Resize handle */
+  .resize-handle.se::after {
+    border-bottom-color: #9ca3af;
+  }
+}
+
+/* ====================================
+   14. ANIMATIONS
    ==================================== */
 
 @keyframes messageSlideIn {
@@ -516,4 +620,3 @@
     opacity: 0;
   }
 }
-
