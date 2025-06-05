@@ -1,4 +1,4 @@
-// ContentApp.jsx - Extensible version with custom actions
+// ContentApp.jsx - Fixed with onUrlChange support
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TerminalIcon from './TerminalIcon';
 import { useUrlTracking } from './hooks/useUrlTracking';
@@ -10,12 +10,12 @@ import { WIDGET_CONFIG, RESIZE_TYPES, MESSAGE_TYPES } from './utils/constants';
 
 const ContentApp = ({ 
   useCustomChat,
-  customActions = [] // Array of custom action objects
+  customActions = [], // Array of custom action objects
+  onUrlChange // ADDED: URL change callback prop
 }) => {
   const [isMinimized, setIsMinimized] = useState(true);
 
-  // URL tracking
-  // URL tracking
+  // URL tracking - single source of truth
   const currentUrl = useUrlTracking();
   const previousUrl = useRef(currentUrl);
 
@@ -49,22 +49,30 @@ const ContentApp = ({
     setIsTyping
   } = chatHook;
 
-  // FIXED: Add URL change messages
+  // Handle URL changes
   useEffect(() => {
-    // Only add message if URL actually changed and we want to show URL messages
+    // Only process if URL actually changed
     if (currentUrl !== previousUrl.current) {
-      addMessage({
-        content: `📍 Navigated to: ${currentUrl}`,
-        type: MESSAGE_TYPES.SYSTEM,
-        timestamp: new Date()
-      });
-    }
-    
-    // Always update previousUrl and call onUrlChange
-    if (currentUrl !== previousUrl.current) {
+      // Add system message for URL change
+      if (previousUrl.current !== null) { // Don't add message on initial load
+        addMessage({
+          content: `📍 Navigated to: ${currentUrl}`,
+          type: MESSAGE_TYPES.SYSTEM,
+          timestamp: new Date()
+        });
+      }
+      
+      // Call external URL change callback (for YouTubeContentApp)
+
+      // Update previous URL reference
       previousUrl.current = currentUrl;
     }
-  }, [currentUrl, addMessage]); // FIXED: Include all dependencies
+    
+    if (onUrlChange) {
+      onUrlChange(currentUrl);
+    }
+    
+  }, [currentUrl, addMessage, onUrlChange]); // Include all dependencies
 
   // Drag and resize functionality
   const { dragging, hasDragged, startDrag, startResize } = useDragAndResize(
