@@ -1,59 +1,48 @@
-// YouTubeContentApp.jsx - Clean version without duplicates
-import React, { useState } from 'react';
+// YouTubeContentApp.jsx - Simplified version with extracted utils
+import React, { useState, useEffect, useCallback } from 'react';
 import ContentApp from './ContentApp';
-import { useYouTubeTranscript } from './hooks/useYoutubeTranscript';
-import { useYouTubeChat } from './hooks/useYoutubeChat';
+import { useYoutubeTranscript } from './hooks/useYoutubeTranscript';
+import { useYoutubeChat } from './hooks/useYoutubeChat';
+import { useYoutubeUrlTracking } from './hooks/useYoutubeUrlTracking';
+import { downloadTranscriptFile } from './utils/transcriptHelpers';
 
-const YouTubeContentApp = () => {
+const YoutubeContentApp = () => {
   const [currentVideoId, setCurrentVideoId] = useState(null);
 
-  // Helper function to extract video ID from URL
-  const extractVideoId = (url) => {
-    try {
-      const urlObj = new URL(url);
-      if (urlObj.hostname.includes('youtube.com') && urlObj.pathname === '/watch') {
-        return urlObj.searchParams.get('v');
-      }
-    } catch (error) {
-      console.error('Error extracting video ID:', error);
-    }
-    return null;
-  };
+  // Use the simplified YouTube URL tracking
+  const {
+    currentUrl,
+    videoId,
+    videoTitle,
+    isYouTubePage,
+    formattedTitle
+  } = useYoutubeUrlTracking();
 
   // Use the transcript hook
   const { 
     transcript, 
     isLoadingTranscript, 
-    getYouTubeTranscript,
+    getYoutubeTranscript,
     clearTranscript 
-  } = useYouTubeTranscript();
+  } = useYoutubeTranscript();
 
   // Use the YouTube chat hook with transcript
-  const youTubeChatHook = useYouTubeChat(transcript);
+  const youTubeChatHook = useYoutubeChat(transcript);
 
-  // URL change handler
-  const handleUrlChange = (newUrl) => {
-    console.log('URL changed to:', newUrl);
-    const videoId = extractVideoId(newUrl);
-    if (videoId) {
-      // We're on a YouTube video page
-      if (videoId !== currentVideoId) {
-        // New video detected
-        console.log('New video detected:', videoId);
-        setCurrentVideoId(videoId);
-        
-        // Clear previous transcript
-        clearTranscript();
-        
-        // Get transcript for new video with delay to ensure page is loaded
-        setTimeout(() => {
-          getYouTubeTranscript();
-        }, 1500);
-      }
-    } 
-  };
+  // Handle video changes - load transcript when videoId changes
+  useEffect(() => {
+    if (videoId && videoId !== currentVideoId) {
+      console.log('Loading transcript for video:', videoId);
+      setCurrentVideoId(videoId);
+      clearTranscript();
+      
+      setTimeout(() => {
+        getYoutubeTranscript();
+      }, 1500);
+    }
+  }, [videoId]);
 
-  const generateSummary = async () => {
+  const generateSummary = useCallback(async () => {
     if (!transcript.length) return;
     console.log('Generating summary for transcript:', transcript);
 
@@ -74,88 +63,32 @@ const YouTubeContentApp = () => {
       
       const summaryPrompt = `Please provide a concise summary of this video transcript (presented in chunks):\n\nChunk 1/${chunks.length}:\n${chunks[0]}`;
       console.log('Summary prompt:', summaryPrompt);
-      youTubeChatHook.sendMessage(summaryPrompt); // Use the YouTube chat hook
+      youTubeChatHook.sendMessage(summaryPrompt);
     } else {
       const summaryPrompt = `Please provide a concise summary of this video transcript:\n\n${fullTranscriptText}`;
-      youTubeChatHook.sendMessage(summaryPrompt); // Use the YouTube chat hook
+      youTubeChatHook.sendMessage(summaryPrompt);
     }
-  };
+  }, [transcript, youTubeChatHook]);
 
-  // Download transcript function
-  const downloadTranscript = () => {
+  // Simplified download function using utility
+  const downloadTranscript = useCallback(() => {
+    youTubeChatHook.addUserMessage("download transcript");
     if (!transcript.length) {
       console.log('No transcript available to download');
+      youTubeChatHook.addMessage({
+        type: 'system',
+        content: '❌ No transcript available to download'
+      });
       return;
     }
 
     try {
-      // Get video title from page
-      const videoTitle = document.querySelector('h1.ytd-video-primary-info-renderer')?.textContent?.trim() 
-        || document.querySelector('#title h1')?.textContent?.trim()
-        || `YouTube_Video_${currentVideoId}`;
-
-      // Create transcript content in different formats
-      const createTextFormat = () => {
-        return transcript.map(item => `[${item.time}] ${item.text}`).join('\n\n');
-      };
-
-      const createSRTFormat = () => {
-        return transcript.map((item, index) => {
-          const startTime = item.time;
-          const nextItem = transcript[index + 1];
-          const endTime = nextItem ? nextItem.time : item.time;
-          
-          // Convert time format for SRT (HH:MM:SS,mmm)
-          const formatSRTTime = (timeStr) => {
-            const parts = timeStr.split(':');
-            if (parts.length === 2) {
-              return `00:${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')},000`;
-            }
-            return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}:${parts[2].padStart(2, '0')},000`;
-          };
-
-          return `${index + 1}\n${formatSRTTime(startTime)} --> ${formatSRTTime(endTime)}\n${item.text}\n`;
-        }).join('\n');
-      };
-
-      const createJSONFormat = () => {
-        const metadata = {
-          videoId: currentVideoId,
-          title: videoTitle,
-          downloadDate: new Date().toISOString(),
-          totalSegments: transcript.length
-        };
-        return JSON.stringify({ metadata, transcript }, null, 2);
-      };
-
-      // Create download options
-      const formats = [
-        { name: 'Text (.txt)', content: createTextFormat(), extension: 'txt', mimeType: 'text/plain' },
-        { name: 'SRT Subtitles (.srt)', content: createSRTFormat(), extension: 'srt', mimeType: 'text/plain' },
-        { name: 'JSON (.json)', content: createJSONFormat(), extension: 'json', mimeType: 'application/json' }
-      ];
-
-      // For now, default to text format. You could add a format selector later.
-      const selectedFormat = formats[0]; // Text format
-
-      // Create and download file
-      const blob = new Blob([selectedFormat.content], { type: selectedFormat.mimeType });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      
-      link.href = url;
-      link.download = `${videoTitle.replace(/[^a-z0-9]/gi, '_')}_transcript.${selectedFormat.extension}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      console.log(`Downloaded transcript as ${selectedFormat.extension.toUpperCase()}`);
+      const result = downloadTranscriptFile(transcript, videoId);
       
       // Show success message in chat
       youTubeChatHook.addMessage({
         type: 'system',
-        content: `✅ Transcript downloaded as ${selectedFormat.name}`
+        content: `✅ Transcript downloaded as ${result.format.name}`
       });
 
     } catch (error) {
@@ -165,7 +98,7 @@ const YouTubeContentApp = () => {
         content: `❌ Error downloading transcript: ${error.message}`
       });
     }
-  };
+  }, [transcript, videoId, youTubeChatHook]);
 
   // Define custom actions for YouTube
   const youtubeActions = [
@@ -173,8 +106,8 @@ const YouTubeContentApp = () => {
       id: 'resume-video',
       label: 'Resume',
       icon: '▶️',
-      onClick: youTubeChatHook.handleResumeVideo, // Use hook's function
-      isVisible: () => youTubeChatHook.showResumeButton, // Use hook's state
+      onClick: youTubeChatHook.handleResumeVideo,
+      isVisible: () => youTubeChatHook.showResumeButton,
       className: 'resume-video-action',
       title: 'Resume the paused YouTube video'
     },
@@ -200,11 +133,11 @@ const YouTubeContentApp = () => {
 
   return (
     <ContentApp 
-      useCustomChat={() => youTubeChatHook} // Pass as function
+      useCustomChat={() => youTubeChatHook}
       customActions={youtubeActions}
-      onUrlChange={handleUrlChange}
+      title={`${videoTitle || 'YouTube'}`}
     />
   );
 };
 
-export default YouTubeContentApp;
+export default YoutubeContentApp;

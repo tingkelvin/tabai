@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { parseTimeToSeconds } from '../utils/helpers';
 import { isRealSpeech } from '../utils/transcriptHelpers'
 
-export const useYouTubeTranscript = () => {
+export const useYoutubeTranscript = () => {
   const [transcript, setTranscript] = useState([]);
   const [isLoadingTranscript, setIsLoadingTranscript] = useState(false);
 
@@ -50,7 +50,7 @@ export const useYouTubeTranscript = () => {
   };
 
   // Main function to get YouTube transcript
-  const getYouTubeTranscript = async () => {
+  const getYoutubeTranscript = async () => {
     if (isLoadingTranscript) {
       console.log('Already loading transcript, skipping...');
       return;
@@ -130,7 +130,7 @@ export const useYouTubeTranscript = () => {
   return {
     transcript,
     isLoadingTranscript,
-    getYouTubeTranscript,
+    getYoutubeTranscript,
     clearTranscript
   };
 };

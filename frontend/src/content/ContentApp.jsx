@@ -1,4 +1,4 @@
-// ContentApp.jsx - Fixed with onUrlChange support
+// ContentApp.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TerminalIcon from './TerminalIcon';
 import { useUrlTracking } from './hooks/useUrlTracking';
@@ -6,12 +6,12 @@ import { usePosition } from './hooks/usePosition';
 import { useDragAndResize } from './hooks/useDragAndResize';
 import { useChat } from './hooks/useChat';
 import { calculateInitialPositions } from './utils/helpers';
-import { WIDGET_CONFIG, RESIZE_TYPES, MESSAGE_TYPES } from './utils/constants';
+import { WIDGET_CONFIG, RESIZE_TYPES } from './utils/constants';
 
 const ContentApp = ({ 
   useCustomChat,
   customActions = [], // Array of custom action objects
-  onUrlChange // ADDED: URL change callback prop
+  title = ""
 }) => {
   const [isMinimized, setIsMinimized] = useState(true);
 
@@ -55,12 +55,7 @@ const ContentApp = ({
     if (currentUrl !== previousUrl.current) {
       previousUrl.current = currentUrl;
     }
-    
-    if (onUrlChange) {
-      onUrlChange(currentUrl);
-    }
-    
-  }, [currentUrl, addMessage, onUrlChange]); // Include all dependencies
+  }, [currentUrl]); // Include all dependencies
 
   // Drag and resize functionality
   const { dragging, hasDragged, startDrag, startResize } = useDragAndResize(
@@ -167,7 +162,7 @@ const ContentApp = ({
             title="Close"
           />
         </div>
-        <h3>AI Chat — {currentUrl}</h3>
+        <h3>{title || new URL(currentUrl).hostname}</h3>
       </div>
 
       <div className="extension-content">

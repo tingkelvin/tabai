@@ -72,3 +72,73 @@ export const isRealSpeech = (text) => {
     }
     return result;
   };
+
+  export const downloadTranscriptFile = (transcript, videoId) => {
+    // Get video title from page
+    const videoTitle = document.querySelector('h1.ytd-video-primary-info-renderer')?.textContent?.trim() 
+      || document.querySelector('#title h1')?.textContent?.trim()
+      || `YouTube_Video_${videoId}`;
+  
+    // Create transcript content in different formats
+    const createTextFormat = () => {
+      return transcript.map(item => `[${item.time}] ${item.text}`).join('\n\n');
+    };
+  
+    const createSRTFormat = () => {
+      return transcript.map((item, index) => {
+        const startTime = item.time;
+        const nextItem = transcript[index + 1];
+        const endTime = nextItem ? nextItem.time : item.time;
+        
+        // Convert time format for SRT (HH:MM:SS,mmm)
+        const formatSRTTime = (timeStr) => {
+          const parts = timeStr.split(':');
+          if (parts.length === 2) {
+            return `00:${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')},000`;
+          }
+          return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}:${parts[2].padStart(2, '0')},000`;
+        };
+  
+        return `${index + 1}\n${formatSRTTime(startTime)} --> ${formatSRTTime(endTime)}\n${item.text}\n`;
+      }).join('\n');
+    };
+  
+    const createJSONFormat = () => {
+      const metadata = {
+        videoId: videoId,
+        title: videoTitle,
+        downloadDate: new Date().toISOString(),
+        totalSegments: transcript.length
+      };
+      return JSON.stringify({ metadata, transcript }, null, 2);
+    };
+  
+    // Create download options
+    const formats = [
+      { name: 'Text (.txt)', content: createTextFormat(), extension: 'txt', mimeType: 'text/plain' },
+      { name: 'SRT Subtitles (.srt)', content: createSRTFormat(), extension: 'srt', mimeType: 'text/plain' },
+      { name: 'JSON (.json)', content: createJSONFormat(), extension: 'json', mimeType: 'application/json' }
+    ];
+  
+    // For now, default to text format. You could add a format selector later.
+    const selectedFormat = formats[0]; // Text format
+  
+    // Create and download file
+    const blob = new Blob([selectedFormat.content], { type: selectedFormat.mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    
+    link.href = url;
+    link.download = `${videoTitle.replace(/[^a-z0-9]/gi, '_')}_transcript.${selectedFormat.extension}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  
+    console.log(`Downloaded transcript as ${selectedFormat.extension.toUpperCase()}`);
+    
+    return {
+      format: selectedFormat,
+      filename: `${videoTitle.replace(/[^a-z0-9]/gi, '_')}_transcript.${selectedFormat.extension}`
+    };
+  };

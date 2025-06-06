@@ -4,7 +4,7 @@ import { useChat } from './useChat';
 import { useYoutubeControl } from './useYoutubeControl';
 import { getTranscriptRangeBinary } from '../utils/transcriptHelpers';
 
-export const useYouTubeChat = (transcript = []) => {
+export const useYoutubeChat = (transcript = []) => {
   const baseChatHook = useChat();
   const { pauseVideo, resumeVideo, isVideoPaused, getCurrentTime } = useYoutubeControl();
   const wasPlayingBeforeTyping = useRef(false);

@@ -2,7 +2,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import ContentApp from './ContentApp';
-import YouTubeContentApp from './YoutubeContentApp';
+import YoutubeContentApp from './YoutubeContentApp';
 import './content.css';
 
 let container = null;
@@ -25,7 +25,7 @@ function showExtension() {
   const isYouTube = window.location.hostname.includes('youtube.com');
 
   if (isYouTube) {
-    root.render(<YouTubeContentApp />);
+    root.render(<YoutubeContentApp />);
   } else {
     root.render(<ContentApp />);
   }
