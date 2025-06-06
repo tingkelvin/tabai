@@ -135,7 +135,7 @@ export const isRealSpeech = (text) => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   
-    console.log(`Downloaded transcript as ${selectedFormat.extension.toUpperCase()}`);
+    //console.log(`Downloaded transcript as ${selectedFormat.extension.toUpperCase()}`);
     
     return {
       format: selectedFormat,

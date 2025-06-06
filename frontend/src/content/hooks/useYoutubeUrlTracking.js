@@ -57,14 +57,14 @@ export const useYoutubeUrlTracking = () => {
 
   // Handle URL changes
   useEffect(() => {
-    console.log('URL changed to:', currentUrl);
+    //console.log('URL changed to:', currentUrl);
     const newVideoId = extractVideoId(currentUrl);
-    console.log('Extracted video ID:', newVideoId);
+    //console.log('Extracted video ID:', newVideoId);
     
     if (newVideoId) {
       // On YouTube video page - only update if videoId actually changed
       if (newVideoId !== videoId) {
-        console.log('Video ID changed from', videoId, 'to', newVideoId);
+        //console.log('Video ID changed from', videoId, 'to', newVideoId);
         setVideoId(newVideoId);
         
         // Reset title for new video
@@ -73,29 +73,29 @@ export const useYoutubeUrlTracking = () => {
         // Try to get title immediately
         const title = getVideoTitleFromPage();
         if (title) {
-          console.log('Found title immediately:', title);
+          //console.log('Found title immediately:', title);
           setVideoTitle(title);
         } else {
-          console.log('Title not found, will retry in 1 second');
+          //console.log('Title not found, will retry in 1 second');
           // If no title found, try again after a short delay for dynamic content
           setTimeout(() => {
             const delayedTitle = getVideoTitleFromPage();
             if (delayedTitle) {
-              console.log('Found title after delay:', delayedTitle);
+              //console.log('Found title after delay:', delayedTitle);
               setVideoTitle(delayedTitle);
             } else {
-              console.log('Still no title found after delay');
+              //console.log('Still no title found after delay');
             }
           }, 1000);
         }
       } else {
-        console.log('Same video ID, not updating');
+        //console.log('Same video ID, not updating');
       }
       
     } else {
       // Not on YouTube video page
       if (videoId !== null) {
-        console.log('Leaving YouTube, clearing video data');
+        //console.log('Leaving YouTube, clearing video data');
         setVideoId(null);
         setVideoTitle('');
       }

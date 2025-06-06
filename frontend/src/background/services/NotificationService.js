@@ -30,7 +30,7 @@ export const notificationService = {
           await chrome.tabs.sendMessage(tabs[0].id, { type, ...data });
         }
       } catch (error) {
-        console.log('Could not notify active tab:', error);
+        //console.log('Could not notify active tab:', error);
       }
     }
   };

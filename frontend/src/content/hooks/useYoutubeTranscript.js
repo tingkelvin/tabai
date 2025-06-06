@@ -42,7 +42,7 @@ export const useYoutubeTranscript = () => {
       const closeButton = document.querySelector('[aria-label*="close transcript" i], [aria-label*="Close transcript" i]');
       if (closeButton) {
         closeButton.click();
-        console.log('Closed transcript panel');
+        //console.log('Closed transcript panel');
       }
     } catch (error) {
       console.error('Error closing transcript panel:', error);
@@ -52,12 +52,12 @@ export const useYoutubeTranscript = () => {
   // Main function to get YouTube transcript
   const getYoutubeTranscript = async () => {
     if (isLoadingTranscript) {
-      console.log('Already loading transcript, skipping...');
+      //console.log('Already loading transcript, skipping...');
       return;
     }
 
     setIsLoadingTranscript(true);
-    console.log("Getting transcript...");
+    //console.log("Getting transcript...");
     
     try {
       // Wait for page to fully load
@@ -71,7 +71,7 @@ export const useYoutubeTranscript = () => {
         
         if (!isTranscriptOpen) {
           transcriptButton.click();
-          console.log('Clicked transcript button');
+          //console.log('Clicked transcript button');
           
           // Wait for transcript panel to load
           await waitForElement('ytd-transcript-segment-renderer, .ytd-transcript-segment-renderer', 3000);
@@ -96,10 +96,10 @@ export const useYoutubeTranscript = () => {
             };
           }).filter(item => item.text && isRealSpeech(item.text));
     
-          console.log(`Found ${transcriptData.length} transcript segments`);
+          //console.log(`Found ${transcriptData.length} transcript segments`);
           
           setTranscript(transcriptData); // Now contains pre-parsed timeInSeconds
-          console.log(transcriptData);
+          //console.log(transcriptData);
           
           // Close transcript panel after getting data
           await closeTranscriptPanel();

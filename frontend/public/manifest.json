@@ -1,41 +1,71 @@
 {
-    "name": "Tab",
-    "version": "1.0.0",
-    "manifest_version": 3,
-    "description": "Tab your life to the future1",
-    "permissions": [
-      "identity",
-      "activeTab",
-      "scripting",
-      "storage"
-    ],
-    "oauth2": {
-      "client_id": "234898757030-nrqj20cp1hv10tle91prieqsqocjjdqh.apps.googleusercontent.com",
-      "scopes": ["openid", "email", "profile"]
-    },
-    "content_scripts": [
-      {
-        "matches": ["<all_urls>"],
-        "js": ["vendor.js", "content.js"]
-      }
-    ],
-    "action": {
-      "default_popup": "popup.html",
-      "default_title": "React Extension"
-    },
-    "background": {
-      "service_worker": "background.js",
-      "type": "module"
-    },
-    "web_accessible_resources": [
-      {
-        "resources": ["*.js", "*.css"],
-        "matches": ["<all_urls>"]
-      }
-    ],
-    "icons": {
+  "name": "Tab",
+  "version": "1.0.0",
+  "manifest_version": 3,
+  "description": "Tab your life to the future - AI-powered chat assistant for every website",
+  "author": "Taber",
+  "homepage_url": "https://your-website.com",
+  
+  "permissions": [
+    "identity",
+    "activeTab", 
+    "scripting",
+    "storage"
+  ],
+  
+  "optional_permissions": [
+    "tabs"
+  ],
+  
+  "host_permissions": [
+    "https://tubetor-backend-234898757030.us-central1.run.app/*"
+  ],
+  
+  "oauth2": {
+    "client_id": "234898757030-nrqj20cp1hv10tle91prieqsqocjjdqh.apps.googleusercontent.com",
+    "scopes": ["email"]
+  },
+  
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["vendor.js", "content.js"],
+      "run_at": "document_end",
+      "all_frames": false
+    }
+  ],
+  
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Taber - AI Chat Assistant",
+    "default_icon": {
       "16": "icons/16x16.png",
       "48": "icons/48x48.png",
       "128": "icons/128x128.png"
     }
-  }
+  },
+  
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  
+  "web_accessible_resources": [
+    {
+      "resources": ["*.js", "*.css", "*.png", "*.svg"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  
+  "icons": {
+    "16": "icons/16x16.png",
+    "48": "icons/48x48.png",
+    "128": "icons/128x128.png"
+  },
+  
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  },
+  
+  "minimum_chrome_version": "88"
+}
