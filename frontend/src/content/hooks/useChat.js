@@ -28,7 +28,7 @@ export const useChat = () => {
       // Send directly to background script
       const reply = await chrome.runtime.sendMessage({
         type: 'CHAT_MESSAGE',
-        data: { message: context ? `context:[${context}]\n message:[${chatInput}]` :  chatInput}
+        data: { message: context ? `${context}\n quesetion:[${chatInput}]` :  chatInput}
       });
       
       const response = {
@@ -95,6 +95,19 @@ export const useChat = () => {
     setChatMessages(prev => [...prev, newMessage]);
   }, []);
 
+  // Method to directly add messages to the chat
+  const addUserMessage = useCallback((message) => {
+    const newMessage = {
+      id: Date.now(),
+      type: MESSAGE_TYPES.USER,
+      content: message,
+      timestamp: new Date(),
+      ...message // Allow overriding any properties
+    };
+
+    setChatMessages(prev => [...prev, newMessage]);
+  }, []);
+
   // Method to add multiple messages at once
   const addMessages = useCallback((messages) => {
     const newMessages = messages.map((message, index) => ({
@@ -139,6 +152,7 @@ export const useChat = () => {
     clearMessages,
     removeMessage,
     updateMessage,
-    setIsTyping
+    setIsTyping,
+    addUserMessage
   };
 };

@@ -1,44 +1,40 @@
-// YouTubeContentApp.jsx - Improved URL change handling
-import React, { useEffect, useRef, useState } from 'react';
+// YouTubeContentApp.jsx - Clean version without duplicates
+import React, { useState } from 'react';
 import ContentApp from './ContentApp';
-import { useYoutubeControl } from './hooks/useYoutubeControl';
-import { useChat } from './hooks/useChat';
-import {parseTimeToSeconds, getTranscriptRangeBinary, isRealSpeech} from './utils/helpers';
+import { useYouTubeTranscript } from './hooks/useYoutubeTranscript';
+import { useYouTubeChat } from './hooks/useYoutubeChat';
 
 const YouTubeContentApp = () => {
-  const { pauseVideo, resumeVideo, isVideoPaused, getCurrentTime } = useYoutubeControl();
-  const wasPlayingBeforeTyping = useRef(false);
-  const [showResumeButton, setShowResumeButton] = useState(false);
-  const [transcript, setTranscript] = useState([]);
-  const [isLoadingTranscript, setIsLoadingTranscript] = useState(false);
   const [currentVideoId, setCurrentVideoId] = useState(null);
-
-  const chatHook = useChat();
 
   // Helper function to extract video ID from URL
   const extractVideoId = (url) => {
-    const urlObj = new URL(url);
-    if (urlObj.hostname.includes('youtube.com') && urlObj.pathname === '/watch') {
-      return urlObj.searchParams.get('v');
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.hostname.includes('youtube.com') && urlObj.pathname === '/watch') {
+        return urlObj.searchParams.get('v');
+      }
+    } catch (error) {
+      console.error('Error extracting video ID:', error);
     }
     return null;
   };
 
-  // Handle resume video action
-  const handleResumeVideo = () => {
-    if (wasPlayingBeforeTyping.current) {
-      resumeVideo();
-      wasPlayingBeforeTyping.current = false;
-      setShowResumeButton(false);
-    }
-  };
+  // Use the transcript hook
+  const { 
+    transcript, 
+    isLoadingTranscript, 
+    getYouTubeTranscript,
+    clearTranscript 
+  } = useYouTubeTranscript();
 
-  // Improved URL change handler
+  // Use the YouTube chat hook with transcript
+  const youTubeChatHook = useYouTubeChat(transcript);
+
+  // URL change handler
   const handleUrlChange = (newUrl) => {
     console.log('URL changed to:', newUrl);
-    
     const videoId = extractVideoId(newUrl);
-    
     if (videoId) {
       // We're on a YouTube video page
       if (videoId !== currentVideoId) {
@@ -47,155 +43,127 @@ const YouTubeContentApp = () => {
         setCurrentVideoId(videoId);
         
         // Clear previous transcript
-        setTranscript([]);
+        clearTranscript();
         
         // Get transcript for new video with delay to ensure page is loaded
         setTimeout(() => {
           getYouTubeTranscript();
-        }, 1500); // Increased delay for YouTube's dynamic loading
+        }, 1500);
       }
-    } else {
-      // Not on a video page or not YouTube
-      if (currentVideoId) {
-        console.log('Left video page');
-        setCurrentVideoId(null);
-        setTranscript([]);
-      }
-    }
-  };
-
-  const getYouTubeTranscript = async () => {
-    if (isLoadingTranscript) {
-      console.log('Already loading transcript, skipping...');
-      return;
-    }
-
-    setIsLoadingTranscript(true);
-    console.log("Getting transcript...");
-    
-    try {
-      // Wait for page to fully load
-      await waitForElement('[aria-label*="transcript" i], [aria-label*="Show transcript" i]', 5000);
-      
-      const transcriptButton = document.querySelector('[aria-label*="transcript" i], [aria-label*="Show transcript" i]');
-    
-      if (transcriptButton) {
-        // Check if transcript panel is already open
-        const isTranscriptOpen = document.querySelector('.ytd-transcript-renderer, ytd-transcript-renderer');
-        
-        if (!isTranscriptOpen) {
-          transcriptButton.click();
-          console.log('Clicked transcript button');
-          
-          // Wait for transcript panel to load
-          await waitForElement('ytd-transcript-segment-renderer, .ytd-transcript-segment-renderer', 3000);
-        }
-    
-        const transcriptItems = document.querySelectorAll(
-          'ytd-transcript-segment-renderer'
-        );
-    
-        if (transcriptItems.length > 0) {
-          const transcriptData = Array.from(transcriptItems).map(item => {
-            const timeElement = item.querySelector('.segment-timestamp, [class*="timestamp"]');
-            const textElement = item.querySelector('.segment-text, [class*="text"]');
-            
-            const timeText = timeElement ? timeElement.textContent.trim() : '0:00';
-            const text = textElement ? textElement.textContent.trim() : '';
-    
-            return {
-              time: timeText,
-              text: text,
-              timeInSeconds: parseTimeToSeconds(timeText) // Parse immediately
-            };
-          }).filter(item => item.text && isRealSpeech(item.text));
-    
-          console.log(`Found ${transcriptData.length} transcript segments`);
-          
-          setTranscript(transcriptData); // Now contains pre-parsed timeInSeconds
-          console.log(transcriptData);
-          
-          // Close transcript panel after getting data
-          await closeTranscriptPanel();
-          return transcriptData;
-        } else {
-          throw new Error('No transcript segments found');
-        }
-      }
-    } catch (error) {
-      console.error('Failed to get transcript:', error);
-      setTranscript([{ 
-        time: '0:00', 
-        text: `Transcript not available: ${error.message}` 
-      }]);
-    } finally {
-      setIsLoadingTranscript(false);
-    }
-  };
-
-  // Helper function to wait for elements
-  const waitForElement = (selector, timeout = 5000) => {
-    return new Promise((resolve, reject) => {
-      const element = document.querySelector(selector);
-      if (element) {
-        resolve(element);
-        return;
-      }
-
-      const observer = new MutationObserver((mutations, obs) => {
-        const element = document.querySelector(selector);
-        if (element) {
-          obs.disconnect();
-          resolve(element);
-        }
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
-
-      setTimeout(() => {
-        observer.disconnect();
-        reject(new Error(`Element ${selector} not found within ${timeout}ms`));
-      }, timeout);
-    });
-  };
-
-  const closeTranscriptPanel = async () => {
-    try {
-      const closeButton = document.querySelector('[aria-label*="close transcript" i], [aria-label*="Close transcript" i]');
-      if (closeButton) {
-        closeButton.click();
-        console.log('Closed transcript panel');
-      }
-    } catch (error) {
-      console.error('Error closing transcript panel:', error);
-    }
+    } 
   };
 
   const generateSummary = async () => {
     if (!transcript.length) return;
-    console.log(transcript);
+    console.log('Generating summary for transcript:', transcript);
 
-    const fullTranscriptText = transcript.map(item => item.text.replace(/\n/g, ' ').trim()).join(' ');
+    const fullTranscriptText = transcript
+      .map(item => item.text.replace(/\n/g, ' ').trim())
+      .join(' ');
+
+    youTubeChatHook.addUserMessage("summary");
   
     // If transcript is very long, chunk it
-    const maxLength = 10000; // Adjust based on your AI model's limits
-    const chunks = [];
+    const maxLength = 10000;
     
     if (fullTranscriptText.length > maxLength) {
+      const chunks = [];
       for (let i = 0; i < fullTranscriptText.length; i += maxLength) {
         chunks.push(fullTranscriptText.slice(i, i + maxLength));
       }
-
       
       const summaryPrompt = `Please provide a concise summary of this video transcript (presented in chunks):\n\nChunk 1/${chunks.length}:\n${chunks[0]}`;
-      console.log(summaryPrompt)
-      chatHook.sendMessage(summaryPrompt);
+      console.log('Summary prompt:', summaryPrompt);
+      youTubeChatHook.sendMessage(summaryPrompt); // Use the YouTube chat hook
     } else {
       const summaryPrompt = `Please provide a concise summary of this video transcript:\n\n${fullTranscriptText}`;
-      chatHook.sendMessage(summaryPrompt);
+      youTubeChatHook.sendMessage(summaryPrompt); // Use the YouTube chat hook
+    }
+  };
+
+  // Download transcript function
+  const downloadTranscript = () => {
+    if (!transcript.length) {
+      console.log('No transcript available to download');
+      return;
+    }
+
+    try {
+      // Get video title from page
+      const videoTitle = document.querySelector('h1.ytd-video-primary-info-renderer')?.textContent?.trim() 
+        || document.querySelector('#title h1')?.textContent?.trim()
+        || `YouTube_Video_${currentVideoId}`;
+
+      // Create transcript content in different formats
+      const createTextFormat = () => {
+        return transcript.map(item => `[${item.time}] ${item.text}`).join('\n\n');
+      };
+
+      const createSRTFormat = () => {
+        return transcript.map((item, index) => {
+          const startTime = item.time;
+          const nextItem = transcript[index + 1];
+          const endTime = nextItem ? nextItem.time : item.time;
+          
+          // Convert time format for SRT (HH:MM:SS,mmm)
+          const formatSRTTime = (timeStr) => {
+            const parts = timeStr.split(':');
+            if (parts.length === 2) {
+              return `00:${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')},000`;
+            }
+            return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}:${parts[2].padStart(2, '0')},000`;
+          };
+
+          return `${index + 1}\n${formatSRTTime(startTime)} --> ${formatSRTTime(endTime)}\n${item.text}\n`;
+        }).join('\n');
+      };
+
+      const createJSONFormat = () => {
+        const metadata = {
+          videoId: currentVideoId,
+          title: videoTitle,
+          downloadDate: new Date().toISOString(),
+          totalSegments: transcript.length
+        };
+        return JSON.stringify({ metadata, transcript }, null, 2);
+      };
+
+      // Create download options
+      const formats = [
+        { name: 'Text (.txt)', content: createTextFormat(), extension: 'txt', mimeType: 'text/plain' },
+        { name: 'SRT Subtitles (.srt)', content: createSRTFormat(), extension: 'srt', mimeType: 'text/plain' },
+        { name: 'JSON (.json)', content: createJSONFormat(), extension: 'json', mimeType: 'application/json' }
+      ];
+
+      // For now, default to text format. You could add a format selector later.
+      const selectedFormat = formats[0]; // Text format
+
+      // Create and download file
+      const blob = new Blob([selectedFormat.content], { type: selectedFormat.mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      
+      link.href = url;
+      link.download = `${videoTitle.replace(/[^a-z0-9]/gi, '_')}_transcript.${selectedFormat.extension}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      console.log(`Downloaded transcript as ${selectedFormat.extension.toUpperCase()}`);
+      
+      // Show success message in chat
+      youTubeChatHook.addMessage({
+        type: 'system',
+        content: `✅ Transcript downloaded as ${selectedFormat.name}`
+      });
+
+    } catch (error) {
+      console.error('Error downloading transcript:', error);
+      youTubeChatHook.addMessage({
+        type: 'system',
+        content: `❌ Error downloading transcript: ${error.message}`
+      });
     }
   };
 
@@ -204,9 +172,9 @@ const YouTubeContentApp = () => {
     {
       id: 'resume-video',
       label: 'Resume',
-      icon: '',
-      onClick: handleResumeVideo,
-      isVisible: () => showResumeButton,
+      icon: '▶️',
+      onClick: youTubeChatHook.handleResumeVideo, // Use hook's function
+      isVisible: () => youTubeChatHook.showResumeButton, // Use hook's state
       className: 'resume-video-action',
       title: 'Resume the paused YouTube video'
     },
@@ -218,77 +186,21 @@ const YouTubeContentApp = () => {
       isVisible: () => transcript.length > 0 && !isLoadingTranscript,
       className: 'summary-action',
       title: 'Generate a summary of the entire video'
+    },
+    {
+      id: 'download-transcript',
+      label: 'Transcript',
+      icon: '💾',
+      onClick: downloadTranscript,
+      isVisible: () => transcript.length > 0 && !isLoadingTranscript,
+      className: 'download-action',
+      title: 'Download transcript as text file'
     }
   ];
 
-  const getCurrentTranscript = () => {
-    const currentTime = getCurrentTime()
-    const queryTranscript = getTranscriptRangeBinary(Math.max(0, currentTime-60), currentTime, transcript).join(' ');
-    return queryTranscript
-  }
-
-  // Enhanced chat hook that handles YouTube video pausing
-  const useYouTubeChat = () => {
-    
-    const handleInputChange = (e) => {
-      const isTyping = e.target.value.length > 0;
-      
-      if (isTyping) {
-        // User started typing
-        if (!isVideoPaused() && !wasPlayingBeforeTyping.current) {
-          wasPlayingBeforeTyping.current = true;
-          pauseVideo();
-        }
-      } else {
-        if (isVideoPaused() && wasPlayingBeforeTyping.current){
-            wasPlayingBeforeTyping.current = false;
-            resumeVideo();
-        }
-      }
-      // Call original handler
-      chatHook.handleInputChange(e);
-    };
-
-    // Enhanced key press handler that includes video controls
-    const handleKeyPress = (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        
-        const userMessage = e.target.value.trim();
-        if (!userMessage) return;
-        
-        const currentTranscript = getCurrentTranscript();
-        chatHook.sendMessage(currentTranscript);
-        // Clear input properly
-        setTimeout(() => {
-          if (e.target) {
-            e.target.style.height = '44px';
-            e.target.style.overflowY = 'hidden';
-          }
-        }, 0);
-        
-        setShowResumeButton(true);
-        if (!isVideoPaused()) {
-          pauseVideo();
-          wasPlayingBeforeTyping.current = true;
-        }
-        
-        return;
-      }
-      
-      chatHook.handleKeyPress(e);
-    };
-  
-    return {
-      ...chatHook,
-      handleInputChange,
-      handleKeyPress
-    };
-  };
-
   return (
     <ContentApp 
-      useCustomChat={useYouTubeChat} 
+      useCustomChat={() => youTubeChatHook} // Pass as function
       customActions={youtubeActions}
       onUrlChange={handleUrlChange}
     />
