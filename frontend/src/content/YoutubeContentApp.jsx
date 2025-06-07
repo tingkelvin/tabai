@@ -32,7 +32,7 @@ const YoutubeContentApp = () => {
   // Handle video changes - load transcript when videoId changes
   useEffect(() => {
     if (videoId && videoId !== currentVideoId) {
-      //console.log('Loading transcript for video:', videoId);
+      console.log('Loading transcript for video:', videoId);
       setCurrentVideoId(videoId);
       clearTranscript();
       
@@ -44,7 +44,7 @@ const YoutubeContentApp = () => {
 
   const generateSummary = useCallback(async () => {
     if (!transcript.length) return;
-    //console.log('Generating summary for transcript:', transcript);
+    console.log('Generating summary for transcript:', transcript);
 
     const fullTranscriptText = transcript
       .map(item => item.text.replace(/\n/g, ' ').trim())
@@ -62,7 +62,7 @@ const YoutubeContentApp = () => {
       }
       
       const summaryPrompt = `Please provide a concise summary of this video transcript (presented in chunks):\n\nChunk 1/${chunks.length}:\n${chunks[0]}`;
-      //console.log('Summary prompt:', summaryPrompt);
+      console.log('Summary prompt:', summaryPrompt);
       youTubeChatHook.sendMessage(summaryPrompt);
     } else {
       const summaryPrompt = `Please provide a concise summary of this video transcript:\n\n${fullTranscriptText}`;
@@ -74,7 +74,7 @@ const YoutubeContentApp = () => {
   const downloadTranscript = useCallback(() => {
     youTubeChatHook.addUserMessage("download transcript");
     if (!transcript.length) {
-      //console.log('No transcript available to download');
+      console.log('No transcript available to download');
       youTubeChatHook.addMessage({
         type: 'system',
         content: '❌ No transcript available to download'
@@ -133,7 +133,7 @@ const YoutubeContentApp = () => {
 
   return (
     <ContentApp 
-      useCustomChat={() => youTubeChatHook}
+      customChatHook={youTubeChatHook}
       customActions={youtubeActions}
       title={`${videoTitle || 'YouTube'}`}
     />

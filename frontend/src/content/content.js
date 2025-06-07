@@ -3,6 +3,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import ContentApp from './ContentApp';
 import YoutubeContentApp from './YoutubeContentApp';
+import LinkedInContentApp from './LinkedinContentApp'
 import './content.css';
 
 let container = null;
@@ -23,14 +24,17 @@ function showExtension() {
 
   // Check if we're on YouTube and render appropriate component
   const isYouTube = window.location.hostname.includes('youtube.com');
+  const isLinkedin = window.location.hostname.includes('linkedin.com');
 
   if (isYouTube) {
     root.render(<YoutubeContentApp />);
+  } else if (isLinkedin) {
+    root.render(<LinkedInContentApp />);
   } else {
     root.render(<ContentApp />);
   }
 
-  // //console.log(`React Chrome Extension loaded on ${isYouTube ? 'YouTube' : 'other site'}!`);
+  // console.log(`React Chrome Extension loaded on ${isYouTube ? 'YouTube' : 'other site'}!`);
 }
 
 // Function to hide and cleanup the extension
@@ -49,7 +53,7 @@ function hideExtension() {
   }
   container = null;
   
-  // //console.log('React Chrome Extension hidden!');
+  // console.log('React Chrome Extension hidden!');
 }
 
 // Function to toggle extension visibility

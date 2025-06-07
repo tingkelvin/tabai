@@ -5,11 +5,11 @@ import { useUrlTracking } from './hooks/useUrlTracking';
 import { usePosition } from './hooks/usePosition';
 import { useDragAndResize } from './hooks/useDragAndResize';
 import { useChat } from './hooks/useChat';
-import { calculateInitialPositions } from './utils/helpers';
+import { calculateInitialPositions, parseMarkdownLine } from './utils/helpers';
 import { WIDGET_CONFIG, RESIZE_TYPES } from './utils/constants';
 
 const ContentApp = ({ 
-  useCustomChat,
+  customChatHook,
   customActions = [], // Array of custom action objects
   title = ""
 }) => {
@@ -33,7 +33,7 @@ const ContentApp = ({
   });
 
   // Use custom chat hook if provided, otherwise use default
-  const chatHook = useCustomChat ? useCustomChat() : useChat();
+  const chatHook = customChatHook || useChat();
   const { 
     chatInput, 
     chatMessages, 
@@ -46,7 +46,9 @@ const ContentApp = ({
     clearMessages,
     removeMessage,
     updateMessage,
-    setIsTyping
+    setIsTyping,
+    addUserMessage,        // ADDED - This was missing!
+    addAssistantMessage 
   } = chatHook;
 
   // Handle URL changes
@@ -174,11 +176,12 @@ const ContentApp = ({
                   <div className="message-text">
                     {message.content.split('\n').map((line, index) => (
                       <div key={index}>
-                        {line}
+                        {parseMarkdownLine(line)}
                         {index < message.content.split('\n').length - 1 && <br />}
                       </div>
                     ))}
                   </div>
+        
                 </div>
               </div>
             ))}

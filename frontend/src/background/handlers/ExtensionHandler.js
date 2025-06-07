@@ -4,7 +4,7 @@ import AuthManager from '../AuthManager.js';
 export const extensionHandler = {
   handleToggle: async (data, sendResponse) => {
     try {
-      //console.log('🔧 Extension toggled:', data.enabled);
+      console.log('🔧 Extension toggled:', data.enabled);
       sendResponse({
         success: true,
         message: `Extension ${data.enabled ? 'enabled' : 'disabled'}`
@@ -19,7 +19,7 @@ export const extensionHandler = {
   },
 
   testConnection: (sendResponse) => {
-    //console.log('🧪 Test connection requested...');
+    console.log('🧪 Test connection requested...');
     sendResponse({
       success: true,
       message: 'Connection test successful!',
