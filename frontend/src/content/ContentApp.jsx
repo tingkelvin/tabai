@@ -86,14 +86,12 @@ const ContentApp = ({
     if (container) container.remove();
   }, []);
 
+  // Then modify handleMinimize like this:
   const handleMinimize = useCallback(() => {
-    if (!isMinimized) {
-      const iconTop = widgetPosition.top;
-      const iconLeft = widgetPosition.left + widgetSize.width - WIDGET_CONFIG.ICON_SIZE;
-      updateIconPosition({ top: iconTop, left: iconLeft });
-    }
+    // Simply minimize without changing the icon position
+    // The icon will stay wherever it currently is
     setIsMinimized(true);
-  }, [isMinimized, widgetPosition, widgetSize, updateIconPosition]);
+  }, []);
 
   const handleExpand = useCallback(() => {
     if (hasDragged) return;

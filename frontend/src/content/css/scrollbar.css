@@ -1,0 +1,19 @@
+/* ====================================
+   11. SCROLLBAR STYLES
+   ==================================== */
+
+.chat-messages::-webkit-scrollbar,
+.chat-input::-webkit-scrollbar {
+  width: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-track,
+.chat-input::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.chat-messages::-webkit-scrollbar-thumb,
+.chat-input::-webkit-scrollbar-thumb {
+  background: #444444;
+  border-radius: 2px;
+} 

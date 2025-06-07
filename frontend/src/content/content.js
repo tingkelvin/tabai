@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import ContentApp from './ContentApp';
 import YoutubeContentApp from './YoutubeContentApp';
 import LinkedInContentApp from './LinkedinContentApp'
-import './content.css';
+import './css/index.css';
 
 let container = null;
 let root = null;

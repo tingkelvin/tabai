@@ -1,0 +1,48 @@
+/* ====================================
+   10. ACTION BUTTONS
+   ==================================== */
+
+.custom-actions-container {
+  margin: 8px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.custom-action-btn {
+  background: #333333;
+  color: #e6e6e6;
+  border: 1px solid #444444;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+}
+
+.custom-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.resume-video-action {
+  background: #333333;
+  color: #e6e6e6;
+  border: 1px solid #444444;
+}
+
+.save-timestamp-action {
+  background: #d97706;
+  color: #ffffff;
+  border: 1px solid #b45309;
+} 

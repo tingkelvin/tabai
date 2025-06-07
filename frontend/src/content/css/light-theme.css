@@ -1,0 +1,105 @@
+/* ====================================
+   13. LIGHT THEME (SYSTEM PREFERENCE)
+   ==================================== */
+
+@media (prefers-color-scheme: light) {
+  /* Main widget */
+  .extension-widget.expanded {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+  }
+
+  /* Terminal icon */
+  .terminal-icon {
+    background-color: #f3f4f6;
+  }
+
+  /* Header */
+  .extension-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .extension-header h3 {
+    color: #1f2937;
+  }
+
+  /* Content area */
+  .extension-content {
+    background: #ffffff;
+  }
+
+  /* Chat messages container */
+  .chat-messages {
+    background: #ffffff;
+  }
+
+  /* User messages - Light theme */
+  .chat-message.user .message-text {
+    background: #3b82f6;
+    color: #ffffff;
+  }
+
+  /* Assistant messages - Light theme */
+  .chat-message.assistant .message-text {
+    background: #f8f9fa;
+    color: #1f2937;
+    border: 1px solid #e5e7eb;
+  }
+
+  /* Typing indicator */
+  .chat-message.typing .message-text {
+    background: #f8f9fa;
+    border: 1px solid #e5e7eb;
+  }
+
+  .typing-dot {
+    background: #9ca3af;
+  }
+
+  /* Chat input */
+  .chat-input {
+    background: #f8f9fa;
+    border: 1px solid #d1d5db;
+    color: #1f2937;
+  }
+
+  .chat-input::placeholder {
+    color: #9ca3af;
+  }
+
+  /* Action buttons */
+  .custom-action-btn {
+    background: #f3f4f6;
+    color: #1f2937;
+    border: 1px solid #d1d5db;
+  }
+
+  .resume-video-action {
+    background: #f3f4f6;
+    color: #1f2937;
+    border: 1px solid #d1d5db;
+  }
+
+  .save-timestamp-action {
+    background: #f59e0b;
+    color: #ffffff;
+    border: 1px solid #d97706;
+  }
+
+  /* Scrollbar */
+  .chat-messages::-webkit-scrollbar-track,
+  .chat-input::-webkit-scrollbar-track {
+    background: #ffffff;
+  }
+
+  .chat-messages::-webkit-scrollbar-thumb,
+  .chat-input::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+  }
+
+  /* Resize handle */
+  .resize-handle.se::after {
+    border-bottom-color: #9ca3af;
+  }
+} 

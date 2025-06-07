@@ -1,0 +1,37 @@
+/* ====================================
+   1. BASE WIDGET STYLES (DARK THEME DEFAULT)
+   ==================================== */
+
+/* Main widget container */
+.extension-widget {
+  position: fixed;
+  z-index: 2147483647;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Widget states */
+.extension-widget.expanded {
+  width: 480px;
+  height: 320px;
+  background: #1a1a1a;
+  border-radius: 12px;
+  border: 1px solid #333333;
+}
+
+.extension-widget.minimized {
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+}
+
+/* Drag states */
+.extension-widget.minimized.dragging {
+  cursor: grabbing;
+}
+
+.extension-widget.expanded.dragging {
+  cursor: grabbing;
+} 
