@@ -28,14 +28,11 @@ function showExtension() {
 
   if (isYouTube) {
     root.render(<YoutubeContentApp />);
-  } else if (isLinkedin) {
-    root.render(<LinkedInContentApp />);
   } else {
-    root.render(<ContentApp />);
-  }
-
-  // console.log(`React Chrome Extension loaded on ${isYouTube ? 'YouTube' : 'other site'}!`);
+    root.render(<LinkedInContentApp />);
+  } 
 }
+  // console.log(`React Chrome Extension loaded on ${isYouTube ? 'YouTube' : 'other site'}!`);
 
 // Function to hide and cleanup the extension
 function hideExtension() {
