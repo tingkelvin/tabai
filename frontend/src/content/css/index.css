@@ -4,10 +4,10 @@
 @import './controls.css';
 @import './content-area.css';
 @import './chat-messages.css';
-@import './typing-indicator.css';
 @import './chat-input.css';
 @import './scrollbar.css';
 @import './resize-handles.css';
 @import './light-theme.css';
+@import './dark-theme.css';
 @import './animations.css';
 @import './markdown.css'; 

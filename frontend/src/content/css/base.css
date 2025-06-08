@@ -16,9 +16,7 @@
 .extension-widget.expanded {
   width: 480px;
   height: 320px;
-  background: #1a1a1a;
   border-radius: 12px;
-  border: 1px solid #333333;
 }
 
 .extension-widget.minimized {

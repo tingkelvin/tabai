@@ -259,14 +259,13 @@
 
 .typing-indicator {
   display: flex;
-  gap: 4px;
+  gap: 10px;
   align-items: center;
 }
 
 .typing-dot {
   width: 6px;
   height: 6px;
-  background: #666666;
   border-radius: 50%;
   animation: typingPulse 1.4s infinite ease-in-out;
 }
