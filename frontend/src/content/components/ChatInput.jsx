@@ -9,6 +9,18 @@ const ChatInput = ({
 }) => {
   return (
     <div className="chat-input-container">
+      <textarea
+        ref={chatInputRef}
+        className="chat-input"
+        value={chatInput}
+        onChange={handleInputChange}
+        onKeyPress={handleKeyPress}
+        placeholder="Ask me anything..."
+        rows="1"
+        autoComplete="off"
+        spellCheck="false"
+      />
+      
       {visibleActions.length > 0 && (
         <div className="custom-actions-container">
           {visibleActions.map((action, index) => (
@@ -26,18 +38,6 @@ const ChatInput = ({
           ))}
         </div>
       )}
-      
-      <textarea
-        ref={chatInputRef}
-        className="chat-input"
-        value={chatInput}
-        onChange={handleInputChange}
-        onKeyPress={handleKeyPress}
-        placeholder="Ask me anything..."
-        rows="1"
-        autoComplete="off"
-        spellCheck="false"
-      />
     </div>
   );
 };

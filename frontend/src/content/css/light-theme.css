@@ -57,11 +57,24 @@
     background: #9ca3af;
   }
 
-  /* Chat input */
-  .chat-input {
+  /* Chat input container */
+  .chat-input-container {
     background: #f8f9fa;
     border: 1px solid #d1d5db;
+  }
+
+  /* Chat input */
+  .chat-input {
+    background: transparent !important;
+    border: none !important;
     color: #1f2937;
+  }
+
+  .chat-input:hover,
+  .chat-input:focus {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
   }
 
   .chat-input::placeholder {
