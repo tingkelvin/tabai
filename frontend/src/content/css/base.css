@@ -32,4 +32,127 @@
 
 .extension-widget.expanded.dragging {
   cursor: grabbing;
-} 
+}
+
+
+  /* ====================================
+   COMPREHENSIVE TEXT SIZE PROTECTION
+   ==================================== */
+
+/* Base extension widget text protection */
+.extension-widget {
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* All text elements within the extension */
+.extension-widget,
+.extension-widget * {
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* Specific message text protection - EVERYTHING */
+.extension-widget .message-text,
+.extension-widget .message-text *,
+.extension-widget .message-text p,
+.extension-widget .message-text span,
+.extension-widget .message-text div,
+.extension-widget .message-text strong,
+.extension-widget .message-text em,
+.extension-widget .message-text li,
+.extension-widget .message-text ul,
+.extension-widget .message-text ol {
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  font-family: inherit !important;
+}
+
+/* User message text - complete protection */
+.extension-widget .chat-message.user .message-text,
+.extension-widget .chat-message.user .message-text *,
+.extension-widget .chat-message.user .message-text p,
+.extension-widget .chat-message.user .message-text span,
+.extension-widget .chat-message.user .message-text div {
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+/* Assistant message text - complete protection */
+.extension-widget .chat-message.assistant .message-text,
+.extension-widget .chat-message.assistant .message-text *,
+.extension-widget .chat-message.assistant .message-text p,
+.extension-widget .chat-message.assistant .message-text span,
+.extension-widget .chat-message.assistant .message-text div {
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+/* Code elements - special sizing but still protected */
+.extension-widget .message-text code,
+.extension-widget .message-text .markdown-code {
+  font-size: 11px !important; /* Slightly smaller for code */
+  line-height: 1.4 !important;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+}
+
+.extension-widget .message-text pre {
+  font-size: 11px !important;
+  line-height: 1.4 !important;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+}
+
+.extension-widget .message-text pre code {
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+/* Input protection */
+.extension-widget .chat-input {
+  font-size: 13px !important;
+  line-height: 22px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+.extension-widget .chat-input::placeholder {
+  font-size: 13px !important;
+  line-height: 22px !important;
+}
+
+/* Button protection */
+.extension-widget .custom-action-btn {
+  font-size: 12px !important;
+  line-height: 1 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* Header protection */
+.extension-widget .extension-header h3 {
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+  font-weight: 600 !important;
+}
+
+/* ====================================
+   NUCLEAR OPTION - IF WEBSITES ARE VERY AGGRESSIVE
+   ==================================== */
+
+/* Override any possible text size inheritance */
+.extension-widget .chat-messages {
+  font-size: 13px !important;
+}
+
+.extension-widget .chat-messages * {
+  font-size: inherit !important;
+}
+
+/* Ensure typing indicator matches */
+.extension-widget .typing-indicator {
+  font-size: 13px !important;
+}
+
+/* ====================================
+   EXCEPTIONS - ELEMENTS THAT SHOULD BE DIFFERENT
+   ==================================== */
