@@ -154,5 +154,113 @@
 }
 
 /* ====================================
-   EXCEPTIONS - ELEMENTS THAT SHOULD BE DIFFERENT
+   SIMPLE HEADER BUTTON FIX
    ==================================== */
+
+/* Force button dimensions */
+.extension-widget .minimize-btn,
+.extension-widget .close-btn {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
+  padding: 0 !important;
+  margin: 0px !important;
+  border: none !important;
+  background: transparent !important;
+  outline: none !important;
+  cursor: pointer !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+.extension-widget .minimize-btn {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  margin-right: 8px !important;
+  border: none !important;
+  background: transparent !important;
+  outline: none !important;
+  cursor: pointer !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  position: relative !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Premium minimize line */
+.extension-widget .minimize-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 2px;
+  background: #8b5cf6; /* Purple */
+  border-radius: 1px;
+  box-shadow: 0 0 0 rgba(139, 92, 246, 0);
+  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); /* Smooth premium easing */
+}
+
+/* Premium hover effects */
+.extension-widget .minimize-btn:hover::before {
+  background: #7c3aed; /* Darker purple */
+  width: 12px; /* Grows wider */
+  height: 2.5px; /* Gets thicker */
+  box-shadow: 
+    0 0 8px rgba(139, 92, 246, 0.4), /* Purple glow */
+    0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle depth shadow */
+  transform: translate(-50%, -50%) scale(1.05); /* Slight scale up */
+}
+
+/* Premium active/click state */
+.extension-widget .minimize-btn:active::before {
+  transform: translate(-50%, -50%) scale(0.95); /* Scale down when clicked */
+  transition: all 0.1s ease; /* Quick feedback */
+}
+
+/* ====================================
+   THEME VARIATIONS (OPTIONAL)
+   ==================================== */
+
+/* Dark theme - brighter purple */
+@media (prefers-color-scheme: dark) {
+  .extension-widget .minimize-btn::before {
+    background: #a78bfa; /* Lighter purple for dark backgrounds */
+  }
+  
+  .extension-widget .minimize-btn:hover::before {
+    background: #c4b5fd;
+    box-shadow: 
+      0 0 10px rgba(167, 139, 250, 0.5),
+      0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Light theme - darker purple */
+@media (prefers-color-scheme: light) {
+  .extension-widget .minimize-btn::before {
+    background: #7c3aed; /* Darker purple for light backgrounds */
+  }
+  
+  .extension-widget .minimize-btn:hover::before {
+    background: #6d28d9;
+    box-shadow: 
+      0 0 8px rgba(124, 58, 237, 0.3),
+      0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+}

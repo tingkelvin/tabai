@@ -1,12 +1,23 @@
 /* ====================================
-   13. DARK THEME (SYSTEM PREFERENCE)
+   DARK THEME - WITH STRATEGIC !important
    ==================================== */
 
    @media (prefers-color-scheme: dark) {
+    /* ✅ HIGH PRIORITY - ALWAYS use !important */
+    
+    /* Main widget - critical positioning and colors */
+    .extension-widget.expanded {
+      background: #262624 !important;
+      border: 1px solid #333333 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+  
+    /* All text colors - websites commonly override these */
     .extension-widget .chat-message.user .message-text,
     .extension-widget .chat-message.user .message-text * {
       background: #141413 !important;
       color: #ffffff !important;
+      border: 1px solid #333333 !important;
     }
   
     .extension-widget .chat-message.assistant .message-text,
@@ -15,136 +26,128 @@
       color: #ffffff !important;
       border: none !important;
     }
-    
-    /* Main widget */
-    .extension-widget.expanded {
-        background: #262624;
-        border: 1px solid #333333;
-    }
   
-    /* Terminal icon */
-    .terminal-icon {
-        background-color: #2a2a2a;
-    }
-  
-    /* Header */
+    /* Header colors - websites often override headers */
     .extension-header {
-        background: #222222;
-        border-bottom: 1px solid #333333;
+      background: #222222 !important;
+      border-bottom: 1px solid #333333 !important;
+      color: #e6e6e6 !important;
     }
   
     .extension-header h3 {
-        color: #e6e6e6;
+      color: #e6e6e6 !important;
     }
   
-    /* Content area */
+    /* Content area colors */
     .extension-content {
-        background: #262624;
-    }
-  
-    /* Chat messages container */
-    .chat-messages {
-        background: #262624;
-    }
-  
-    /* User messages - Light theme */
-    .chat-message.user .message-text {
-      background: #141413;
+      background: #262624 !important;
       color: #ffffff !important;
     }
   
-    /* Assistant messages - Light theme */
-    .chat-message.assistant .message-text {
-        background: transparent;
-        color:#ffffff !important;
-        border: none !important;
+    .chat-messages {
+      background: #262624 !important;
+      color: #ffffff !important;
     }
   
-    /* Typing indicator */
-    .chat-message.typing .message-text {
-        background: #2a2a2a;
-        border: 1px solid #333333;
-    }
-  
-    .typing-dot {
-        background: #666666;
-    }
-  
-    /* Chat input container */
+    /* Input styling - forms are heavily styled by websites */
     .chat-input-container {
-        background: #30302e;
-        border: 1px solid #444444;
+      background: #30302e !important;
+      border: 1px solid #444444 !important;
+      box-shadow: none !important;
     }
   
-    /* Chat input */
     .chat-input,
     .chat-input:not(:focus),
     .chat-input:not(:hover),
     .chat-input:not(:active) {
       background: transparent !important;
       border: none !important;
-      border-color: transparent !important;
-      border-width: 0 !important;
-      border-style: none !important;
       color: #ffffff !important;
       -webkit-appearance: none !important;
       -moz-appearance: none !important;
       appearance: none !important;
       box-shadow: none !important;
+      outline: none !important;
     }
   
     .chat-input:hover,
     .chat-input:focus,
     .chat-input:active {
       border: none !important;
-      border-color: transparent !important;
-      border-width: 0 !important;
-      border-style: none !important;
       outline: none !important;
       box-shadow: none !important;
-      -webkit-appearance: none !important;
-      -moz-appearance: none !important;
-      appearance: none !important;
+      color: #ffffff !important;
+      background: transparent !important;
     }
   
     .chat-input::placeholder {
-        color: #888888;
+      color: #888888 !important;
     }
   
-    /* Action buttons */
+    /* Button colors - websites have global button styles */
     .custom-action-btn {
-      background: transparent;
-      color: #e6e6e6;
-      border: 1px solid #444444;
+      background: transparent !important;
+      color: #e6e6e6 !important;
+      border: 1px solid #444444 !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      appearance: none !important;
+      box-shadow: none !important;
     }
   
+    /* Terminal icon - can be overridden */
+    .terminal-icon {
+      background-color: #2a2a2a !important;
+      border: 1px solid #333333 !important;
+      color: #ffffff !important;
+    }
+  
+    /* Typing indicator */
+    .chat-message.typing .message-text {
+      background: #2a2a2a !important;
+      border: 1px solid #333333 !important;
+      color: #ffffff !important;
+    }
+  
+    .typing-dot {
+      background: #666666 !important;
+    }
+  
+    /* ✅ MEDIUM PRIORITY - Use !important for key functionality */
+    
     .custom-action-btn:hover {
-      background: #262624;
+      background: #262624 !important;
+      border-color: #555555 !important;
     }
   
     .save-timestamp-action {
-        background: #d97706;
-        color: #ffffff;
-        border: 1px solid #b45309;
+      background: #d97706 !important;
+      color: #ffffff !important;
+      border: 1px solid #b45309 !important;
+      box-shadow: none !important;
     }
   
     .save-timestamp-action:hover {
-      background: #0284c7;
+      background: #b45309 !important;
+      border-color: #92400e !important;
     }
   
-    /* Scrollbar */
+    /* ❌ LOW PRIORITY - Usually don't need !important */
+    
+    /* Scrollbar - rarely overridden */
     .chat-messages::-webkit-scrollbar-track,
     .chat-input::-webkit-scrollbar-track {
-        background: #1a1a1a;
+      background: #1a1a1a;
     }
   
     .chat-messages::-webkit-scrollbar-thumb,
     .chat-input::-webkit-scrollbar-thumb {
-        background: #444444;
+      background: #444444;
     }
   
-    /* Resize handle */
+    /* Resize handle - decorative */
     .resize-handle.se::after {
       border-bottom-color: #64748b;
     }
-  } 
+  }
+  

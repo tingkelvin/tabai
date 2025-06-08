@@ -19,11 +19,6 @@ const WidgetHeader = ({
           onClick={handleMinimize}
           title="Minimize"
         />
-        <button
-          className="close-btn"
-          onClick={handleClose}
-          title="Close"
-        />
       </div>
       <h3>{title || new URL(currentUrl).hostname}</h3>
     </div>

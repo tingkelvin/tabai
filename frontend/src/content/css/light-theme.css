@@ -1,143 +1,148 @@
 /* ====================================
-   13. LIGHT THEME (SYSTEM PREFERENCE)
+   LIGHT THEME - WITH STRATEGIC !important
    ==================================== */
 
-@media (prefers-color-scheme: light) {
-  /* Main widget */
-  .extension-widget.expanded {
-    background: #faf9f5;
-    border: 1px solid #e2e8f0;
+   @media (prefers-color-scheme: light) {
+    /* ✅ HIGH PRIORITY - ALWAYS use !important */
+    
+    /* Main widget */
+    .extension-widget.expanded {
+      background: #faf9f5 !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    }
+  
+    /* All text colors */
+    .extension-widget .chat-message.user .message-text,
+    .extension-widget .chat-message.user .message-text * {
+      background: #f0eee6 !important;
+      color: #161615 !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+  
+    .extension-widget .chat-message.assistant .message-text,
+    .extension-widget .chat-message.assistant .message-text * {
+      background: transparent !important;
+      color: #0f172a !important;
+      border: none !important;
+    }
+  
+    /* Header colors */
+    .extension-header {
+      background: #f1f5f9 !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      color: #0f172a !important;
+    }
+  
+    .extension-header h3 {
+      color: #0f172a !important;
+    }
+  
+    /* Content areas */
+    .extension-content {
+      background: #faf9f5 !important;
+      color: #0f172a !important;
+    }
+  
+    .chat-messages {
+      background: #faf9f5 !important;
+      color: #0f172a !important;
+    }
+  
+    /* Input styling */
+    .chat-input-container {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: none !important;
+    }
+  
+    .chat-input,
+    .chat-input:not(:focus),
+    .chat-input:not(:hover),
+    .chat-input:not(:active) {
+      background: transparent !important;
+      border: none !important;
+      color: #0f172a !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      appearance: none !important;
+      box-shadow: none !important;
+      outline: none !important;
+    }
+  
+    .chat-input:hover,
+    .chat-input:focus,
+    .chat-input:active {
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      color: #0f172a !important;
+      background: transparent !important;
+    }
+  
+    .chat-input::placeholder {
+      color: #64748b !important;
+    }
+  
+    /* Button colors */
+    .custom-action-btn {
+      background: transparent !important;
+      color: #334155 !important;
+      border: 1px solid #cbd5e1 !important;
+    }
+  
+    /* Terminal icon */
+    .terminal-icon {
+      background-color: #f1f5f9 !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #0f172a !important;
+    }
+  
+    /* Typing indicator */
+    .chat-message.typing .message-text {
+      background: #f1f5f9 !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #0f172a !important;
+    }
+  
+    .typing-dot {
+      background: #64748b !important;
+    }
+  
+    /* ✅ MEDIUM PRIORITY */
+    
+    .custom-action-btn:hover {
+      background: #faf9f5 !important;
+      border-color: #94a3b8 !important;
+    }
+  
+    .save-timestamp-action {
+      background: #0ea5e9 !important;
+      color: #ffffff !important;
+      border: 1px solid #0284c7 !important;
+      box-shadow: none !important;
+    }
+  
+    .save-timestamp-action:hover {
+      background: #0284c7 !important;
+      border-color: #0369a1 !important;
+    }
+  
+    /* ❌ LOW PRIORITY - Usually don't need !important */
+    
+    /* Scrollbar */
+    .chat-messages::-webkit-scrollbar-track,
+    .chat-input::-webkit-scrollbar-track {
+      background: #f8fafc;
+    }
+  
+    .chat-messages::-webkit-scrollbar-thumb,
+    .chat-input::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+    }
+  
+    /* Resize handle */
+    .resize-handle.se::after {
+      border-bottom-color: #64748b;
+    }
   }
-
-  /* Terminal icon */
-  .terminal-icon {
-    background-color: #f1f5f9;
-  }
-
-  /* Header */
-  .extension-header {
-    background: #f1f5f9;
-    border-bottom: 1px solid #e2e8f0;
-  }
-
-  .extension-header h3 {
-    color: #0f172a;
-  }
-
-  /* Content area */
-  .extension-content {
-    background: #faf9f5;
-  }
-
-  /* Chat messages container */
-  .chat-messages {
-    background: #faf9f5;
-  }
-
-  /* User messages - Light theme */
-  .chat-message.user .message-text {
-    background: #f0eee6;
-    color: #161615;
-  }
-
-  /* Assistant messages - Light theme */
-  .chat-message.assistant .message-text {
-    background: transparent;
-    color: #0f172a;
-    border: none !important;
-  }
-
-  /* Typing indicator */
-  .chat-message.typing .message-text {
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
-    padding: 8px 12px;
-  }
-
-  .typing-indicator {
-    display: flex;
-    align-items: center;
-  }
-
-  .typing-dot {
-    background: #64748b;
-  }
-
-  /* Chat input container */
-  .chat-input-container {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-  }
-
-  /* Chat input */
-  .chat-input,
-  .chat-input:not(:focus),
-  .chat-input:not(:hover),
-  .chat-input:not(:active) {
-    background: transparent !important;
-    border: none !important;
-    border-color: transparent !important;
-    border-width: 0 !important;
-    border-style: none !important;
-    color: #0f172a;
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    appearance: none !important;
-    box-shadow: none !important;
-  }
-
-  .chat-input:hover,
-  .chat-input:focus,
-  .chat-input:active {
-    border: none !important;
-    border-color: transparent !important;
-    border-width: 0 !important;
-    border-style: none !important;
-    outline: none !important;
-    box-shadow: none !important;
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    appearance: none !important;
-  }
-
-  .chat-input::placeholder {
-    color: #64748b;
-  }
-
-  /* Action buttons */
-  .custom-action-btn {
-    background: transparent;
-    color: #334155;
-    border: 1px solid #cbd5e1;
-  }
-
-  .custom-action-btn:hover {
-    background: #faf9f5;
-  }
-
-  .save-timestamp-action {
-    background: #0ea5e9;
-    color: #ffffff;
-    border: 1px solid #0284c7;
-  }
-
-  .save-timestamp-action:hover {
-    background: #0284c7;
-  }
-
-  /* Scrollbar */
-  .chat-messages::-webkit-scrollbar-track,
-  .chat-input::-webkit-scrollbar-track {
-    background: #f8fafc;
-  }
-
-  .chat-messages::-webkit-scrollbar-thumb,
-  .chat-input::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-  }
-
-  /* Resize handle */
-  .resize-handle.se::after {
-    border-bottom-color: #64748b;
-  }
-} 
