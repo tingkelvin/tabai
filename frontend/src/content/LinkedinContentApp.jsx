@@ -4,6 +4,7 @@ import { useLinkedInUrlTracking } from './hooks/useLinkedInUrlTracking';
 import { useSimpleFormDetector } from './hooks/useSimpleFormDetector';
 import { useChat } from './hooks/useChat';
 import ContentApp from './ContentApp';
+import {SummaryIcon, SalaryIcon, DutiesIcon, ResumeIcon} from './components/Icons'
 
 const LinkedinContentApp = () => {
   const { jobObject,  formattedTitle } = useLinkedInUrlTracking();
@@ -129,44 +130,46 @@ const LinkedinContentApp = () => {
 
   }, [jobObject, chatHook, resume]);
   
-  const linkedinActions = [
-    {
-      id: 'generate-summary',
-      label: 'Summary',
-      icon: '📋',
-      onClick: () => ask("Provide a summary of this job posting"),
-      isVisible: () => !!jobObject,
-      className: 'summary-action',
-      title: 'Generate a summary of the job'
-    },
-    {
-      id: 'salary-info',
-      label: 'Salary',
-      icon: '💰',
-      onClick: () => ask("What is the salary range for this position?"),
-      isVisible: () => !!jobObject,
-      className: 'salary-action',
-      title: 'Get salary information'
-    },
-    {
-      id: 'job-duties',
-      label: 'Duties',
-      icon: '📝',
-      onClick: () => ask("What are the main duties and responsibilities?"),
-      isVisible: () => !!jobObject,
-      className: 'duties-action',
-      title: 'Learn about job duties'
-    },
-    {
-      id: 'resume-fit',
-      label: 'Resume Fit',
-      icon: '🎯',
-      onClick: () => ask("Is my resume a good fit for this job?", true),
-      isVisible: () => !!jobObject,
-      className: 'resume-fit-action',
-      title: 'Check if your resume matches this job'
-    }
-  ];
+
+// Updated actions array with SVG icons
+const linkedinActions = [
+  {
+    id: 'generate-summary',
+    label: 'Summary',
+    icon: <SummaryIcon />,
+    onClick: () => ask("Provide a summary of this job posting"),
+    isVisible: () => !!jobObject,
+    className: 'summary-action',
+    title: 'Generate a summary of the job'
+  },
+  {
+    id: 'salary-info',
+    label: 'Salary',
+    icon: <SalaryIcon />,
+    onClick: () => ask("What is the salary range for this position?"),
+    isVisible: () => !!jobObject,
+    className: 'salary-action',
+    title: 'Get salary information'
+  },
+  {
+    id: 'job-duties',
+    label: 'Duties',
+    icon: <DutiesIcon />,
+    onClick: () => ask("What are the main duties and responsibilities?"),
+    isVisible: () => !!jobObject,
+    className: 'duties-action',
+    title: 'Learn about job duties'
+  },
+  {
+    id: 'resume-fit',
+    label: 'Resume Fit',
+    icon: <ResumeIcon />,
+    onClick: () => ask("Is my resume a good fit for this job?", true),
+    isVisible: () => !!jobObject,
+    className: 'resume-fit-action',
+    title: 'Check if your resume matches this job'
+  }
+];
 
   return (
     <ContentApp 

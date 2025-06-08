@@ -5,6 +5,7 @@ import { useYoutubeTranscript } from './hooks/useYoutubeTranscript';
 import { useYoutubeChat } from './hooks/useYoutubeChat';
 import { useYoutubeUrlTracking } from './hooks/useYoutubeUrlTracking';
 import { downloadTranscriptFile } from './utils/transcriptHelpers';
+import { PlayIconFilled, DownloadIconAlt, SummaryIcon} from './components/Icons';
 
 const YoutubeContentApp = () => {
   const [currentVideoId, setCurrentVideoId] = useState(null);
@@ -105,7 +106,7 @@ const YoutubeContentApp = () => {
     {
       id: 'resume-video',
       label: 'Resume',
-      icon: '▶️',
+      icon: <PlayIconFilled />,
       onClick: youTubeChatHook.handleResumeVideo,
       isVisible: () => youTubeChatHook.showResumeButton,
       className: 'resume-video-action',
@@ -114,7 +115,7 @@ const YoutubeContentApp = () => {
     {
       id: 'generate-summary',
       label: 'Summary',
-      icon: '📋',
+      icon: <SummaryIcon />,
       onClick: generateSummary,
       isVisible: () => transcript.length > 0 && !isLoadingTranscript,
       className: 'summary-action',
@@ -123,7 +124,7 @@ const YoutubeContentApp = () => {
     {
       id: 'download-transcript',
       label: 'Transcript',
-      icon: '💾',
+      icon: <DownloadIconAlt />,
       onClick: downloadTranscript,
       isVisible: () => transcript.length > 0 && !isLoadingTranscript,
       className: 'download-action',

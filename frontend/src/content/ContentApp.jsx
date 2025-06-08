@@ -7,7 +7,7 @@ import { useDragAndResize } from './hooks/useDragAndResize';
 import { useChat } from './hooks/useChat';
 import { calculateInitialPositions, parseMarkdownLine } from './utils/helpers';
 import { WIDGET_CONFIG, RESIZE_TYPES } from './utils/constants';
-
+import { getFileIcon } from './components/Icons';
 // Import new components
 import WidgetHeader from './components/WidgetHeader';
 import ChatMessages from './components/ChatMessages';
@@ -86,17 +86,17 @@ const ContentApp = ({
     }
   }, [addUserMessage]);
 
-  // Create file action buttons
-  const fileActionButtons = uploadedFiles.map((file, index) => ({
+  // File action with dynamic icons based on file type
+  const fileActionButtonsWithTypes = uploadedFiles.map((file, index) => ({
     id: `file-${index}`,
     label: formatFileName(file.name),
-    icon: '📄',
+    icon: getFileIcon(file.name),
     onClick: () => {
-      // Handle file click - you can customize this behavior
       addUserMessage(`Selected file: ${file.name}`);
     },
     className: 'file-action'
   }));
+
 
   // Default upload action
   const defaultUploadAction = {
@@ -170,7 +170,7 @@ const ContentApp = ({
   }, [hasDragged, isMinimized, iconPosition, widgetSize, constrainWidgetPosition, updateWidgetPosition]);
 
   // Combine all actions
-  const allActions = [defaultUploadAction, ...fileActionButtons, ...customActions];
+  const allActions = [defaultUploadAction, ...fileActionButtonsWithTypes, ...customActions];
 
   // Filter and render visible custom actions
   const visibleActions = allActions.filter(action => 

@@ -1,8 +1,21 @@
 /* ====================================
-   13. LIGHT THEME (SYSTEM PREFERENCE)
+   13. DARK THEME (SYSTEM PREFERENCE)
    ==================================== */
 
    @media (prefers-color-scheme: dark) {
+    .extension-widget .chat-message.user .message-text,
+    .extension-widget .chat-message.user .message-text * {
+      background: #141413 !important;
+      color: #ffffff !important;
+    }
+  
+    .extension-widget .chat-message.assistant .message-text,
+    .extension-widget .chat-message.assistant .message-text * {
+      background: transparent !important;
+      color: #ffffff !important;
+      border: none !important;
+    }
+    
     /* Main widget */
     .extension-widget.expanded {
         background: #262624;
@@ -37,13 +50,13 @@
     /* User messages - Light theme */
     .chat-message.user .message-text {
       background: #141413;
-      color: #ffffff;
+      color: #ffffff !important;
     }
   
     /* Assistant messages - Light theme */
     .chat-message.assistant .message-text {
         background: transparent;
-        color:#ffffff;
+        color:#ffffff !important;
         border: none !important;
     }
   
@@ -73,7 +86,7 @@
       border-color: transparent !important;
       border-width: 0 !important;
       border-style: none !important;
-      color: #ffffff;
+      color: #ffffff !important;
       -webkit-appearance: none !important;
       -moz-appearance: none !important;
       appearance: none !important;

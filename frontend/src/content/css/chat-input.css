@@ -4,10 +4,10 @@
 
 .chat-input-container {
   position: relative;
-  margin: 0 16px 16px 16px;
+  margin: 0 16px 0px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0px;
   border-radius: 12px;
   padding: 8px;
 }
@@ -22,7 +22,6 @@
   border-color: transparent !important;
   border-width: 0 !important;
   border-style: none !important;
-  color: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 13px;
   line-height: 22px;
@@ -56,10 +55,12 @@
   -webkit-appearance: none !important;
   -moz-appearance: none !important;
   appearance: none !important;
+  color: #ffffff !important;
 }
 
 .chat-input::placeholder {
   line-height: 22px;
+  color: #888888 !important;
 }
 
 .custom-actions-container {
@@ -96,4 +97,87 @@
   background: #333333;
   color: #e6e6e6;
   border: 1px solid #444444;
+}
+
+.save-timestamp-action {
+  background: #d97706;
+  color: #ffffff;
+  border: 1px solid #b45309;
+}
+
+/* SVG Icon Styles */
+.custom-action-btn svg {
+  /* Ensure SVG icons inherit the button's color */
+  color: inherit;
+  stroke: currentColor;
+  fill: none;
+  
+  /* Perfect alignment */
+  vertical-align: middle;
+  margin-right: 6px;
+  
+  /* Smooth transitions */
+  transition: all 0.2s ease;
+}
+
+/* For filled SVG icons */
+.custom-action-btn svg[fill="currentColor"] {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* Icon sizing adjustments */
+.action-icon svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* Hover effects for SVG icons */
+.custom-action-btn:hover svg {
+  transform: scale(1.1);
+}
+
+/* Specific button type styling */
+.resume-video-action svg {
+  /* Play button can be slightly larger */
+  width: 16px;
+  height: 16px;
+}
+
+.download-action svg {
+  /* Download arrow animation on hover */
+  transition: transform 0.3s ease;
+}
+
+.download-action:hover svg {
+  transform: translateY(1px);
+}
+
+/* File action specific styling */
+.file-action svg {
+  opacity: 0.8;
+}
+
+.file-action:hover svg {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+/* Dark/Light theme adjustments */
+@media (prefers-color-scheme: dark) {
+  .custom-action-btn svg {
+    stroke: currentColor;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  .custom-action-btn svg {
+    stroke: currentColor;
+    opacity: 0.9;
+  }
+  
+  .custom-action-btn:hover svg {
+    opacity: 1;
+  }
 }
