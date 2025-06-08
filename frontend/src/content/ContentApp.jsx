@@ -8,6 +8,12 @@ import { useChat } from './hooks/useChat';
 import { calculateInitialPositions, parseMarkdownLine } from './utils/helpers';
 import { WIDGET_CONFIG, RESIZE_TYPES } from './utils/constants';
 
+// Import new components
+import WidgetHeader from './components/WidgetHeader';
+import ChatMessages from './components/ChatMessages';
+import ChatInput from './components/ChatInput';
+import ResizeHandles from './components/ResizeHandles';
+
 const ContentApp = ({ 
   customChatHook,
   customActions = [], // Array of custom action objects
@@ -146,102 +152,34 @@ const ContentApp = ({
         height: widgetSize.height,
       }}
     >
-      <div
-        className={`extension-header ${dragging ? 'dragging' : ''}`}
-        onMouseDown={startDrag}
-      >
-        <div className="extension-controls">
-          <button
-            className="minimize-btn"
-            onClick={handleMinimize}
-            title="Minimize"
-          />
-          <button
-            className="close-btn"
-            onClick={handleClose}
-            title="Close"
-          />
-        </div>
-        <h3>{title || new URL(currentUrl).hostname}</h3>
-      </div>
+      <WidgetHeader
+        dragging={dragging}
+        startDrag={startDrag}
+        handleMinimize={handleMinimize}
+        handleClose={handleClose}
+        title={title}
+        currentUrl={currentUrl}
+      />
 
       <div className="extension-content">
         <div className="chat-section">
-          <div className="chat-messages" ref={chatMessagesRef}>
-            {chatMessages.map((message) => (
-              <div key={message.id} className={`chat-message ${message.type}`}>
-                <div className="message-content">
-                  <div className="message-text">
-                    {message.content.split('\n').map((line, index) => (
-                      <div key={index}>
-                        {parseMarkdownLine(line)}
-                        {index < message.content.split('\n').length - 1 && <br />}
-                      </div>
-                    ))}
-                  </div>
-        
-                </div>
-              </div>
-            ))}
-            
-            {isTyping && (
-              <div className="chat-message assistant typing">
-                <div className="message-content">
-                  <div className="typing-indicator">
-                    <div className="typing-dot"></div>
-                    <div className="typing-dot"></div>
-                    <div className="typing-dot"></div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          <ChatMessages
+            chatMessages={chatMessages}
+            isTyping={isTyping}
+            chatMessagesRef={chatMessagesRef}
+          />
 
-          {/* Chat input container with custom actions */}
-          <div className="chat-input-container">
-            {/* Render custom action buttons */}
-            {visibleActions.length > 0 && (
-              <div className="custom-actions-container">
-                {visibleActions.map((action, index) => (
-                  <button
-                    key={action.id || index}
-                    className={`custom-action-btn ${action.className || ''}`}
-                    onClick={action.onClick}
-                    title={action.title}
-                    disabled={action.disabled}
-                    style={action.style}
-                  >
-                    {action.icon && <span className="action-icon">{action.icon}</span>}
-                    {action.label}
-                  </button>
-                ))}
-              </div>
-            )}
-            
-            <textarea
-              ref={chatInputRef}
-              className="chat-input"
-              value={chatInput}
-              onChange={handleInputChange}
-              onKeyPress={handleKeyPress}
-              placeholder="Ask me anything..."
-              rows="1"
-              autoComplete="off"
-              spellCheck="false"
-            />
-          </div>
+          <ChatInput
+            visibleActions={visibleActions}
+            chatInputRef={chatInputRef}
+            chatInput={chatInput}
+            handleInputChange={handleInputChange}
+            handleKeyPress={handleKeyPress}
+          />
         </div>
       </div>
 
-      {/* Resize Handles - 4 Corners */}
-      {Object.values(RESIZE_TYPES).map(type => (
-        <div 
-          key={type}
-          className={`resize-handle ${type}`} 
-          onMouseDown={(e) => startResize(e, type)}
-          title="Resize"
-        />
-      ))}
+      <ResizeHandles startResize={startResize} />
     </div>
   );
 };
