@@ -52,14 +52,14 @@ export const useChat = () => {
         data: { message: messageToSend }
       });
       
-      const responseContent = reply.content || "I'm having trouble processing your request.";
+      const responseContent = reply.content || "I do not find any response, sorry.";
       
       // ALWAYS add the AI response to chat (even when addToChat is false)
       // addToChat: false only affects the user message, not the AI response
       const response = {
         id: Date.now() + 1,
         type: MESSAGE_TYPES.ASSISTANT,
-        content: responseContent,
+        content: responseContent.trim(),
         timestamp: new Date()
       };
       
