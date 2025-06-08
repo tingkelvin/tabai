@@ -1,23 +1,24 @@
-import React from 'react';
-import { parseMarkdownLine } from '../utils/helpers';
+import React, { useRef, useEffect } from 'react';
+import { parseMarkdownLine, parseMessageContent } from '../utils/helpers';
 
 const ChatMessages = ({ 
   chatMessages, 
   isTyping, 
   chatMessagesRef 
 }) => {
+  useEffect(() => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
+  }, [chatMessages, isTyping]);
+
   return (
     <div className="chat-messages" ref={chatMessagesRef}>
       {chatMessages.map((message) => (
         <div key={message.id} className={`chat-message ${message.type}`}>
           <div className="message-content">
             <div className="message-text">
-              {message.content.split('\n').map((line, index) => (
-                <div key={index}>
-                  {parseMarkdownLine(line)}
-                  {index < message.content.split('\n').length - 1 && <br />}
-                </div>
-              ))}
+              {parseMessageContent(message.content)}
             </div>
           </div>
         </div>
