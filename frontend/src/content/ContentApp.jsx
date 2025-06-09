@@ -1,18 +1,22 @@
 // ContentApp.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TerminalIcon from './TerminalIcon';
-import { useUrlTracking } from './hooks/useUrlTracking';
-import { usePosition } from './hooks/usePosition';
-import { useDragAndResize } from './hooks/useDragAndResize';
-import { useChat } from './hooks/useChat';
-import { calculateInitialPositions, parseMarkdownLine } from './utils/helpers';
-import { WIDGET_CONFIG, RESIZE_TYPES } from './utils/constants';
+import { calculateInitialPositions} from './utils/helpers';
+import { WIDGET_CONFIG } from './utils/constants';
 import { getFileIcon } from './components/Icons';
+
 // Import new components
 import WidgetHeader from './components/WidgetHeader';
 import ChatMessages from './components/ChatMessages';
 import ChatInput from './components/ChatInput';
 import ResizeHandles from './components/ResizeHandles';
+
+// Hooks
+import { useUrlTracking } from './hooks/useUrlTracking';
+import { usePosition } from './hooks/usePosition';
+import { useDragAndResize } from './hooks/useDragAndResize';
+import { useChat } from './hooks/useChat';
+import { useFileManagement } from './hooks/useFileManagement';
 
 const ContentApp = ({ 
   customChatHook,
@@ -21,7 +25,6 @@ const ContentApp = ({
 }) => {
   const [isMinimized, setIsMinimized] = useState(true);
   const fileInputRef = useRef(null);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
 
   // URL tracking - single source of truth
   const currentUrl = useUrlTracking();
@@ -56,43 +59,32 @@ const ContentApp = ({
     updateMessage,
     setIsTyping,
     addUserMessage,
-    addAssistantMessage 
+    addAssistantMessage,
+    setGetFileContentsFunction
   } = chatHook;
 
-  // Format file name
-  const formatFileName = (fileName) => {
-    const lastDotIndex = fileName.lastIndexOf('.');
-    if (lastDotIndex === -1) return fileName;
-    
-    const name = fileName.substring(0, lastDotIndex);
-    const extension = fileName.substring(lastDotIndex);
-    
-    if (name.length > 5) {
-      return `${name.substring(0, 5)}...${extension}`;
-    }
-    return fileName;
-  };
+  const {
+    uploadedFiles,
+    formatFileName,
+    handleFileUpload,
+    loadSessionFiles,
+    displayFileContent,
+    getAllContentAsString
+  } = useFileManagement(addUserMessage);
 
-  // Handle file upload
-  const handleFileUpload = useCallback((event) => {
-    const file = event.target.files[0];
-    if (file) {
-      // Add file to uploaded files
-      setUploadedFiles(prev => [...prev, file]);
-      // Add message with the file name
-      addUserMessage(`Uploaded file: ${file.name}`);
-      // Reset the file input
-      event.target.value = '';
-    }
-  }, [addUserMessage]);
+  // Handle URL changes
+  useEffect(() => {
+    loadSessionFiles();
+    setGetFileContentsFunction(getAllContentAsString);
+  }, [uploadedFiles]);
 
   // File action with dynamic icons based on file type
   const fileActionButtonsWithTypes = uploadedFiles.map((file, index) => ({
     id: `file-${index}`,
     label: formatFileName(file.name),
     icon: getFileIcon(file.name),
-    onClick: () => {
-      addUserMessage(`Selected file: ${file.name}`);
+    onClick: async () => {
+      await displayFileContent(file)
     },
     className: 'file-action'
   }));

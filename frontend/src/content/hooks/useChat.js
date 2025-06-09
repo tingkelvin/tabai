@@ -1,15 +1,20 @@
 // hooks/useChat.js - Simplified version
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { MESSAGE_TYPES } from '../utils/constants';
 
 export const useChat = () => {
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
-
+  const getFileContentsFunctionRef = useRef(null);
 
   const sendMessage = useCallback(async (context = null, options = {}) => {
     const { returnReply = false, addToChat = true } = options;
+
+    if(getFileContentsFunctionRef){
+      const fileContent = await getFileContentsFunctionRef.current();
+      console.log(fileContent);
+    }
     
     // Fix: Allow context-only messages (for ask function)
     if (!chatInput.trim() && context == null) return;
@@ -191,6 +196,11 @@ export const useChat = () => {
     );
   }, []);
 
+  const setGetFileContentsFunction = (fn) => {
+    getFileContentsFunctionRef.current = fn;
+  };
+  
+
   return {
     chatInput,
     chatMessages,
@@ -205,6 +215,7 @@ export const useChat = () => {
     updateMessage,
     setIsTyping,
     addUserMessage,
-    addAssistantMessage
+    addAssistantMessage,
+    setGetFileContentsFunction
   };
 };
