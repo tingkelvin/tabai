@@ -22,8 +22,8 @@
 
     
     .extension-widget .chat-message.assistant .message-text,
-    .extension-widget .chat-message.assistant .message-text * {
-      /* background: transparent !important; */
+    .extension-widget .chat-message.assistant .message-text *:not(.typing-indicator):not(.typing-dot) {
+      background: transparent !important;
       color: #ffffff !important;
       border: none !important;
     }
