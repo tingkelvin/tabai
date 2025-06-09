@@ -22,17 +22,23 @@ const LinkedinContentApp = () => {
 
       const getSuggestion = async () => {
         // Very specific prompt for short, direct answers
-        const prompt = `
-  Job: ${JSON.stringify(jobObject, null, 2)}
-  Resume: ${resume}
-  I need to fill this field: "${focusedElement.label}"
-  Platform: Linkedin
-  Rules: No explanations or additional text, reply in format ans:[your_answer_here]`;
+        const context = `Job: ${JSON.stringify(jobObject, null, 2)}`
+
+        const message = `
+          I need to fill this field: "${focusedElement.label}"
+          Platform: Linkedin
+          Rules: No explanations or additional text, reply in format ans:[your_answer_here]`;
         
-        const suggestion = await chatHook.sendMessage(prompt, { 
-          returnReply: true, 
-          addToChat: false 
-        });
+        const suggestion = await chatHook.sendMessage(
+          context,
+          message, 
+          { 
+            returnReply: true, 
+            addToChat: false ,
+            addResponseToChat: false,
+            useFileContents: true
+          }
+        );
         
         // Extract answer from ans:[...] format
         let cleanSuggestion = suggestion;
@@ -112,7 +118,7 @@ const LinkedinContentApp = () => {
 
   // Auto-extract when new job is detected
 
-  const ask = useCallback(async (question, resumeNeeded = false) => {
+  const ask = async (question, resumeNeeded = false) => {
     if (!jobObject) {
       chatHook.addAssistantMessage("No job posting found to analyze.");
       return;
@@ -121,14 +127,12 @@ const LinkedinContentApp = () => {
     console.log('Asking question about job:', question);
     chatHook.addUserMessage(question);
     
-    // Fix: Proper conditional string building
-    const summaryPrompt = `${question} ${resumeNeeded ? `Resume: ${resume}` : ""} Job Details: ${JSON.stringify(jobObject, null, 2)}`;
-    
-    // Fix: Await the response and manually add to chat
-    await chatHook.sendMessage(summaryPrompt, { addToChat: false });
-
-  }, [jobObject, chatHook, resume]);
-  
+    await chatHook.sendMessage(
+      `Job Details: ${JSON.stringify(jobObject, null, 2)}`, 
+      question, 
+      { addToChat: false, useFileContents: resumeNeeded }
+    );
+  };
 
 // Updated actions array with SVG icons
 const linkedinActions = [

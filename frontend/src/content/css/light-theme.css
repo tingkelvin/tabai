@@ -17,16 +17,18 @@
     .extension-widget .chat-message.user .message-text * {
       background: #f0eee6 !important;
       color: #161615 !important;
-      border: 1px solid #e2e8f0 !important;
+      border: none !important;
     }
   
+    
     .extension-widget .chat-message.assistant .message-text,
     .extension-widget .chat-message.assistant .message-text * {
-      background: transparent !important;
+      /* background: transparent !important; */
       color: #0f172a !important;
       border: none !important;
     }
   
+
     /* Header colors */
     .extension-header {
       background: #f1f5f9 !important;

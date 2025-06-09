@@ -61,13 +61,13 @@ const YoutubeContentApp = () => {
       for (let i = 0; i < fullTranscriptText.length; i += maxLength) {
         chunks.push(fullTranscriptText.slice(i, i + maxLength));
       }
-      
-      const summaryPrompt = `Please provide a concise summary of this video transcript (presented in chunks):\n\nChunk 1/${chunks.length}:\n${chunks[0]}`;
-      console.log('Summary prompt:', summaryPrompt);
-      youTubeChatHook.sendMessage(summaryPrompt);
+      youTubeChatHook.sendMessage(`${chunks[0]}`, 'summary', {
+        useFileContents: false
+      })
     } else {
-      const summaryPrompt = `Please provide a concise summary of this video transcript:\n\n${fullTranscriptText}`;
-      youTubeChatHook.sendMessage(summaryPrompt);
+      youTubeChatHook.sendMessage(`${fullTranscriptText}`, 'summary', {
+        useFileContents: false
+      })
     }
   }, [transcript, youTubeChatHook]);
 
@@ -76,28 +76,16 @@ const YoutubeContentApp = () => {
     youTubeChatHook.addUserMessage("download transcript");
     if (!transcript.length) {
       console.log('No transcript available to download');
-      youTubeChatHook.addMessage({
-        type: 'system',
-        content: '❌ No transcript available to download'
-      });
+      youTubeChatHook.addAssistantMessage('❌ No transcript available to download')
       return;
     }
 
     try {
       const result = downloadTranscriptFile(transcript, videoId);
-      
-      // Show success message in chat
-      youTubeChatHook.addMessage({
-        type: 'system',
-        content: `✅ Transcript downloaded as ${result.format.name}`
-      });
-
+      youTubeChatHook.addAssistantMessage(`✅ Transcript downloaded as ${result.format.name}`)
     } catch (error) {
       console.error('Error downloading transcript:', error);
-      youTubeChatHook.addMessage({
-        type: 'system',
-        content: `❌ Error downloading transcript: ${error.message}`
-      });
+      youTubeChatHook.addAssistantMessage(`❌ Error downloading transcript: ${error.message}`)
     }
   }, [transcript, videoId, youTubeChatHook]);
 
