@@ -137,6 +137,15 @@ const LinkedinContentApp = () => {
 // Updated actions array with SVG icons
 const linkedinActions = [
   {
+    id: 'generate-cover-letter',
+    label: 'Cover letter',
+    icon: <SummaryIcon />,
+    onClick: () => ask("cover letter", true),
+    isVisible: () => !!jobObject,
+    className: 'cover-letter-action',
+    title: 'Generate a cover letter of the job'
+  },
+  {
     id: 'generate-summary',
     label: 'Summary',
     icon: <SummaryIcon />,

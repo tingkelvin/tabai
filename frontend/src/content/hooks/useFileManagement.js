@@ -6,6 +6,7 @@ export const useFileManagement = (addUserMessage) => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   // Remove fileContents cache to prevent memory leaks
   const fileContentsRef = useRef(new Map()); // Use Map for better memory management
+  const fileInputRef = useRef(null); // Add back the fileInputRef
   
   // Initialize the storage instance
   const sessionFileStorage = SessionFileStorage();
@@ -212,6 +213,7 @@ export const useFileManagement = (addUserMessage) => {
     displayFileContent,
     getAllContentAsString,
     removeFile,
-    cleanup // Export cleanup for component unmounting
+    cleanup, // Export cleanup for component unmounting
+    fileInputRef // Add back to returned object
   };
 };

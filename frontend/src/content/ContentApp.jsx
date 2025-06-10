@@ -263,7 +263,6 @@ const ContentApp = ({
         ref={fileInputRef}
         onChange={handleOptimizedFileUpload}
         style={{ display: 'none' }}
-        accept=".txt,.md,.json,.csv,.js,.jsx,.ts,.tsx,.py,.html,.css,.xml,.yml,.yaml" // Limit file types
       />
     </div>
   );
