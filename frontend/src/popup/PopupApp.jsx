@@ -217,40 +217,40 @@ const PopupApp = () => {
           {/* User Avatar */}
           {isAuthenticated && user && (
             <div className="flex items-center gap-2">
-              {user.picture ? (
-                <img 
-                  src={user.picture} 
-                  alt={user.name} 
-                  className="w-10 h-10 rounded-full border-2 border-white shadow-md"
-                />
-              ) : (
-                <div className="w-10 h-10 bg-gradient-to-br from-slate-200 to-slate-300 rounded-full flex items-center justify-center shadow-md">
-                  <User className="w-5 h-5 text-slate-600" />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+              <button 
+                onClick={toggleExtension}
+                disabled={!isAuthenticated}
+                className={`p-2 text-slate-400 rounded-xl transition-all duration-200 disabled:opacity-50 group ${
+                  isActive ? 'hover:bg-red-50' : 'hover:bg-emerald-50'
+                }`}
+                title={isActive ? "Stop Tab" : "Start Tab"}
+              >
+                {isActive ? (
+                  <ZapOff className="w-5 h-5 text-slate-600 group-hover:text-red-500 group-hover:rotate-12 transition-all duration-300" />
+                ) : (
+                  <Zap className="w-5 h-5 text-slate-600 group-hover:text-emerald-500 group-hover:rotate-12 transition-all duration-300" />
+                )}
+              </button>
 
-        {/* User Info Card */}
-        {isAuthenticated && user && (
-          <div className="relative bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-slate-200/50 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-slate-900 mb-0.5">{user.name}</p>
-                <p className="text-xs text-slate-600">{user.email}</p>
-              </div>
+              <button 
+                onClick={openSettings}
+                disabled={!isAuthenticated}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all duration-200 disabled:opacity-50 group"
+              >
+                <Settings className="w-5 h-5 text-slate-600 group-hover:rotate-90 transition-transform duration-300" />
+              </button>
+
               <button 
                 onClick={handleLogout}
                 disabled={isAuthenticating}
-                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200 disabled:opacity-50"
+                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200 disabled:opacity-50 group"
                 title="Sign out"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-5 h-5 text-slate-600 group-hover:text-red-500 group-hover:rotate-12 transition-all duration-300" />
               </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Main Content */}
@@ -338,20 +338,6 @@ const PopupApp = () => {
                   <p className="text-xs opacity-75">
                     {isActive ? 'Stop tabbing' : 'Start tabbing'}
                   </p>
-                </div>
-              </button>
-
-              <button 
-                onClick={openSettings}
-                disabled={!isAuthenticated}
-                className="w-full p-4 rounded-xl border-2 border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 text-slate-700 hover:from-slate-100 hover:to-slate-200 transition-all duration-300 flex items-center gap-4 group shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center shadow-sm">
-                  <Settings className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-semibold">Settings</p>
-                  <p className="text-xs text-slate-600">Coming soon...</p>
                 </div>
               </button>
             </div>
