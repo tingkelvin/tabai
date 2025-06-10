@@ -73,14 +73,52 @@
 
 .custom-action-btn {
   border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 12px;
+  padding: 0; /* Remove padding for better control */
+  font-size: 8px;
   font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  min-height: 32px;
+  justify-content: center;
+  gap: 1px;
+  min-height: 24px; /* Increased for better touch targets */
+  min-width: 24px;  /* Ensure minimum square size */
+  box-sizing: border-box;
+}
+
+/* Square button variant for single icons/characters */
+.custom-action-btn.square,
+.custom-action-btn[data-single-icon="true"] {
+  width: 32px;   /* Fixed square dimensions */
+  height: 32px;  /* Fixed square dimensions */
+  padding: 0;    /* No padding for perfect square */
+  gap: 0;        /* No gap for single items */
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* For buttons with text + icon */
+.custom-action-btn:not(.square):not([data-single-icon="true"]) {
+  padding: 6px 12px; /* Restore padding for text buttons */
+  min-width: auto;   /* Allow natural width */
+  height: 32px;      /* Fixed height for consistency */
+}
+
+/* Icon sizing for square buttons */
+.custom-action-btn.square .action-icon,
+.custom-action-btn[data-single-icon="true"] .action-icon {
+  font-size: 24px;
+  line-height: 1;
+  margin: 0;
+}
+
+.custom-action-btn.square svg,
+.custom-action-btn[data-single-icon="true"] svg {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  display: block;
+  /* Micro-adjustment - move up by 0.5px if needed */
+  transform: translateY(-0.5px);
 }
 
 .custom-action-btn:disabled {
@@ -114,7 +152,7 @@
   
   /* Perfect alignment */
   vertical-align: middle;
-  margin-right: 6px;
+  margin-right: 0px;
   
   /* Smooth transitions */
   transition: all 0.2s ease;

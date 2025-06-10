@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TerminalIcon from './TerminalIcon';
 import { calculateInitialPositions} from './utils/helpers';
 import { WIDGET_CONFIG } from './utils/constants';
-import { getFileIcon } from './components/Icons';
+import { getFileIcon, PlusIcon } from './components/Icons';
 
 // Import new components
 import WidgetHeader from './components/WidgetHeader';
@@ -94,7 +94,7 @@ const ContentApp = ({
   const defaultUploadAction = {
     id: 'upload-file',
     label: '',
-    icon: '+',
+    icon: <PlusIcon />,
     onClick: () => fileInputRef.current?.click(),
     className: 'upload-file-action'
   };
