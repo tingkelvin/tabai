@@ -25,6 +25,7 @@ const ContentApp = ({
 }) => {
   const [isMinimized, setIsMinimized] = useState(true);
   const fileInputRef = useRef(null);
+  const cleanupRef = useRef(null);
 
   // URL tracking - single source of truth
   const currentUrl = useUrlTracking();
@@ -70,35 +71,29 @@ const ContentApp = ({
     loadSessionFiles,
     displayFileContent,
     getAllContentAsString,
-    removeFile
+    removeFile,
+    cleanup: fileCleanup
   } = useFileManagement(addUserMessage);
 
-  // Handle URL changes
+  // Store cleanup function for unmounting
+  useEffect(() => {
+    cleanupRef.current = fileCleanup;
+  }, [fileCleanup]);
+
+  // Component cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (cleanupRef.current) {
+        cleanupRef.current();
+      }
+    };
+  }, []);
+
+  // Load session files and set getFileContentsFunction
   useEffect(() => {
     loadSessionFiles();
     setGetFileContentsFunction(getAllContentAsString);
-  }, [uploadedFiles]);
-
-  // File action with dynamic icons based on file type
-  const fileActionButtonsWithTypes = uploadedFiles.map((file, index) => ({
-    id: `file-${index}`,
-    label: formatFileName(file.name),
-    icon: getFileIcon(file.name),
-    onClick: async () => {
-      await removeFile(file)
-    },
-    className: 'file-action'
-  }));
-
-
-  // Default upload action
-  const defaultUploadAction = {
-    id: 'upload-file',
-    label: '',
-    icon: <PlusIcon />,
-    onClick: () => fileInputRef.current?.click(),
-    className: 'upload-file-action'
-  };
+  }, []);
 
   // Handle URL changes
   useEffect(() => {
@@ -131,6 +126,10 @@ const ContentApp = ({
   }, [chatMessages, isTyping]);
 
   const handleClose = useCallback(() => {
+    if (cleanupRef.current) {
+      cleanupRef.current();
+    }
+    
     const container = document.getElementById('react-extension-root');
     if (container) container.remove();
   }, []);
@@ -162,11 +161,44 @@ const ContentApp = ({
     }, 100);
   }, [hasDragged, isMinimized, iconPosition, widgetSize, constrainWidgetPosition, updateWidgetPosition]);
 
-  // Combine all actions
-  const allActions = [defaultUploadAction, ...fileActionButtonsWithTypes, ...customActions];
+  // Optimized file upload handler with better error handling
+  const handleOptimizedFileUpload = async (event) => {
+    try {
+      await handleFileUpload(event);
+    } catch (error) {
+      console.error('File upload failed:', error);
+      addUserMessage(`❌ Upload failed: ${error.message}`);
+    }
+  };
+
+  const fileActions = [
+    // Default upload action
+    {
+      id: 'upload-file',
+      label: '',
+      icon: <PlusIcon />,
+      onClick: () => fileInputRef.current?.click(),
+      className: 'upload-file-action'
+    },
+    // File action buttons with dynamic icons based on file type
+    ...uploadedFiles.map((file, index) => ({
+      id: `file-${index}`,
+      label: formatFileName(file.name),
+      icon: getFileIcon(file.name),
+      onClick: async () => {
+        try {
+          await removeFile(file);
+        } catch (error) {
+          console.error('File removal failed:', error);
+          addUserMessage(`❌ Failed to remove file: ${error.message}`);
+        }
+      },
+      className: 'file-action'
+    }))
+  ];
 
   // Filter and render visible custom actions
-  const visibleActions = allActions.filter(action => 
+  const actionButtons = customActions.filter(action => 
     typeof action.isVisible === 'function' ? action.isVisible() : action.isVisible !== false
   );
 
@@ -213,7 +245,8 @@ const ContentApp = ({
           />
 
           <ChatInput
-            visibleActions={visibleActions}
+            fileActions={fileActions}
+            actionButtons={actionButtons}
             chatInputRef={chatInputRef}
             chatInput={chatInput}
             handleInputChange={handleInputChange}
@@ -228,8 +261,9 @@ const ContentApp = ({
       <input
         type="file"
         ref={fileInputRef}
-        onChange={handleFileUpload}
+        onChange={handleOptimizedFileUpload}
         style={{ display: 'none' }}
+        accept=".txt,.md,.json,.csv,.js,.jsx,.ts,.tsx,.py,.html,.css,.xml,.yml,.yaml" // Limit file types
       />
     </div>
   );

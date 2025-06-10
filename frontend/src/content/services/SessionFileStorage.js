@@ -1,7 +1,8 @@
 const SessionFileStorage = () => {
   const STORAGE_KEY = 'session_uploaded_files';
-  const MAX_SIZE = 4 * 1024 * 1024; // 4MB limit
-  const MAX_TOTAL_SIZE = MAX_SIZE * 2; // 8MB total
+  const MAX_SIZE = 2 * 1024 * 1024; // Reduced to 2MB limit per file
+  const MAX_TOTAL_SIZE = 4 * 1024 * 1024; // Reduced to 4MB total
+  const MAX_FILES = 5; // Limit number of files
 
   const validateFile = (file) => {
     if (file.size > MAX_SIZE) {
@@ -9,6 +10,12 @@ const SessionFileStorage = () => {
     }
     
     const currentFiles = loadFiles();
+    
+    // Check file count limit
+    if (currentFiles.length >= MAX_FILES) {
+      throw new Error(`Maximum ${MAX_FILES} files allowed. Remove files first.`);
+    }
+    
     const totalSize = currentFiles.reduce((sum, f) => sum + f.size, 0);
     
     if (totalSize + file.size > MAX_TOTAL_SIZE) {
@@ -29,8 +36,24 @@ const SessionFileStorage = () => {
     
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
+      let timeoutId;
+      
+      // Add timeout to prevent hanging
+      timeoutId = setTimeout(() => {
+        reader.abort();
+        reject(new Error('File reading timeout'));
+      }, 30000); // 30 second timeout
+      
+      const cleanup = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        reader.onload = null;
+        reader.onerror = null;
+        reader.onabort = null;
+      };
       
       reader.onload = () => {
+        cleanup();
+        
         try {
           const fileData = {
             id: Date.now() + Math.random().toString(36).substr(2, 9),
@@ -45,22 +68,60 @@ const SessionFileStorage = () => {
           };
           
           const existingFiles = loadFiles();
+          
+          // Check for duplicates before adding
+          const isDuplicate = existingFiles.some(f => 
+            f.name === file.name && 
+            f.size === file.size && 
+            f.lastModified === file.lastModified
+          );
+          
+          if (isDuplicate) {
+            reject(new Error('File already exists'));
+            return;
+          }
+          
           existingFiles.push(fileData);
           
-          sessionStorage.setItem(STORAGE_KEY, JSON.stringify(existingFiles));
-          console.log(`📝 File saved to session: ${file.name} (will be lost on tab close)`);
-          resolve(fileData);
+          try {
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(existingFiles));
+            console.log(`📝 File saved to session: ${file.name} (${getFileSize(file.size)})`);
+            resolve(fileData);
+          } catch (storageError) {
+            if (storageError.name === 'QuotaExceededError') {
+              // Try to clean up and retry once
+              cleanup();
+              gc(); // Force garbage collection if available
+              
+              setTimeout(() => {
+                try {
+                  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(existingFiles));
+                  resolve(fileData);
+                } catch (retryError) {
+                  reject(new Error('Session storage quota exceeded. Try smaller files or close/reopen tab.'));
+                }
+              }, 100);
+            } else {
+              reject(storageError);
+            }
+          }
           
         } catch (error) {
-          if (error.name === 'QuotaExceededError') {
-            reject(new Error('Session storage quota exceeded. Try smaller files or close/reopen tab.'));
-          } else {
-            reject(error);
-          }
+          reject(error);
         }
       };
       
-      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.onerror = () => {
+        cleanup();
+        reject(new Error('Failed to read file'));
+      };
+      
+      reader.onabort = () => {
+        cleanup();
+        reject(new Error('File reading was aborted'));
+      };
+      
+      // Use ArrayBuffer instead of DataURL for better memory efficiency
       reader.readAsDataURL(file);
     });
   }
@@ -68,9 +129,32 @@ const SessionFileStorage = () => {
   const loadFiles = () => {
     try {
       const stored = sessionStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
+      if (!stored) return [];
+      
+      const files = JSON.parse(stored);
+      
+      // Clean up old files (older than 1 hour)
+      const oneHourAgo = Date.now() - (60 * 60 * 1000);
+      const validFiles = files.filter(f => {
+        const uploadTime = new Date(f.uploadDate).getTime();
+        return uploadTime > oneHourAgo;
+      });
+      
+      // If we cleaned any files, update storage
+      if (validFiles.length !== files.length) {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(validFiles));
+        console.log(`🧹 Cleaned ${files.length - validFiles.length} old files`);
+      }
+      
+      return validFiles;
     } catch (error) {
       console.error('Error loading session files:', error);
+      // If storage is corrupted, clear it
+      try {
+        sessionStorage.removeItem(STORAGE_KEY);
+      } catch (e) {
+        // Ignore cleanup errors
+      }
       return [];
     }
   }
@@ -81,6 +165,12 @@ const SessionFileStorage = () => {
       const filteredFiles = files.filter(f => f.id !== fileId);
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(filteredFiles));
       console.log(`🗑️ File deleted from session: ${fileId}`);
+      
+      // Force garbage collection hint
+      if (typeof gc === 'function') {
+        setTimeout(gc, 100);
+      }
+      
       return true;
     } catch (error) {
       console.error('Error deleting file:', error);
@@ -92,6 +182,12 @@ const SessionFileStorage = () => {
     try {
       sessionStorage.removeItem(STORAGE_KEY);
       console.log('🧹 All session files cleared');
+      
+      // Force garbage collection hint
+      if (typeof gc === 'function') {
+        setTimeout(gc, 100);
+      }
+      
       return true;
     } catch (error) {
       console.error('Error clearing files:', error);
@@ -105,12 +201,16 @@ const SessionFileStorage = () => {
     
     return {
       fileCount: files.length,
+      maxFiles: MAX_FILES,
       totalSize: totalSize,
       totalSizeFormatted: getFileSize(totalSize),
+      maxTotalSizeFormatted: getFileSize(MAX_TOTAL_SIZE),
       sessionId: getSessionId(),
       storageUsed: getStorageUsage(),
       maxSize: MAX_SIZE,
-      maxSizeFormatted: getFileSize(MAX_SIZE)
+      maxSizeFormatted: getFileSize(MAX_SIZE),
+      remainingSpace: MAX_TOTAL_SIZE - totalSize,
+      remainingSpaceFormatted: getFileSize(MAX_TOTAL_SIZE - totalSize)
     };
   }
   
@@ -140,19 +240,30 @@ const SessionFileStorage = () => {
   
   const getFileObject = (storedFile) => {
     try {
-      const base64Data = storedFile.content.split(',')[1];
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
-      
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      // More efficient base64 decoding
+      const [header, base64Data] = storedFile.content.split(',');
+      if (!base64Data) {
+        throw new Error('Invalid file content format');
       }
       
-      const byteArray = new Uint8Array(byteNumbers);
-      return new File([byteArray], storedFile.name, {
+      // Use more efficient conversion
+      const binaryString = atob(base64Data);
+      const bytes = new Uint8Array(binaryString.length);
+      
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      const file = new File([bytes], storedFile.name, {
         type: storedFile.type,
         lastModified: storedFile.lastModified
       });
+      
+      // Add custom properties for tracking
+      file.id = storedFile.id;
+      file.uploadDate = storedFile.uploadDate;
+      
+      return file;
     } catch (error) {
       console.error('Error converting to File object:', error);
       return null;
@@ -161,6 +272,21 @@ const SessionFileStorage = () => {
   
   const isNewSession = () => {
     return loadFiles().length === 0;
+  }
+
+  // New method to check memory pressure
+  const checkMemoryPressure = () => {
+    const stats = getSessionStats();
+    const usage = stats.totalSize / MAX_TOTAL_SIZE;
+    
+    if (usage > 0.8) {
+      console.warn(`⚠️ High memory usage: ${(usage * 100).toFixed(1)}%`);
+      return 'high';
+    } else if (usage > 0.6) {
+      console.warn(`⚠️ Medium memory usage: ${(usage * 100).toFixed(1)}%`);
+      return 'medium';
+    }
+    return 'low';
   }
 
   return {
@@ -174,7 +300,11 @@ const SessionFileStorage = () => {
     getStorageUsage,
     getSessionId,
     getFileObject,
-    isNewSession
+    isNewSession,
+    checkMemoryPressure,
+    MAX_SIZE,
+    MAX_TOTAL_SIZE,
+    MAX_FILES
   };
 }
 

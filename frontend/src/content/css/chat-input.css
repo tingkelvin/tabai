@@ -221,3 +221,81 @@
     opacity: 1;
   }
 }
+
+/* Add this CSS to your existing stylesheet */
+
+.actions-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.file-actions-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-start;
+  align-items: center;
+  flex: 1;
+}
+
+.action-buttons-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+  flex: 1;
+}
+
+/* When only one container has content, let it take appropriate space */
+.actions-wrapper:has(.file-actions-container:empty) .action-buttons-container {
+  justify-content: center;
+}
+
+.actions-wrapper:has(.action-buttons-container:empty) .file-actions-container {
+  justify-content: center;
+}
+
+/* File action styling */
+.file-action {
+  background: #2a2a2a;
+  color: #e6e6e6;
+  border: 1px solid #444444;
+}
+
+.file-action:hover {
+  background: #dc2626;
+  border-color: #b91c1c;
+  transform: scale(1.05);
+}
+
+/* Upload file action styling */
+.upload-file-action {
+  background: #059669;
+  color: #ffffff;
+  border: 1px solid #047857;
+}
+
+.upload-file-action:hover {
+  background: #047857;
+  border-color: #065f46;
+  transform: scale(1.05);
+}
+
+/* Responsive behavior for smaller screens */
+@media (max-width: 480px) {
+  .actions-wrapper {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .file-actions-container,
+  .action-buttons-container {
+    justify-content: center;
+    width: 100%;
+  }
+}

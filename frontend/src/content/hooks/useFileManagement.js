@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import SessionFileStorage from '../services/SessionFileStorage';
 import { readAndSerializeFile, validateFile } from '../utils/fileUtils';
 
 export const useFileManagement = (addUserMessage) => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [fileContents, setFileContents] = useState({});
+  // Remove fileContents cache to prevent memory leaks
+  const fileContentsRef = useRef(new Map()); // Use Map for better memory management
   
   // Initialize the storage instance
   const sessionFileStorage = SessionFileStorage();
@@ -22,41 +23,13 @@ export const useFileManagement = (addUserMessage) => {
     return fileName;
   };
 
-    // New function to get all content as a single string
-    const getAllContentAsString = async () => {
-        if (uploadedFiles.length === 0) {
-          return '';
-        }
-        try {
-          const contentPromises = uploadedFiles.map(async (file) => {
-            try {
-              const content = await readFileContent(file);
-                  
-              return content;
-            } catch (error) {
-              console.error(`Error reading ${file.name}:`, error);
-              return includeFileNames 
-                ? `${fileNameFormat.replace('{fileName}', file.name)}\n[Error reading file: ${error.message}]`
-                : `[Error reading ${file.name}: ${error.message}]`;
-            }
-          });
-    
-          const allContents = await Promise.all(contentPromises);
-          return allContents.join('\n\n---\n\n');
-    
-        } catch (error) {
-          console.error('Error getting all content:', error);
-          throw new Error(`Failed to get all content: ${error.message}`);
-        }
-    };
-    
-
-  // Simple async function - no useCallback needed
-  const readFileContent = async (file) => {
+  // Optimized file reading with proper cleanup - define this first
+  const readFileContent = useCallback(async (file) => {
     try {
-      // Check if we already have the content cached
-      if (fileContents[file.name]) {
-        return fileContents[file.name];
+      // Check cache first
+      const cacheKey = `${file.name}-${file.lastModified}-${file.size}`;
+      if (fileContentsRef.current.has(cacheKey)) {
+        return fileContentsRef.current.get(cacheKey);
       }
 
       let content;
@@ -65,68 +38,77 @@ export const useFileManagement = (addUserMessage) => {
       if (file.text && typeof file.text === 'function') {
         content = await file.text();
       } else {
-        // Fallback to FileReader
+        // Properly managed FileReader
         content = await new Promise((resolve, reject) => {
           const reader = new FileReader();
-          reader.onload = (event) => resolve(event.target.result);
-          reader.onerror = reject;
+          
+          const cleanup = () => {
+            reader.onload = null;
+            reader.onerror = null;
+            reader.onabort = null;
+          };
+          
+          reader.onload = (event) => {
+            cleanup();
+            resolve(event.target.result);
+          };
+          
+          reader.onerror = (error) => {
+            cleanup();
+            reject(error);
+          };
+          
+          reader.onabort = () => {
+            cleanup();
+            reject(new Error('File reading aborted'));
+          };
+          
           reader.readAsText(file);
         });
       }
 
-      // Cache the content
-      setFileContents(prev => ({
-        ...prev,
-        [file.name]: content
-      }));
-
+      // Cache with size limit (keep max 10 files in memory)
+      if (fileContentsRef.current.size >= 10) {
+        const firstKey = fileContentsRef.current.keys().next().value;
+        fileContentsRef.current.delete(firstKey);
+      }
+      
+      fileContentsRef.current.set(cacheKey, content);
       return content;
     } catch (error) {
       console.error('Error reading file content:', error);
       throw new Error(`Failed to read ${file.name}: ${error.message}`);
     }
-  };
+  }, []); // No dependencies needed as it only uses refs
 
-  // Event handler - no useCallback needed
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    // Check if file already uploaded
-    const existingFile = uploadedFiles.find(f => f.name === file.name);
-    if (existingFile) {
-        addUserMessage(`⚠️ File "${file.name}" is already uploaded`);
-        event.target.value = '';
-        return;
-    }
-  
-    try {
-      // Validate file before processing
-      validateFile(file);
-      
-      // Read and serialize file content safely
-      const serializedFile = await readAndSerializeFile(file);
-      
-      // Save to session storage
-      const savedFile = await sessionFileStorage.saveFile(file);
-      setUploadedFiles(prev => [...prev, file]);
-      // You can now safely use serializedFile.content as a string
-      console.log('File content preview:', serializedFile.content.substring(0, 200) + '...');
-      
-      // Store serialized content if needed
-      // await sessionFileStorage.saveSerializedContent(serializedFile);
-      
-    } catch (error) {
-      console.error('File upload error:', error);
-      addUserMessage(`❌ Upload failed: ${error.message}`);
+  // Optimized function to get all content as a single string
+  const getAllContentAsString = useCallback(async () => {
+    if (uploadedFiles.length === 0) {
+      return '';
     }
     
-    // Clear input
-    event.target.value = '';
-  };
+    try {
+      const contentPromises = uploadedFiles.map(async (file) => {
+        try {
+          const content = await readFileContent(file);
+          return content;
+        } catch (error) {
+          console.error(`Error reading ${file.name}:`, error);
+          return `[Error reading ${file.name}: ${error.message}]`;
+        }
+      });
 
-  // Simple function - no useCallback needed
-  const loadSessionFiles = () => {
+      const allContents = await Promise.all(contentPromises);
+      return allContents.join('\n\n---\n\n');
+
+    } catch (error) {
+      console.error('Error getting all content:', error);
+      throw new Error(`Failed to get all content: ${error.message}`);
+    }
+  }, [uploadedFiles, readFileContent]); // readFileContent is stable now, so this is safe
+
+  // Optimized file loading
+  const loadSessionFiles = useCallback(() => {
     try {
       const sessionFiles = sessionFileStorage.loadFiles();
       
@@ -139,6 +121,38 @@ export const useFileManagement = (addUserMessage) => {
     } catch (error) {
       console.error('Error loading session files:', error);
     }
+  }, [sessionFileStorage]);
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Check if file already uploaded
+    const existingFile = uploadedFiles.find(f => 
+      f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
+    );
+    
+    if (existingFile) {
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      // Validate file before processing
+      validateFile(file);
+      
+      // Save to session storage (this already handles the file reading)
+      const savedFile = await sessionFileStorage.saveFile(file);
+      
+      // Only store the file object, not duplicate content
+      setUploadedFiles(prev => [...prev, file]);
+      
+    } catch (error) {
+      console.error('File upload error:', error);
+    }
+    
+    // Clear input to prevent memory retention
+    event.target.value = '';
   };
 
   const displayFileContent = async (file) => {
@@ -146,36 +160,27 @@ export const useFileManagement = (addUserMessage) => {
       const content = await readFileContent(file);
       const preview = content.length > 200 ? content.substring(0, 200) + '...' : content;
       
-      addUserMessage(
-        `\`\`\`\n${file.name}:\n${preview}\n\`\`\``
-      );
     } catch (error) {
-      addUserMessage(`❌ Failed to read ${file.name}: ${error.message}`);
     }
   };
 
   const removeFile = async (fileToRemove) => {
     try {
-      // Handle both file object and file name string
       const fileName = typeof fileToRemove === 'string' ? fileToRemove : fileToRemove.name;
       
-      // Find the file in uploadedFiles array
       const fileExists = uploadedFiles.find(f => f.name === fileName);
       
       if (!fileExists) {
-        addUserMessage(`⚠️ File "${fileName}" not found`);
         return;
       }
-  
-      // Remove from session storage - need to get the file ID
-      // If your files have IDs, use that, otherwise we need to find by name
+
+      // Remove from session storage
       if (fileExists.id) {
         sessionFileStorage.deleteFile(fileExists.id);
       } else {
-        // Fallback: find file in session storage by name and delete
         const sessionFiles = sessionFileStorage.loadFiles();
         const sessionFile = sessionFiles.find(sf => sf.name === fileName);
-        if (sessionFile && sessionFile.id) {
+        if (sessionFile?.id) {
           sessionFileStorage.deleteFile(sessionFile.id);
         }
       }
@@ -183,22 +188,21 @@ export const useFileManagement = (addUserMessage) => {
       // Remove from uploadedFiles state
       setUploadedFiles(prev => prev.filter(f => f.name !== fileName));
       
-      // Remove from fileContents cache
-      setFileContents(prev => {
-        const updated = { ...prev };
-        delete updated[fileName];
-        return updated;
-      });
-      
-      addUserMessage(`✅ Removed "${fileName}"`);
+      // Clear from cache using proper key
+      const cacheKeys = Array.from(fileContentsRef.current.keys());
+      const keysToRemove = cacheKeys.filter(key => key.startsWith(fileName));
+      keysToRemove.forEach(key => fileContentsRef.current.delete(key));
       
     } catch (error) {
       console.error('Error removing file:', error);
       const fileName = typeof fileToRemove === 'string' ? fileToRemove : fileToRemove.name;
-      addUserMessage(`❌ Failed to remove "${fileName}": ${error.message}`);
     }
   };
-  
+
+  // Cleanup function for unmounting
+  const cleanup = () => {
+    fileContentsRef.current.clear();
+  };
 
   return {
     uploadedFiles,
@@ -207,6 +211,7 @@ export const useFileManagement = (addUserMessage) => {
     loadSessionFiles,
     displayFileContent,
     getAllContentAsString,
-    removeFile
+    removeFile,
+    cleanup // Export cleanup for component unmounting
   };
 };
