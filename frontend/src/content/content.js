@@ -5,6 +5,7 @@ import ContentApp from './ContentApp';
 import YoutubeContentApp from './YoutubeContentApp';
 import LinkedInContentApp from './LinkedinContentApp'
 import './css/index.css';
+import './settings/SettingsManager';
 
 let container = null;
 let root = null;

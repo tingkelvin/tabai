@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import useAuth from './useAuth';
+import useSettings from './hooks/useSettings';
 import Header from './components/Header';
 import AuthError from './components/AuthError';
 import Announcements from './components/Announcements';
 import QuickLinks from './components/QuickLinks';
 import Footer from './components/Footer';
+import Settings from './components/Settings';
 
 const PopupApp = () => {
   const [currentTab, setCurrentTab] = useState(null);
   const [isActive, setIsActive] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const { settings } = useSettings();
   
   // Use the enhanced auth hook that coordinates with background script
   const { 
@@ -24,6 +28,11 @@ const PopupApp = () => {
   useEffect(() => {
     initializePopup();
   }, []);
+
+  // Apply dark mode to popup
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', settings.darkMode ? 'dark' : 'light');
+  }, [settings.darkMode]);
 
   // Sync extension state with authentication status
   useEffect(() => {
@@ -107,14 +116,11 @@ const PopupApp = () => {
   };
 
   const openSettings = () => {
-    // TODO: Open settings page or modal
-    console.log('Opening Settings...');
-    
-    // You could open a new tab with settings page:
-    // chrome.tabs.create({ url: chrome.runtime.getURL('settings.html') });
-    
-    // Or send a message to background script to handle settings
-    // sendMessageToBackground('OPEN_SETTINGS');
+    setIsSettingsOpen(true);
+  };
+
+  const closeSettings = () => {
+    setIsSettingsOpen(false);
   };
 
   const toggleExtension = async () => {
@@ -170,7 +176,7 @@ const PopupApp = () => {
   };
 
   return (
-    <div className="w-96 bg-gradient-to-br from-slate-50 to-white shadow-2xl overflow-hidden border border-slate-200/50">
+    <div className="w-110 bg-gradient-to-br from-slate-50 to-white shadow-2xl overflow-hidden border border-slate-200/50">
       <Header 
         isAuthenticated={isAuthenticated}
         isActive={isActive}
@@ -183,17 +189,12 @@ const PopupApp = () => {
 
       <div className="p-6 space-y-6">
         <AuthError error={authError} onClear={clearError} />
-
-        {isAuthenticated && (
-          <div className="text-center">
-            <p className="text-sm text-slate-600 mb-1">Welcome Tabber</p>
-          </div>
-        )}
-
         <Announcements />
         <QuickLinks />
         <Footer />
       </div>
+
+      <Settings isOpen={isSettingsOpen} onClose={closeSettings} />
     </div>
   );
 };

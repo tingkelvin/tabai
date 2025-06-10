@@ -24,6 +24,26 @@ export const extensionLifecycleManager = {
   },
 
   handleStorageChanges: (changes, namespace) => {
+    if (namespace === 'sync') {
+      // Handle user settings changes
+      if (changes.userSettings) {
+        const settings = changes.userSettings.newValue;
+        console.log('🔄 User settings changed:', settings);
+        
+        // Notify all parts of the extension about settings changes
+        notificationService.notifyExtensionParts('SETTINGS_UPDATED', { settings });
+        notificationService.notifyContentScripts('SETTINGS_UPDATED', { settings });
+      }
+
+      // Handle chat settings changes
+      if (changes.chatSettings) {
+        const settings = changes.chatSettings.newValue;
+        console.log('🔄 Chat settings changed:', settings);
+        notificationService.notifyExtensionParts('CHAT_SETTINGS_UPDATED', { settings });
+        notificationService.notifyContentScripts('CHAT_SETTINGS_UPDATED', { settings });
+      }
+    }
+
     if (namespace === 'local') {
       const authKeys = ['bearerToken', 'userInfo', 'tokenExpiry'];
       const hasAuthChanges = authKeys.some(key => changes[key]);

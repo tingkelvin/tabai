@@ -19,7 +19,7 @@ const Header = ({
         <StatusIndicator isAuthenticated={isAuthenticated} isActive={isActive} />
         
         {/* Header Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-auto">
           {isAuthenticated ? (
             <>
               <button 

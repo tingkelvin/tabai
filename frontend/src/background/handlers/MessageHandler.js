@@ -28,11 +28,17 @@ export const messageHandler = {
         return chatHandler.handleMessage(message.data, sendResponse);
 
       // Settings messages
-      case 'GET_SETTINGS':
-        return settingsHandler.getSettings(sendResponse);
+      case 'GET_USER_SETTINGS':
+        return settingsHandler.getUserSettings(sendResponse);
       
-      case 'SAVE_SETTINGS':
-        return settingsHandler.saveSettings(message.data, sendResponse);
+      case 'SAVE_USER_SETTINGS':
+        return settingsHandler.saveUserSettings(message.data, sendResponse);
+
+      case 'GET_CHAT_SETTINGS':
+        return settingsHandler.getChatSettings(sendResponse);
+      
+      case 'SAVE_CHAT_SETTINGS':
+        return settingsHandler.saveChatSettings(message.data, sendResponse);
 
       // Extension messages
       case 'EXTENSION_TOGGLED':
