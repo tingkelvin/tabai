@@ -154,12 +154,59 @@ export const useFileManagement = (addUserMessage) => {
     }
   };
 
+  const removeFile = async (fileToRemove) => {
+    try {
+      // Handle both file object and file name string
+      const fileName = typeof fileToRemove === 'string' ? fileToRemove : fileToRemove.name;
+      
+      // Find the file in uploadedFiles array
+      const fileExists = uploadedFiles.find(f => f.name === fileName);
+      
+      if (!fileExists) {
+        addUserMessage(`⚠️ File "${fileName}" not found`);
+        return;
+      }
+  
+      // Remove from session storage - need to get the file ID
+      // If your files have IDs, use that, otherwise we need to find by name
+      if (fileExists.id) {
+        sessionFileStorage.deleteFile(fileExists.id);
+      } else {
+        // Fallback: find file in session storage by name and delete
+        const sessionFiles = sessionFileStorage.loadFiles();
+        const sessionFile = sessionFiles.find(sf => sf.name === fileName);
+        if (sessionFile && sessionFile.id) {
+          sessionFileStorage.deleteFile(sessionFile.id);
+        }
+      }
+      
+      // Remove from uploadedFiles state
+      setUploadedFiles(prev => prev.filter(f => f.name !== fileName));
+      
+      // Remove from fileContents cache
+      setFileContents(prev => {
+        const updated = { ...prev };
+        delete updated[fileName];
+        return updated;
+      });
+      
+      addUserMessage(`✅ Removed "${fileName}"`);
+      
+    } catch (error) {
+      console.error('Error removing file:', error);
+      const fileName = typeof fileToRemove === 'string' ? fileToRemove : fileToRemove.name;
+      addUserMessage(`❌ Failed to remove "${fileName}": ${error.message}`);
+    }
+  };
+  
+
   return {
     uploadedFiles,
     formatFileName,
     handleFileUpload,
     loadSessionFiles,
     displayFileContent,
-    getAllContentAsString
+    getAllContentAsString,
+    removeFile
   };
 };

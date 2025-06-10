@@ -69,7 +69,8 @@ const ContentApp = ({
     handleFileUpload,
     loadSessionFiles,
     displayFileContent,
-    getAllContentAsString
+    getAllContentAsString,
+    removeFile
   } = useFileManagement(addUserMessage);
 
   // Handle URL changes
@@ -84,7 +85,7 @@ const ContentApp = ({
     label: formatFileName(file.name),
     icon: getFileIcon(file.name),
     onClick: async () => {
-      await displayFileContent(file)
+      await removeFile(file)
     },
     className: 'file-action'
   }));

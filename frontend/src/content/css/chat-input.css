@@ -80,7 +80,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 4px;
   min-height: 24px; /* Increased for better touch targets */
   min-width: 24px;  /* Ensure minimum square size */
   box-sizing: border-box;
@@ -106,6 +106,7 @@
 /* Icon sizing for square buttons */
 .custom-action-btn.square .action-icon,
 .custom-action-btn[data-single-icon="true"] .action-icon {
+  border-radius: 8px !important;
   font-size: 24px;
   line-height: 1;
   margin: 0;
@@ -113,6 +114,7 @@
 
 .custom-action-btn.square svg,
 .custom-action-btn[data-single-icon="true"] svg {
+  border-radius: 8px !important;
   width: 16px;
   height: 16px;
   margin: 0;
