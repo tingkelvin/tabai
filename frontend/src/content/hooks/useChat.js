@@ -1,4 +1,4 @@
-// hooks/useChat.js - Simplified version
+// hooks/useChat.js - Fixed version
 import { useState, useCallback, useRef } from 'react';
 import { MESSAGE_TYPES } from '../utils/constants';
 
@@ -8,101 +8,29 @@ export const useChat = () => {
   const [isTyping, setIsTyping] = useState(false);
   const getFileContentsFunctionRef = useRef(null);
 
-  const sendMessage = useCallback(async (context = '', message = '', options = {}) => {
-    const { 
-      returnReply = false, 
-      addToChat = true,
-      addResponseToChat = true,
-      useFileContents = true,
-      useContext = true
-    } = options;
-
-    const chatInputTrimmed = chatInput.trim();
-
+  const sendMessage = useCallback(async (message) => {
     // Fix: Allow context-only messages (for ask function)
-    if (!chatInputTrimmed && !message && !context) return;
-  
-    // Only add user message to chat if addToChat is true AND we have chatInput
-    if (chatInputTrimmed && addToChat){
-      const userMessage = {
-        id: Date.now(),
-        type: MESSAGE_TYPES.USER,
-        content: chatInputTrimmed,
-        timestamp: new Date()
-      };
-      setChatMessages(prev => [...prev, userMessage]);
-      setChatInput('');
-    }
-    
-    // Always show typing when sending a message (even if addToChat is false)
-    setIsTyping(true);
-  
-    try {
-      const buildPrompt = async () => {
-        const parts = [];
-      
-        // Add context
-        if (useContext && context) {
-          parts.push(`<context>\n${context}\n</context>`);
-        }
-      
-        // Add file contents
-        if (useFileContents) {
-          const getContentFunction = getFileContentsFunctionRef.current;
-          if (getContentFunction && typeof getContentFunction === 'function') {
-            const fileContents = await getContentFunction();
-            if (fileContents) {
-              parts.push(`<files>\n${fileContents}\n</files>`);
-            }
-          }
-        }
-      
-        // Add current chat input (from the input field)
-        if (chatInputTrimmed) {
-          parts.push(`<user_input>\n${chatInputTrimmed}\n</user_input>`);
-        }
-      
-        // Add message parameter (for programmatic messages)
-        if (message) {
-          parts.push(`<user_message>\n${message.trim()}\n</user_message>`);
-        }
-      
-        return parts.join('\n\n');
-      };
+    if (!message) return;
 
-      const prompt = await buildPrompt();
-      
-      console.log('🚀 Sending to backend:', prompt.substring(0, 100) + '...');
-      
+    // Always show typing when sending a message
+    setIsTyping(true);
+
+    try {
+      console.log('🚀 Sending to backend:', message.substring(0, 100) + '...');
+
       // Send directly to background script
       const reply = await chrome.runtime.sendMessage({
         type: 'CHAT_MESSAGE',
-        data: { message: prompt }
+        data: { message: message }
       });
-      
-      const responseContent = reply.content || "I do not find any response, sorry.";
-      
-      // ALWAYS add the AI response to chat (even when addToChat is false)
-      // addToChat: false only affects the user message, not the AI response
-      const response = {
-        id: Date.now() + 1,
-        type: MESSAGE_TYPES.ASSISTANT,
-        content: responseContent.trim(),
-        timestamp: new Date()
-      };
 
-      if (addResponseToChat)
-        setChatMessages(prev => [...prev, response]);
-      
-      // Return reply if requested
-      if (returnReply) {
-        return responseContent;
-      }
-      
+      const responseContent = reply.content || "I do not find any response, sorry.";
+      return responseContent;
+
     } catch (error) {
       console.error('❌ Error sending message:', error);
       const errorContent = "Sorry, I'm experiencing technical difficulties. Please try again later.";
-      
+
       // Always add error response to chat
       const errorResponse = {
         id: Date.now() + 1,
@@ -110,27 +38,26 @@ export const useChat = () => {
         content: errorContent,
         timestamp: new Date()
       };
-      
+
       setChatMessages(prev => [...prev, errorResponse]);
-      
-      if (returnReply) {
-        return errorContent;
-      }
+
+      return errorContent;
+
     } finally {
       setIsTyping(false);
     }
-  }, [chatInput]);
+  }, []); // Remove chatInput dependency to prevent recreation
 
   const handleInputChange = useCallback((e) => {
     setChatInput(e.target.value);
-    
+
     const textarea = e.target;
     textarea.style.height = 'auto';
-    
+
     const scrollHeight = textarea.scrollHeight;
     const minHeight = 44;
     const maxHeight = 400;
-    
+
     const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
     textarea.style.height = `${newHeight}px`;
     textarea.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
@@ -139,8 +66,20 @@ export const useChat = () => {
   const handleKeyPress = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
-      
+
+      // Add user message to chat
+      const userMessage = {
+        id: Date.now(),
+        type: MESSAGE_TYPES.USER,
+        content: chatInput.trim(),
+        timestamp: new Date()
+      };
+
+      setChatMessages(prev => [...prev, userMessage]);
+
+      // Clear input and reset textarea height
+      setChatInput('');
+
       setTimeout(() => {
         if (e.target) {
           e.target.style.height = '44px';
@@ -148,7 +87,7 @@ export const useChat = () => {
         }
       }, 0);
     }
-  }, [sendMessage]);
+  }, [chatInput]); // Include chatInput as dependency
 
   // Method to directly add messages to the chat
   const addMessage = useCallback((message) => {
@@ -163,30 +102,29 @@ export const useChat = () => {
     setChatMessages(prev => [...prev, newMessage]);
   }, []);
 
-  // Method to directly add messages to the chat
-  const addUserMessage = useCallback((message) => {
+  // Method to directly add user messages to the chat
+  const addUserMessage = useCallback((content) => {
     const newMessage = {
       id: Date.now(),
       type: MESSAGE_TYPES.USER,
-      content: message,
-      timestamp: new Date(),
-      ...message // Allow overriding any properties
+      content: content,
+      timestamp: new Date()
     };
 
     setChatMessages(prev => [...prev, newMessage]);
   }, []);
 
-    // Method to directly add messages to the chat
-    const addAssistantMessage = useCallback((message) => {
-      const newMessage = {
-        id: Date.now(),
-        type: MESSAGE_TYPES.ASSISTANT,
-        content: message,
-        timestamp: new Date(),
-        ...message // Allow overriding any properties
-      };
-      setChatMessages(prev => [...prev, newMessage]);
-    }, []);
+  // Method to directly add assistant messages to the chat
+  const addAssistantMessage = useCallback((content) => {
+    const newMessage = {
+      id: Date.now(),
+      type: MESSAGE_TYPES.ASSISTANT,
+      content: content,
+      timestamp: new Date()
+    };
+
+    setChatMessages(prev => [...prev, newMessage]);
+  }, []);
 
   // Method to add multiple messages at once
   const addMessages = useCallback((messages) => {
@@ -213,17 +151,17 @@ export const useChat = () => {
 
   // Method to update a specific message
   const updateMessage = useCallback((messageId, updates) => {
-    setChatMessages(prev => 
-      prev.map(msg => 
+    setChatMessages(prev =>
+      prev.map(msg =>
         msg.id === messageId ? { ...msg, ...updates } : msg
       )
     );
   }, []);
 
-  const setGetFileContentsFunction = (fn) => {
+  // Stable function to set file contents getter
+  const setGetFileContentsFunction = useCallback((fn) => {
     getFileContentsFunctionRef.current = fn;
-  };
-  
+  }, []);
 
   return {
     chatInput,

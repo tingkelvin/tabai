@@ -5,7 +5,7 @@ import { useYoutubeTranscript } from './hooks/useYoutubeTranscript';
 import { useYoutubeChat } from './hooks/useYoutubeChat';
 import { useYoutubeUrlTracking } from './hooks/useYoutubeUrlTracking';
 import { downloadTranscriptFile } from './utils/transcriptHelpers';
-import { PlayIconFilled, DownloadIconAlt, SummaryIcon} from './components/Icons';
+import { PlayIconFilled, DownloadIconAlt, SummaryIcon } from './components/Icons';
 
 const YoutubeContentApp = () => {
   const [currentVideoId, setCurrentVideoId] = useState(null);
@@ -20,11 +20,11 @@ const YoutubeContentApp = () => {
   } = useYoutubeUrlTracking();
 
   // Use the transcript hook
-  const { 
-    transcript, 
-    isLoadingTranscript, 
+  const {
+    transcript,
+    isLoadingTranscript,
     getYoutubeTranscript,
-    clearTranscript 
+    clearTranscript
   } = useYoutubeTranscript();
 
   // Use the YouTube chat hook with transcript
@@ -32,11 +32,12 @@ const YoutubeContentApp = () => {
 
   // Handle video changes - load transcript when videoId changes
   useEffect(() => {
+    console.log('🚀 Loading transcript for video:', videoId);
     if (videoId && videoId !== currentVideoId) {
       console.log('Loading transcript for video:', videoId);
       setCurrentVideoId(videoId);
       clearTranscript();
-      
+
       setTimeout(() => {
         getYoutubeTranscript();
       }, 1500);
@@ -52,10 +53,10 @@ const YoutubeContentApp = () => {
       .join(' ');
 
     youTubeChatHook.addUserMessage("summary");
-  
+
     // If transcript is very long, chunk it
     const maxLength = 10000;
-    
+
     if (fullTranscriptText.length > maxLength) {
       const chunks = [];
       for (let i = 0; i < fullTranscriptText.length; i += maxLength) {
@@ -121,7 +122,7 @@ const YoutubeContentApp = () => {
   ];
 
   return (
-    <ContentApp 
+    <ContentApp
       customChatHook={youTubeChatHook}
       customActions={youtubeActions}
       title={`${videoTitle || 'YouTube'}`}

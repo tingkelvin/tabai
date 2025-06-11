@@ -6,6 +6,7 @@ import YoutubeContentApp from './YoutubeContentApp';
 import LinkedInContentApp from './LinkedinContentApp'
 import './css/index.css';
 import './settings/SettingsManager';
+import { FileProvider } from './contexts/FileProvider';
 
 let container = null;
 let root = null;
@@ -14,7 +15,7 @@ let isExtensionEnabled = true;
 // Function to create and show the extension
 function showExtension() {
   if (container) return; // Already visible
-  
+
   // Create container for React app
   container = document.createElement('div');
   container.id = 'react-extension-root';
@@ -28,38 +29,38 @@ function showExtension() {
   const isLinkedin = window.location.hostname.includes('linkedin.com');
 
   if (isYouTube) {
-    root.render(<YoutubeContentApp />);
+    root.render(<FileProvider><YoutubeContentApp /></FileProvider>);
   } else if (isLinkedin) {
-    root.render(<LinkedInContentApp />);
+    root.render(<FileProvider><LinkedInContentApp /></FileProvider>);
   } else {
     root.render(<ContentApp />);
   }
 }
-  // console.log(`React Chrome Extension loaded on ${isYouTube ? 'YouTube' : 'other site'}!`);
+// console.log(`React Chrome Extension loaded on ${isYouTube ? 'YouTube' : 'other site'}!`);
 
 // Function to hide and cleanup the extension
 function hideExtension() {
   if (!container) return; // Already hidden
-  
+
   // Unmount React app
   if (root) {
     root.unmount();
     root = null;
   }
-  
+
   // Remove container from DOM
   if (container && container.parentNode) {
     container.parentNode.removeChild(container);
   }
   container = null;
-  
+
   // console.log('React Chrome Extension hidden!');
 }
 
 // Function to toggle extension visibility
 function toggleExtension(enabled) {
   isExtensionEnabled = enabled;
-  
+
   if (enabled) {
     showExtension();
   } else {
@@ -73,7 +74,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     toggleExtension(message.enabled);
     sendResponse({ success: true });
   }
-  
+
   if (message.type === 'GET_EXTENSION_STATE') {
     sendResponse({ enabled: isExtensionEnabled });
   }

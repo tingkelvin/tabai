@@ -8,6 +8,7 @@ export const useYoutubeControl = () => {
 
   // Find YouTube video element
   useEffect(() => {
+    console.log('🚀 useYoutubeControl mounted');
     const findVideoElement = () => {
       // Try different selectors for YouTube video
       const selectors = [
@@ -16,7 +17,7 @@ export const useYoutubeControl = () => {
         '#movie_player video',
         '.html5-video-player video'
       ];
-      
+
       for (const selector of selectors) {
         const video = document.querySelector(selector);
         if (video && video.duration) {
@@ -69,7 +70,7 @@ export const useYoutubeControl = () => {
   const getCurrentTime = () => {
     return videoElement ? Math.floor(videoElement.currentTime) : 0;
   };
-  
+
   return {
     pauseVideo,
     resumeVideo,

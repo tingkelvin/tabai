@@ -63,13 +63,13 @@ export const useDragAndResize = (widgetSize, widgetPosition, iconPosition, isMin
 
     // Adjust position for northwest/southwest resizing
     if ([RESIZE_TYPES.NORTHWEST, RESIZE_TYPES.SOUTHWEST].includes(resizeType)) {
-      updateWidgetPosition({ 
-        left: Math.max(0, widgetPosition.left + deltaX) 
+      updateWidgetPosition({
+        left: Math.max(0, widgetPosition.left + deltaX)
       });
     }
     if ([RESIZE_TYPES.NORTHWEST, RESIZE_TYPES.NORTHEAST].includes(resizeType)) {
-      updateWidgetPosition({ 
-        top: Math.max(0, widgetPosition.top + deltaY) 
+      updateWidgetPosition({
+        top: Math.max(0, widgetPosition.top + deltaY)
       });
     }
   }, [resizeType, widgetPosition, setWidgetSize, updateWidgetPosition]);
@@ -95,6 +95,7 @@ export const useDragAndResize = (widgetSize, widgetPosition, iconPosition, isMin
   }, [rel, isMinimized, widgetSize, updateIconPosition, updateWidgetPosition]);
 
   useEffect(() => {
+    console.log('🚀 Dragging:', dragging);
     if (!dragging && !resizing) return;
 
     const handleMouseMove = (e) => {

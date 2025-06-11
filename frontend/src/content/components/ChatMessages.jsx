@@ -1,12 +1,13 @@
 import React, { useRef, useEffect } from 'react';
 import { parseMarkdownLine, parseMessageContent } from '../utils/helpers';
 
-const ChatMessages = ({ 
-  chatMessages, 
-  isTyping, 
-  chatMessagesRef 
+const ChatMessages = ({
+  chatMessages,
+  isTyping,
+  chatMessagesRef
 }) => {
   useEffect(() => {
+    console.log('🚀 Chat messages:', chatMessages);
     if (chatMessagesRef.current) {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
@@ -23,7 +24,7 @@ const ChatMessages = ({
           </div>
         </div>
       ))}
-      
+
       {isTyping && (
         <div className="chat-message assistant typing">
           <div className="message-content">

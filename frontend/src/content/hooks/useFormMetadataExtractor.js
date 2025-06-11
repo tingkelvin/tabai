@@ -14,26 +14,26 @@ export const useFormMetadataExtractor = () => {
       if (element.labels && element.labels[0]) {
         return element.labels[0].textContent.trim();
       }
-      
+
       // Method 2: Look for label with 'for' attribute
       if (element.id) {
         const label = document.querySelector(`label[for="${element.id}"]`);
         if (label) return label.textContent.trim();
       }
-      
+
       // Method 3: Parent label
       const parentLabel = element.closest('label');
       if (parentLabel) {
         return parentLabel.textContent.replace(element.outerHTML, '').trim();
       }
-      
+
       // Method 4: LinkedIn-style container
       const container = element.closest('[data-test-form-element]');
       if (container) {
         const label = container.querySelector('label');
         if (label) return label.textContent.trim();
       }
-      
+
       // Method 5: Previous sibling
       let sibling = element.previousElementSibling;
       while (sibling) {
@@ -42,12 +42,12 @@ export const useFormMetadataExtractor = () => {
         }
         sibling = sibling.previousElementSibling;
       }
-      
+
       // Method 6: Aria-label or title
-      return element.getAttribute('aria-label') || 
-             element.getAttribute('title') || 
-             element.getAttribute('data-test-text-entity-list-form-title') ||
-             'Unlabeled field';
+      return element.getAttribute('aria-label') ||
+        element.getAttribute('title') ||
+        element.getAttribute('data-test-text-entity-list-form-title') ||
+        'Unlabeled field';
     };
 
     const getValidationRules = () => {
@@ -93,7 +93,7 @@ export const useFormMetadataExtractor = () => {
           disabled: option.disabled
         }));
       }
-      
+
       // For radio buttons with same name
       if (element.type === 'radio') {
         const radioGroup = document.querySelectorAll(`input[name="${element.name}"]`);
@@ -104,7 +104,7 @@ export const useFormMetadataExtractor = () => {
           disabled: radio.disabled
         }));
       }
-      
+
       return null;
     };
 
@@ -113,7 +113,7 @@ export const useFormMetadataExtractor = () => {
       const fieldset = element.closest('fieldset');
       const section = element.closest('section');
       const container = element.closest('[data-test-form-element]');
-      
+
       return {
         fieldsetLegend: fieldset?.querySelector('legend')?.textContent.trim() || null,
         sectionHeading: section?.querySelector('h1, h2, h3, h4, h5, h6')?.textContent.trim() || null,
@@ -128,27 +128,27 @@ export const useFormMetadataExtractor = () => {
       name: element.name || '',
       tagName: element.tagName.toLowerCase(),
       type: element.type || element.tagName.toLowerCase(),
-      
+
       // User-visible information
       label: getLabel(),
       placeholder: element.placeholder || '',
       value: element.value || '',
-      
+
       // Validation and constraints
       validation: getValidationRules(),
-      
+
       // Options for select/radio elements
       options: getOptions(),
-      
+
       // Context and grouping
       context: getFieldContext(),
-      
+
       // Additional metadata
       disabled: element.disabled,
       readonly: element.readOnly,
       tabIndex: element.tabIndex,
       className: element.className,
-      
+
       // Custom attributes (useful for dynamic forms)
       customAttributes: Array.from(element.attributes)
         .filter(attr => attr.name.startsWith('data-'))
@@ -156,7 +156,7 @@ export const useFormMetadataExtractor = () => {
           acc[attr.name] = attr.value;
           return acc;
         }, {}),
-      
+
       // Position information
       position: {
         offsetTop: element.offsetTop,
@@ -169,12 +169,12 @@ export const useFormMetadataExtractor = () => {
   // Extract form structure and metadata
   const extractFormMetadata = useCallback(() => {
     setIsScanning(true);
-    
+
     try {
       const forms = document.querySelectorAll('form');
       const allFields = document.querySelectorAll('input, select, textarea');
       const buttons = document.querySelectorAll('button, input[type="submit"], input[type="button"], input[type="reset"]');
-      
+
       // Extract form information
       const formInfo = Array.from(forms).map((form, index) => ({
         id: form.id || `form_${index}`,
@@ -202,10 +202,10 @@ export const useFormMetadataExtractor = () => {
 
       // Group fields by context/section
       const groupedFields = fields.reduce((groups, field) => {
-        const groupKey = field.context.fieldsetLegend || 
-                        field.context.sectionHeading || 
-                        'main';
-        
+        const groupKey = field.context.fieldsetLegend ||
+          field.context.sectionHeading ||
+          'main';
+
         if (!groups[groupKey]) {
           groups[groupKey] = [];
         }
@@ -221,9 +221,9 @@ export const useFormMetadataExtractor = () => {
           level: parseInt(h.tagName.charAt(1)),
           text: h.textContent.trim()
         })),
-        formPurpose: forms[0]?.closest('section')?.querySelector('h1, h2')?.textContent.trim() || 
-                    document.querySelector('h1')?.textContent.trim() || 
-                    'Unknown form purpose'
+        formPurpose: forms[0]?.closest('section')?.querySelector('h1, h2')?.textContent.trim() ||
+          document.querySelector('h1')?.textContent.trim() ||
+          'Unknown form purpose'
       };
 
       const metadata = {
@@ -235,7 +235,7 @@ export const useFormMetadataExtractor = () => {
         totalFields: fields.length,
         requiredFields: fields.filter(f => f.validation.required).length,
         extractedAt: new Date().toISOString(),
-        
+
         // Summary for LLM
         summary: {
           formPurpose: pageContext.formPurpose,
@@ -287,8 +287,8 @@ ${fields.map(field => `
     Required: ${field.validation.required ? 'Yes' : 'No'}
     ${field.placeholder ? `Placeholder: ${field.placeholder}` : ''}
     ${field.options ? `Options: ${field.options.map(opt => opt.text).join(', ')}` : ''}
-    ${Object.keys(field.validation).filter(key => field.validation[key] && key !== 'required').length > 0 ? 
-      `Validation: ${Object.entries(field.validation).filter(([key, value]) => value && key !== 'required').map(([key, value]) => `${key}: ${value}`).join(', ')}` : ''}
+    ${Object.keys(field.validation).filter(key => field.validation[key] && key !== 'required').length > 0 ?
+        `Validation: ${Object.entries(field.validation).filter(([key, value]) => value && key !== 'required').map(([key, value]) => `${key}: ${value}`).join(', ')}` : ''}
 `).join('')}
 `).join('')}
 
@@ -310,18 +310,19 @@ Focus on being practical and specific about the data needed for each field.
 
   // Auto-scan on mount and when DOM changes significantly
   useEffect(() => {
+    console.log('🚀 Form metadata extractor mounted');
     // Initial scan
     const timer = setTimeout(extractFormMetadata, 100);
 
     // Set up observer for dynamic content
     const observer = new MutationObserver((mutations) => {
-      const hasFormChanges = mutations.some(mutation => 
-        Array.from(mutation.addedNodes).some(node => 
-          node.nodeType === Node.ELEMENT_NODE && 
+      const hasFormChanges = mutations.some(mutation =>
+        Array.from(mutation.addedNodes).some(node =>
+          node.nodeType === Node.ELEMENT_NODE &&
           (node.tagName === 'FORM' || node.querySelector?.('input, select, textarea'))
         )
       );
-      
+
       if (hasFormChanges) {
         clearTimeout(timer);
         setTimeout(extractFormMetadata, 500); // Debounce

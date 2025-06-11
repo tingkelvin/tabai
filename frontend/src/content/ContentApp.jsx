@@ -1,7 +1,7 @@
-// ContentApp.jsx
+// ContentApp.jsx - Fixed version
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TerminalIcon from './TerminalIcon';
-import { calculateInitialPositions} from './utils/helpers';
+import { calculateInitialPositions } from './utils/helpers';
 import { WIDGET_CONFIG } from './utils/constants';
 import { getFileIcon, PlusIcon } from './components/Icons';
 
@@ -18,7 +18,7 @@ import { useDragAndResize } from './hooks/useDragAndResize';
 import { useChat } from './hooks/useChat';
 import { useFileManagement } from './hooks/useFileManagement';
 
-const ContentApp = ({ 
+const ContentApp = ({
   customChatHook,
   customActions = [], // Array of custom action objects
   title = ""
@@ -33,7 +33,7 @@ const ContentApp = ({
 
   // Calculate initial positions
   const { widgetPosition: initialWidgetPos, iconPosition: initialIconPos } = calculateInitialPositions();
-  
+
   // Position management
   const [widgetPosition, updateWidgetPosition, constrainWidgetPosition] = usePosition(initialWidgetPos);
   const [iconPosition, updateIconPosition, constrainIconPosition] = usePosition(initialIconPos);
@@ -46,12 +46,12 @@ const ContentApp = ({
 
   // Use custom chat hook if provided, otherwise use default
   const chatHook = customChatHook || useChat();
-  const { 
-    chatInput, 
-    chatMessages, 
-    isTyping, 
-    handleInputChange, 
-    handleKeyPress, 
+  const {
+    chatInput,
+    chatMessages,
+    isTyping,
+    handleInputChange,
+    handleKeyPress: baseChatHookHandleKeyPress,
     sendMessage,
     addMessage,
     addMessages,
@@ -75,13 +75,59 @@ const ContentApp = ({
     cleanup: fileCleanup
   } = useFileManagement(addUserMessage);
 
+
+  const handleKeyPress = async (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      if (customChatHook) {
+        baseChatHookHandleKeyPress(e);
+        return;
+      }
+
+      e.preventDefault();
+      const chatInputTrimmed = chatInput.trim();
+      if (!chatInputTrimmed) return; // Don't send empty messages
+
+      const buildPrompt = async () => {
+        const fileContents = await getAllContentAsString();
+        const parts = [];
+
+        // Add current chat input (from the input field)
+        if (chatInputTrimmed) {
+          parts.push(`<user_input>\n${chatInputTrimmed}\n</user_input>`);
+        }
+        baseChatHookHandleKeyPress(e);
+
+        // Add file contents as context (fixed variable name)
+        if (fileContents) {
+          parts.push(`<context>\n${fileContents.trim()}\n</context>`);
+        }
+
+        return parts.join('\n\n');
+      };
+
+      try {
+        const prompt = await buildPrompt();
+        const reply = await sendMessage(prompt);
+        console.log('🚀 Reply:', reply);
+        // Call the base handler to clear input and reset textarea
+
+      } catch (error) {
+        console.error('❌ Error in handleKeyPress:', error);
+        addUserMessage(`❌ Error sending message: ${error.message}`);
+      }
+    }
+  };
+
+
   // Store cleanup function for unmounting
   useEffect(() => {
+    console.log('🚀 Mounting component');
     cleanupRef.current = fileCleanup;
   }, [fileCleanup]);
 
   // Component cleanup on unmount
   useEffect(() => {
+    console.log('🚀 Unmounting component');
     return () => {
       if (cleanupRef.current) {
         cleanupRef.current();
@@ -89,14 +135,20 @@ const ContentApp = ({
     };
   }, []);
 
-  // Load session files and set getFileContentsFunction
+  // Load session files and set getFileContentsFunction - SIMPLE!
   useEffect(() => {
+    console.log('🚀 Loading session files on mount');
     loadSessionFiles();
+  }, []); // Empty dependency array - runs only once
+
+  useEffect(() => {
+    console.log('🚀 Updating file contents function');
     setGetFileContentsFunction(getAllContentAsString);
-  }, []);
+  }, [getAllContentAsString, setGetFileContentsFunction]);
 
   // Handle URL changes
   useEffect(() => {
+    console.log('🚀 URL changed');
     // Only process if URL actually changed
     if (currentUrl !== previousUrl.current) {
       previousUrl.current = currentUrl;
@@ -105,12 +157,12 @@ const ContentApp = ({
 
   // Drag and resize functionality
   const { dragging, hasDragged, startDrag, startResize } = useDragAndResize(
-    widgetSize, 
-    widgetPosition, 
-    iconPosition, 
+    widgetSize,
+    widgetPosition,
+    iconPosition,
     isMinimized,
-    setWidgetSize, 
-    updateWidgetPosition, 
+    setWidgetSize,
+    updateWidgetPosition,
     updateIconPosition
   );
 
@@ -120,6 +172,7 @@ const ContentApp = ({
 
   // Auto-scroll chat messages
   useEffect(() => {
+    console.log('🚀 Auto-scrolling chat messages');
     if (chatMessagesRef.current) {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
@@ -129,7 +182,7 @@ const ContentApp = ({
     if (cleanupRef.current) {
       cleanupRef.current();
     }
-    
+
     const container = document.getElementById('react-extension-root');
     if (container) container.remove();
   }, []);
@@ -140,20 +193,20 @@ const ContentApp = ({
 
   const handleExpand = useCallback(() => {
     if (hasDragged) return;
-    
+
     if (isMinimized) {
       const widgetTop = iconPosition.top;
       const widgetLeft = iconPosition.left - widgetSize.width + WIDGET_CONFIG.ICON_SIZE;
-      
+
       const constrainedPosition = constrainWidgetPosition(
         { top: widgetTop, left: widgetLeft },
         { elementWidth: widgetSize.width, elementHeight: widgetSize.height }
       );
-      
+
       updateWidgetPosition(constrainedPosition);
     }
     setIsMinimized(false);
-    
+
     setTimeout(() => {
       if (chatInputRef.current) {
         chatInputRef.current.focus();
@@ -198,7 +251,7 @@ const ContentApp = ({
   ];
 
   // Filter and render visible custom actions
-  const actionButtons = customActions.filter(action => 
+  const actionButtons = customActions.filter(action =>
     typeof action.isVisible === 'function' ? action.isVisible() : action.isVisible !== false
   );
 

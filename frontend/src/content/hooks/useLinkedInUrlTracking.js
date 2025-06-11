@@ -14,7 +14,7 @@ export const useLinkedInUrlTracking = () => {
       if (urlObj.hostname.includes('linkedin.com')) {
         const jobViewMatch = urlObj.pathname.match(/\/jobs\/view\/(\d+)/);
         if (jobViewMatch) return jobViewMatch[1];
-        
+
         const currentJobId = urlObj.searchParams.get('currentJobId');
         if (currentJobId) return currentJobId;
       }
@@ -64,11 +64,12 @@ export const useLinkedInUrlTracking = () => {
 
   // Handle URL changes
   useEffect(() => {
+    console.log('🚀 LinkedIn URL tracking mounted');
     const jobId = extractJobId(currentUrl);
     const isJobPage = !!jobId;
-    
+
     setIsLinkedInJobPage(isJobPage);
-    
+
     if (isJobPage) {
       // Small delay to let LinkedIn load content
       const timer = setTimeout(() => {
@@ -76,14 +77,14 @@ export const useLinkedInUrlTracking = () => {
         console.log('Extracted job:', job);
         setJobObject(job);
       }, 1000);
-      
+
       return () => clearTimeout(timer);
     } else {
       setJobObject(null);
     }
   }, [currentUrl]);
 
-  const formattedTitle = jobObject?.jobTitle 
+  const formattedTitle = jobObject?.jobTitle
     ? `💼 ${jobObject.jobTitle}${jobObject.company ? ` at ${jobObject.company}` : ''}`
     : 'LinkedIn';
 

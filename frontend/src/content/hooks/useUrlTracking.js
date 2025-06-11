@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 export const useUrlTracking = () => {
   const [currentUrl, setCurrentUrl] = useState(() => window.location.href); // Initialize immediately
   const lastUrl = useRef(window.location.href); // Initialize ref too
-  
+
   const updateUrlState = useCallback(() => {
     const newUrl = window.location.href;
-    
+
     if (newUrl !== lastUrl.current) {
       console.log("URL changed from:", lastUrl.current, "to:", newUrl);
       lastUrl.current = newUrl;
@@ -16,19 +16,20 @@ export const useUrlTracking = () => {
   }, []);
 
   useEffect(() => {
+    console.log('🚀 useUrlTracking mounted');
     console.log("useUrlTracking initialized for:", window.location.hostname);
-    
+
     // Store original methods
     const originalPushState = history.pushState;
     const originalReplaceState = history.replaceState;
 
     // Override history methods
-    history.pushState = function(...args) {
+    history.pushState = function (...args) {
       originalPushState.apply(history, args);
       setTimeout(updateUrlState, 10); // Small delay for DOM updates
     };
 
-    history.replaceState = function(...args) {
+    history.replaceState = function (...args) {
       originalReplaceState.apply(history, args);
       setTimeout(updateUrlState, 10);
     };
@@ -66,9 +67,9 @@ export const useUrlTracking = () => {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('yt-navigate-finish', handleYouTubeNavigation);
       document.removeEventListener('yt-page-data-updated', handleYouTubeNavigation);
-      
+
       clearInterval(pollInterval); // Clear the polling interval
-      
+
       history.pushState = originalPushState;
       history.replaceState = originalReplaceState;
     };
