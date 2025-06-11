@@ -51,7 +51,7 @@ const ContentApp = ({
     chatMessages,
     isTyping,
     handleInputChange,
-    handleKeyPress: baseChatHookHandleKeyPress,
+    handleKeyPress,
     sendMessage,
     addMessage,
     addMessages,
@@ -74,50 +74,6 @@ const ContentApp = ({
     removeFile,
     cleanup: fileCleanup
   } = useFileManagement(addUserMessage);
-
-
-  const handleKeyPress = async (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      if (customChatHook) {
-        baseChatHookHandleKeyPress(e);
-        return;
-      }
-
-      e.preventDefault();
-      const chatInputTrimmed = chatInput.trim();
-      if (!chatInputTrimmed) return; // Don't send empty messages
-
-      const buildPrompt = async () => {
-        const fileContents = await getAllContentAsString();
-        const parts = [];
-
-        // Add current chat input (from the input field)
-        if (chatInputTrimmed) {
-          parts.push(`<user_input>\n${chatInputTrimmed}\n</user_input>`);
-        }
-        baseChatHookHandleKeyPress(e);
-
-        // Add file contents as context (fixed variable name)
-        if (fileContents) {
-          parts.push(`<context>\n${fileContents.trim()}\n</context>`);
-        }
-
-        return parts.join('\n\n');
-      };
-
-      try {
-        const prompt = await buildPrompt();
-        const reply = await sendMessage(prompt);
-        console.log('🚀 Reply:', reply);
-        // Call the base handler to clear input and reset textarea
-
-      } catch (error) {
-        console.error('❌ Error in handleKeyPress:', error);
-        addUserMessage(`❌ Error sending message: ${error.message}`);
-      }
-    }
-  };
-
 
   // Store cleanup function for unmounting
   useEffect(() => {
