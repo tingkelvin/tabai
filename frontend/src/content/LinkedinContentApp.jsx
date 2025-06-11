@@ -13,9 +13,11 @@ const LinkedinContentApp = () => {
   const lastJobId = useRef(null);
   const { getAllContentAsString, uploadedFiles } = useFileContext();
 
-  const { focusedElement } = useSimpleFormDetector();
+  const { focusedElement, formElementsByHeader } = useSimpleFormDetector();
 
   useEffect(() => {
+    console.log(formElementsByHeader)
+    
     if (focusedElement?.label &&
       jobObject &&
       focusedElement?.label !== "Unknown field" &&
@@ -24,18 +26,18 @@ const LinkedinContentApp = () => {
 
       const getSuggestion = async () => {
         // Very specific prompt for short, direct answers
-        const context = `Job: ${JSON.stringify(jobObject, null, 2)}`
         const fileContents = await getAllContentAsString();
-
-        const message = `
-          <context>
-            ${context}
-          </context>
-          ${fileContents ? `\nFiles:\n${fileContents}` : ''}
-          I need to fill this field: "${focusedElement.label}"
-          Platform: Linkedin
-          Rules: No explanations or additional text, reply in format ans:[your_answer_here]`;
-
+        if (!fileContents) {
+          chatHook.addAssistantMessage("Please upload a resume")
+          return;
+        }
+        let message = `<job>${JSON.stringify(jobObject, null, 2)}</job>`
+        message += `<resume>{${fileContents ? `Resume: ${fileContents}</reusme>` : ''}`
+        message += `<fields>"${focusedElement.label}</fields>`
+        message += "<request>job apply, fill in the fields, using resume</request>"
+        message += "<rules>No explanations or additional text, reply in format ans:[your_answer_here]<rules>"
+        
+         
         const suggestion = await chatHook.sendMessage(message);
 
         // Extract answer from ans:[...] format
@@ -116,7 +118,7 @@ const LinkedinContentApp = () => {
 
   // Auto-extract when new job is detected
 
-  const ask = async (question, resumeNeeded = false) => {
+  const ask = async (question, resumeNeeded = false, ansOnly=false) => {
     if (!jobObject) {
       chatHook.addAssistantMessage("No job posting found to analyze.");
       return;
@@ -125,22 +127,31 @@ const LinkedinContentApp = () => {
     console.log('Asking question about job:', question);
     chatHook.addUserMessage(question);
 
-    const context = `Job: ${JSON.stringify(jobObject, null, 2)}`
+    try {
+      const jobContext = `${JSON.stringify(jobObject, null, 2)}`;
+      const fileContents = await getAllContentAsString();
+      
+      if (resumeNeeded && (!fileContents || !fileContents.trim())) {
+        chatHook.addAssistantMessage("Please upload your resume first.");
+        return;
+      }
 
-    const fileContents = await getAllContentAsString();
-
-
-    const message = `
-    <context>
-      ${context}
-    </context>
-    ${resumeNeeded ? `\nFiles:\n${fileContents}` : ''}
-    ${question}`;
-    console.log('🚀 Message:', message);
-
-    const response = await chatHook.sendMessage(message);
-    chatHook.addAssistantMessage(response);
-    console.log('🚀 Response:', response);
+      let message = `<job>${jobContext}</job>`
+      message +="<platform>linkedin<</platform>"
+      message+= `<resume>${resumeNeeded && fileContents ? `Resume: ${fileContents}` : ''} </resume>`
+      message+= `<request>${question}</request>`
+      if (ansOnly) message += "<rules>no other text</rules>"
+      console.log('🚀 Message:', message);
+      const response = await chatHook.sendMessage(message);
+      
+      if (response) {
+        chatHook.addAssistantMessage(response);
+        console.log('🚀 Response:', response);
+      }
+    } catch (error) {
+      console.error('Error processing request:', error);
+      chatHook.addAssistantMessage("Sorry, I encountered an error while processing your request. Please try again.");
+    }
   };
 
   // Updated actions array with SVG icons
@@ -149,7 +160,7 @@ const LinkedinContentApp = () => {
       id: 'generate-cover-letter',
       label: 'Cover letter',
       icon: <SummaryIcon />,
-      onClick: () => ask("cover letter", true),
+      onClick: () => ask("cover letter", true, true),
       isVisible: () => !!jobObject,
       className: 'cover-letter-action',
       title: 'Generate a cover letter of the job'
@@ -158,7 +169,7 @@ const LinkedinContentApp = () => {
       id: 'generate-summary',
       label: 'Summary',
       icon: <SummaryIcon />,
-      onClick: () => ask("Provide a summary of this job posting"),
+      onClick: () => ask("summary"),
       isVisible: () => !!jobObject,
       className: 'summary-action',
       title: 'Generate a summary of the job'
@@ -167,7 +178,7 @@ const LinkedinContentApp = () => {
       id: 'salary-info',
       label: 'Salary',
       icon: <SalaryIcon />,
-      onClick: () => ask("What is the salary range for this position?"),
+      onClick: () => ask("salary?"),
       isVisible: () => !!jobObject,
       className: 'salary-action',
       title: 'Get salary information'
@@ -176,7 +187,7 @@ const LinkedinContentApp = () => {
       id: 'job-duties',
       label: 'Duties',
       icon: <DutiesIcon />,
-      onClick: () => ask("What are the main duties and responsibilities?"),
+      onClick: () => ask("duties?"),
       isVisible: () => !!jobObject,
       className: 'duties-action',
       title: 'Learn about job duties'
@@ -185,7 +196,7 @@ const LinkedinContentApp = () => {
       id: 'resume-fit',
       label: 'Resume Fit',
       icon: <ResumeIcon />,
-      onClick: () => ask("Is my resume a good fit for this job?", true),
+      onClick: () => ask("resume fit?", true),
       isVisible: () => !!jobObject,
       className: 'resume-fit-action',
       title: 'Check if your resume matches this job'
