@@ -7,7 +7,7 @@ export const chatHandler = {
   handleMessage: async (data, sendResponse) => {
     try {
       console.log('💬 Processing chat message:', data.message);
-      
+
       // Check if AuthManager is available
       if (!AuthManager) {
         return sendResponse({
@@ -16,10 +16,10 @@ export const chatHandler = {
           content: "Authentication system is not available. Please refresh the extension.",
         });
       }
-      
+
       // Check authentication status
       const authStatus = await AuthManager.checkAuthStatus();
-      
+
       if (!authStatus.isAuthenticated) {
         return sendResponse({
           success: false,
@@ -31,8 +31,9 @@ export const chatHandler = {
 
       // Get bearer token
       const bearerToken = await AuthManager.getBearerToken();
-      
+
       if (!bearerToken) {
+        AuthManager.logout();
         return sendResponse({
           success: false,
           error: 'TOKEN_UNAVAILABLE',
@@ -43,7 +44,7 @@ export const chatHandler = {
 
       // Call API
       const apiResponse = await chatWithLlm(
-        data.message, 
+        data.message,
         bearerToken
       );
 
@@ -56,10 +57,26 @@ export const chatHandler = {
 
     } catch (error) {
       console.error('❌ Error processing chat message:', error);
-      
+      if (error.message.includes('401')) {
+        return sendResponse({
+          success: false,
+          error: 'AUTH_REQUIRED',
+          content: "Please log in to use the chat feature.",
+          requiresAuth: true
+        });
+      }
+
+
+
       // Use centralized error handling
       const errorResponse = createErrorResponse(error);
       sendResponse(errorResponse);
+      if (errorResponse.error === 'UNAUTHORIZED' ||
+        errorResponse.error === 'TOKEN_UNAVAILABLE' ||
+        errorResponse.error === 'AUTH_REQUIRED'
+      ) {
+        AuthManager.logout();
+      }
     }
   }
 };
