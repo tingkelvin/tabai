@@ -29,7 +29,7 @@ const LinkedinContentApp = () => {
       tagName: field.tagName || "unknown",
       required: field.required || false,
     })), null, 2)}</fields>`;
-    message += "<request>job apply, fill in ALL the fields using resume data if value is not already filled</request>";
+    message += "<request>job apply, fill in ALL the fields using resume data if value is not already filled without repeating value</request>";
     message += "<rules>Reply with JSON format: [{\"id\": \"field_id\", \"suggestion\": \"your_answer_here\"}] for each field. No explanations.</rules>";
     return message;
   };
@@ -96,7 +96,21 @@ const LinkedinContentApp = () => {
     console.log("gatherFieldsToAutoFill sectionElements", sectionElements)
     const fieldsToAutoFill = [];
     const idToDomMap = {};
+    console.log("current", userFilledElementsRef.current)
+    // First add cached elements with same header
+    for (const [element, data] of userFilledElementsRef.current) {
+      const parentElement = childToParentRef.current.get(element);
+      if (parentElement?.nearestHeader?.text === focusedElement.nearestHeader?.text) {
+        const { element: _, ...elementWithoutDomRef } = parentElement;
+        fieldsToAutoFill.push({
+          ...elementWithoutDomRef,
+          value: "" // Include the cached value
+        });
+        idToDomMap[elementWithoutDomRef.id] = parentElement;
+      }
+    }
 
+    // Then add current section elements
     for (const element of sectionElements) {
       if ((element.tagName === 'textarea' || element.tagName === 'input') &&
         element.nearestHeader?.text === focusedElement.nearestHeader?.text) {
