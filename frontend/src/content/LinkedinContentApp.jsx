@@ -13,63 +13,31 @@ const LinkedinContentApp = () => {
   const lastJobId = useRef(null);
   const { getAllContentAsString, uploadedFiles } = useFileContext();
 
-  const { focusedElement, formElementsByHeader } = useSimpleFormDetector();
+  const { focusedElement, sectionElements } = useSimpleFormDetector();
 
   useEffect(() => {
-    console.log(formElementsByHeader)
-    
-    if (focusedElement?.label &&
-      jobObject &&
+    console.log("focusedElement changed")
+
+    let fieldsToAutoFill = []
+    if ((focusedElement?.label || focusedElement?.placeholder) &&
       focusedElement?.label !== "Unknown field" &&
       focusedElement?.placeholder !== "Ask me anything..." &&
       !focusedElement?.className?.includes('chat-input')) {
 
-      const getSuggestion = async () => {
-        // Very specific prompt for short, direct answers
-        const fileContents = await getAllContentAsString();
-        if (!fileContents) {
-          chatHook.addAssistantMessage("Please upload a resume")
-          return;
+      for (const element of sectionElements) {
+        if (element.tagName === 'textarea' || element.tagName === 'input') {
+          console.log('Found textarea, setting placeholder...');
+          element.element.placeholder = "Please describe your experience and why you're interested in this position...";
+
+          // Destructure to exclude the 'element' property
+          const { element: _, ...elementWithoutDomRef } = element;
+          fieldsToAutoFill.push(elementWithoutDomRef);
         }
-        let message = `<job>${JSON.stringify(jobObject, null, 2)}</job>`
-        message += `<resume>{${fileContents ? `Resume: ${fileContents}</reusme>` : ''}`
-        message += `<fields>"${focusedElement.label}</fields>`
-        message += "<request>job apply, fill in the fields, using resume</request>"
-        message += "<rules>No explanations or additional text, reply in format ans:[your_answer_here]<rules>"
-        
-         
-        const suggestion = await chatHook.sendMessage(message);
+      }
 
-        // Extract answer from ans:[...] format
-        let cleanSuggestion = suggestion;
-
-        // Look for ans:[...] pattern
-        const ansMatch = suggestion.match(/ans:\s*\[([^\]]+)\]/i);
-        if (ansMatch) {
-          cleanSuggestion = ansMatch[1];
-        }
-
-        // Additional cleaning
-        cleanSuggestion = cleanSuggestion
-          .replace(/['"]/g, '') // Remove quotes
-          .replace(/^(ans|answer|placeholder|suggestion):\s*/i, '') // Remove prefixes
-          .trim()
-
-        console.log('🤖 AI suggestion for', focusedElement.label, ':', cleanSuggestion);
-
-        // Update placeholder with suggestion (no need to store separately!)
-        const actualElement = document.querySelector(`#${focusedElement.id}`);
-        if (actualElement) {
-          if (!actualElement.getAttribute('data-original-placeholder')) {
-            actualElement.setAttribute('data-original-placeholder', actualElement.placeholder || '');
-          }
-          actualElement.placeholder = `${cleanSuggestion} (Press Tab to auto-fill)`;
-        }
-      };
-
-      getSuggestion();
+      console.log(fieldsToAutoFill)
     }
-  }, [focusedElement?.label]);
+  }, [focusedElement, sectionElements]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Tab' && e.target.closest && e.target.placeholder && !e.target.closest('.extension-widget')) {
@@ -118,7 +86,7 @@ const LinkedinContentApp = () => {
 
   // Auto-extract when new job is detected
 
-  const ask = async (question, resumeNeeded = false, ansOnly=false) => {
+  const ask = async (question, resumeNeeded = false, ansOnly = false) => {
     if (!jobObject) {
       chatHook.addAssistantMessage("No job posting found to analyze.");
       return;
@@ -130,20 +98,20 @@ const LinkedinContentApp = () => {
     try {
       const jobContext = `${JSON.stringify(jobObject, null, 2)}`;
       const fileContents = await getAllContentAsString();
-      
+
       if (resumeNeeded && (!fileContents || !fileContents.trim())) {
         chatHook.addAssistantMessage("Please upload your resume first.");
         return;
       }
 
       let message = `<job>${jobContext}</job>`
-      message +="<platform>linkedin<</platform>"
-      message+= `<resume>${resumeNeeded && fileContents ? `Resume: ${fileContents}` : ''} </resume>`
-      message+= `<request>${question}</request>`
+      message += "<platform>linkedin<</platform>"
+      message += `<resume>${resumeNeeded && fileContents ? `Resume: ${fileContents}` : ''} </resume>`
+      message += `<request>${question}</request>`
       if (ansOnly) message += "<rules>no other text</rules>"
       console.log('🚀 Message:', message);
       const response = await chatHook.sendMessage(message);
-      
+
       if (response) {
         chatHook.addAssistantMessage(response);
         console.log('🚀 Response:', response);

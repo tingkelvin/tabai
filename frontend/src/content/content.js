@@ -30,11 +30,12 @@ function showExtension() {
 
   if (isYouTube) {
     root.render(<FileProvider><YoutubeContentApp /></FileProvider>);
-  } else if (isLinkedin) {
-    root.render(<FileProvider><LinkedInContentApp /></FileProvider>);
   } else {
-    root.render(<FileProvider><ContentApp /></FileProvider>);
+    root.render(<FileProvider><LinkedInContentApp /></FileProvider>);
   }
+  // else {
+  //   root.render(<FileProvider><ContentApp /></FileProvider>);
+  // }
 }
 // console.log(`React Chrome Extension loaded on ${isYouTube ? 'YouTube' : 'other site'}!`);
 

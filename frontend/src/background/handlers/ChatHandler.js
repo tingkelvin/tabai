@@ -10,6 +10,7 @@ export const chatHandler = {
 
       // Check if AuthManager is available
       if (!AuthManager) {
+        AuthManager.logout();
         return sendResponse({
           success: false,
           error: 'AUTH_SYSTEM_UNAVAILABLE',
@@ -21,6 +22,7 @@ export const chatHandler = {
       const authStatus = await AuthManager.checkAuthStatus();
 
       if (!authStatus.isAuthenticated) {
+        AuthManager.logout();
         return sendResponse({
           success: false,
           error: 'AUTH_REQUIRED',

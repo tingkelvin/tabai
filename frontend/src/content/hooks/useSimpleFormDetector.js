@@ -1,226 +1,324 @@
-// hooks/useSimpleFormDetector.js - Enhanced LinkedIn form detector with tab simulation
+// hooks/useSimpleFormDetector.js - Fixed LinkedIn form detector
 import { useState, useEffect, useCallback } from 'react';
 
 export const useSimpleFormDetector = () => {
   const [focusedElement, setFocusedElement] = useState(null);
-  const [allFormElements, setAllFormElements] = useState([]);
-  const [formElementsByHeader, setFormElementsByHeader] = useState({});
+  const [sectionElements, setSectionElements] = useState([]);
 
-  // Simple function to extract what we can see from LinkedIn elements
-  const getElementInfo = useCallback((element) => {
+  // Check if an element is visible/not hidden
+  const isElementVisible = useCallback((element) => {
+    if (!element || !element.nodeType || element.nodeType !== Node.ELEMENT_NODE) {
+      return false;
+    }
+
+    try {
+      // Quick check - if offsetParent is null, element is likely hidden
+      // (except for position: fixed elements)
+      if (element.offsetParent === null) {
+        // Additional check for position: fixed elements
+        const computedStyle = window.getComputedStyle(element);
+        if (computedStyle.position !== 'fixed') {
+          return false;
+        }
+      }
+
+      // Check computed styles for common hiding techniques
+      const computedStyle = window.getComputedStyle(element);
+
+      // Hidden via display: none
+      if (computedStyle.display === 'none') {
+        return false;
+      }
+
+      // Hidden via visibility: hidden
+      if (computedStyle.visibility === 'hidden') {
+        return false;
+      }
+
+      // Hidden via opacity: 0
+      if (parseFloat(computedStyle.opacity) === 0) {
+        return false;
+      }
+
+      // Hidden via zero dimensions
+      const rect = element.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) {
+        return false;
+      }
+
+      // Check if element is outside the viewport (optional - uncomment if needed)
+      // if (rect.bottom < 0 || rect.right < 0 || 
+      //     rect.left > window.innerWidth || rect.top > window.innerHeight) {
+      //   return false;
+      // }
+
+      return true;
+    } catch (error) {
+      console.warn('Error checking element visibility:', error);
+      return false;
+    }
+  }, []);
+
+  // Find the nearest header element (h1, h2, h3, etc.) above the target element
+  const findNearestHeader = useCallback((element) => {
     if (!element) return null;
 
-    // Get the label text (most important for LinkedIn)
-    const getLabel = () => {
-      // Method 1: Direct label element
-      if (element.labels && element.labels[0]) {
-        return element.labels[0].textContent.trim();
+    let current = element;
+
+    while (current && current !== document.body) {
+      // Check if current element is a header
+      if (current.tagName && /^H[1-6]$/i.test(current.tagName)) {
+        return {
+          element: current,
+          text: current.textContent.trim(),
+          level: parseInt(current.tagName.charAt(1)),
+          tagName: current.tagName.toLowerCase()
+        };
       }
-      
-      // Method 2: Look for label in the same container
-      const container = element.closest('[data-test-form-element]');
-      if (container) {
-        const label = container.querySelector('label');
-        if (label) {
-          return label.textContent.trim();
-        }
-      }
-      
-      // Method 3: Previous sibling label
-      let sibling = element.previousElementSibling;
+
+      // Check previous siblings
+      let sibling = current.previousElementSibling;
       while (sibling) {
-        if (sibling.tagName === 'LABEL') {
-          return sibling.textContent.trim();
+        if (/^H[1-6]$/i.test(sibling.tagName)) {
+          return {
+            element: sibling,
+            text: sibling.textContent.trim(),
+            level: parseInt(sibling.tagName.charAt(1)),
+            tagName: sibling.tagName.toLowerCase()
+          };
         }
+
+        // Also check if sibling contains a header
+        const headerInSibling = sibling.querySelector('h1, h2, h3, h4, h5, h6');
+        if (headerInSibling) {
+          return {
+            element: headerInSibling,
+            text: headerInSibling.textContent.trim(),
+            level: parseInt(headerInSibling.tagName.charAt(1)),
+            tagName: headerInSibling.tagName.toLowerCase()
+          };
+        }
+
         sibling = sibling.previousElementSibling;
       }
 
-      // Method 4: aria-label or aria-labelledby
-      if (element.getAttribute('aria-label')) {
-        return element.getAttribute('aria-label').trim();
-      }
+      // Move up to parent and continue searching
+      current = current.parentElement;
+    }
 
-      if (element.getAttribute('aria-labelledby')) {
-        const labelId = element.getAttribute('aria-labelledby');
-        const labelElement = document.getElementById(labelId);
-        if (labelElement) {
-          return labelElement.textContent.trim();
-        }
-      }
-      
+    return null;
+  }, []);
+
+  // Simple function to extract element information (now includes header)
+  const getElementInfo = useCallback((element) => {
+    if (!element || !element.nodeType || element.nodeType !== Node.ELEMENT_NODE) {
       return null;
+    }
+
+    // Get the label text (works for various form structures)
+    const getLabel = () => {
+      try {
+        // Method 1: Direct label element (HTML standard)
+        if (element.labels && element.labels[0]) {
+          return element.labels[0].textContent.trim();
+        }
+
+        // Method 2: Find label by 'for' attribute matching element id
+        if (element.id) {
+          const labelByFor = document.querySelector(`label[for="${element.id}"]`);
+          if (labelByFor) {
+            return labelByFor.textContent.trim();
+          }
+        }
+
+        // Method 3: Look for label in the same control-group (Bootstrap style)
+        if (element.closest) {
+          const controlGroup = element.closest('.control-group');
+          if (controlGroup) {
+            const label = controlGroup.querySelector('label.control-label');
+            if (label) {
+              return label.textContent.trim();
+            }
+          }
+
+          // Method 4: Look for label in any parent container
+          const container = element.closest('div');
+          if (container) {
+            const label = container.querySelector('label');
+            if (label) {
+              return label.textContent.trim();
+            }
+          }
+        }
+
+        // Method 5: Check previous siblings for labels
+        let sibling = element.previousElementSibling;
+        while (sibling) {
+          if (sibling.tagName === 'LABEL') {
+            return sibling.textContent.trim();
+          }
+          sibling = sibling.previousElementSibling;
+        }
+
+        // Method 6: Check parent's previous siblings (nested structures)
+        let parent = element.parentElement;
+        while (parent && parent !== document.body) {
+          let parentSibling = parent.previousElementSibling;
+          while (parentSibling) {
+            if (parentSibling.tagName === 'LABEL') {
+              return parentSibling.textContent.trim();
+            }
+            if (parentSibling.querySelector) {
+              const labelInSibling = parentSibling.querySelector('label');
+              if (labelInSibling) {
+                return labelInSibling.textContent.trim();
+              }
+            }
+            parentSibling = parentSibling.previousElementSibling;
+          }
+          parent = parent.parentElement;
+          // Don't go too far up the DOM
+          if (parent && parent.tagName === 'FORM') break;
+        }
+
+        // Method 7: aria-label or aria-labelledby
+        if (element.getAttribute) {
+          if (element.getAttribute('aria-label')) {
+            return element.getAttribute('aria-label').trim();
+          }
+
+          if (element.getAttribute('aria-labelledby')) {
+            const labelId = element.getAttribute('aria-labelledby');
+            const labelElement = document.getElementById(labelId);
+            if (labelElement) {
+              return labelElement.textContent.trim();
+            }
+          }
+        }
+
+        return null;
+      } catch (error) {
+        console.warn('Error getting label:', error);
+        return null;
+      }
     };
 
     // Get select options if it's a select element
     const getOptions = () => {
-      if (element.tagName.toLowerCase() === 'select') {
-        return Array.from(element.options).map(option => ({
-          value: option.value,
-          text: option.textContent.trim()
-        }));
+      try {
+        if (element.tagName && element.tagName.toLowerCase() === 'select' && element.options) {
+          return Array.from(element.options).map(option => ({
+            value: option.value,
+            text: option.textContent.trim()
+          }));
+        }
+        return null;
+      } catch (error) {
+        console.warn('Error getting options:', error);
+        return null;
       }
+    };
+
+    try {
+      return {
+        id: element.id || `generated-id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        tagName: element.tagName ? element.tagName.toLowerCase() : '',
+        type: element.type || '',
+        label: getLabel(),
+        placeholder: element.placeholder || '',
+        value: element.value || '',
+        required: element.required || false,
+        disabled: element.disabled || false,
+        readonly: element.readOnly || false,
+        tabIndex: element.tabIndex,
+        className: element.className || '',
+        options: getOptions(),
+        nearestHeader: findNearestHeader(element), // Added header information
+        element: element // Keep reference to the actual DOM element
+      };
+    } catch (error) {
+      console.warn('Error creating element info:', error);
       return null;
-    };
+    }
+  }, [findNearestHeader]); // Added findNearestHeader to dependencies
 
-    return {
-      id: element.id || `generated-id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      tagName: element.tagName.toLowerCase(),
-      type: element.type || '',
-      label: getLabel(),
-      placeholder: element.placeholder || '',
-      value: element.value || '',
-      required: element.required || false,
-      disabled: element.disabled || false,
-      readonly: element.readOnly || false,
-      tabIndex: element.tabIndex,
-      className: element.className || '',
-      options: getOptions(),
-      element: element // Keep reference to the actual DOM element
-    };
-  }, []);
+  // Get elements in the same container (now filters hidden elements)
+  const getElementsInContainer = useCallback((element) => {
+    if (!element || !element.nodeType || element.nodeType !== Node.ELEMENT_NODE) {
+      return [];
+    }
 
-  // Function to find the nearest header for an element
-  const findNearestHeader = useCallback((element) => {
-    let current = element;
-    
-    // Walk up the DOM tree to find a header
-    while (current && current !== document.body) {
-      // Check if current element has a header as a sibling or parent
-      let sibling = current.previousElementSibling;
-      
-      // Look for headers in previous siblings
-      while (sibling) {
-        const header = sibling.querySelector('h1, h2, h3, h4, h5, h6');
-        if (header) {
-          return {
-            text: header.textContent.trim(),
-            level: parseInt(header.tagName.substring(1)),
-            element: header
-          };
-        }
-        
-        // Check if the sibling itself is a header
-        if (/^h[1-6]$/i.test(sibling.tagName)) {
-          return {
-            text: sibling.textContent.trim(),
-            level: parseInt(sibling.tagName.substring(1)),
-            element: sibling
-          };
-        }
-        
-        sibling = sibling.previousElementSibling;
+    const elements = [];
+
+    try {
+      // Find a reasonable container (form, fieldset, or div with multiple inputs)
+      let container = null;
+
+      if (element.closest) {
+        container = element.closest('form, fieldset');
       }
-      
-      // Move up to parent
-      current = current.parentElement;
-      
-      // Check if parent contains a header before this element
-      if (current) {
-        const headers = current.querySelectorAll('h1, h2, h3, h4, h5, h6');
-        for (let i = headers.length - 1; i >= 0; i--) {
-          const header = headers[i];
-          // Check if this header comes before our element in the DOM
-          if (header.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING) {
-            return {
-              text: header.textContent.trim(),
-              level: parseInt(header.tagName.substring(1)),
-              element: header
-            };
+
+      if (!container) {
+        // Look for a div container that has multiple form elements
+        let current = element.parentElement;
+        while (current && current !== document.body) {
+          if (current.querySelectorAll) {
+            const formElementsCount = current.querySelectorAll('input, select, textarea').length;
+            if (formElementsCount > 1) {
+              container = current;
+              break;
+            }
           }
+          current = current.parentElement;
         }
       }
+
+      if (container && container.querySelectorAll) {
+        const formElements = container.querySelectorAll('input, select, textarea');
+        formElements.forEach(el => {
+          // Filter out hidden elements before processing
+          if (isElementVisible(el)) {
+            const elementInfo = getElementInfo(el);
+            if (elementInfo) {
+              elements.push(elementInfo);
+            }
+          }
+        });
+      }
+
+      return elements;
+    } catch (error) {
+      console.warn('Error getting elements in container:', error);
+      return [];
     }
-    
-    return {
-      text: 'Unknown Section',
-      level: 0,
-      element: null
-    };
-  }, []);
+  }, [getElementInfo, isElementVisible]);
 
-  // Alternative method: Use document.querySelectorAll as fallback
-// Alternative method: Use document.querySelectorAll as fallback
-const extractAllFormElements = useCallback(() => {
-  console.log('📋 Using querySelector method as fallback...');
-  
-  // Find all focusable elements using CSS selector
-  const focusableElements = document.querySelectorAll(
-    'input:not([disabled]):not([tabindex="-1"]), ' +
-    'select:not([disabled]):not([tabindex="-1"]), ' +
-    'textarea:not([disabled]):not([tabindex="-1"]), ' +
-    'button:not([disabled]):not([tabindex="-1"]), ' +
-    '[tabindex]:not([tabindex="-1"])'
-  );
-  
-  const elements = [];
-  const tempGroupedByHeader = {}; // Temporary grouping
-
-  focusableElements.forEach((element, index) => {
-    // Skip elements that are part of the extension widget
-    if (element.closest('.extension-widget')) {
-      return;
-    }
-
-    const elementInfo = getElementInfo(element);
-
-    if (elementInfo.label == null) return;
-
-    const nearestHeader = findNearestHeader(element);
-    
-    const elementWithHeader = {
-      ...elementInfo,
-      nearestHeader: nearestHeader,
-      tabOrder: index + 1
-    };
-
-    elements.push(elementWithHeader);
-
-    // Group by header temporarily
-    const headerKey = nearestHeader.text;
-    if (!tempGroupedByHeader[headerKey]) {
-      tempGroupedByHeader[headerKey] = {
-        header: nearestHeader,
-        elements: []
-      };
-    }
-    tempGroupedByHeader[headerKey].elements.push(elementWithHeader);
-  });
-
-  // Filter to only include sections with at least one required element
-  const groupedByHeader = {};
-  Object.keys(tempGroupedByHeader).forEach(headerKey => {
-    const section = tempGroupedByHeader[headerKey];
-    const hasRequiredElement = section.elements.some(element => element.required);
-    
-    if (hasRequiredElement) {
-      groupedByHeader[headerKey] = section;
-    }
-  });
-
-  setAllFormElements(elements);
-  setFormElementsByHeader(groupedByHeader);
-
-  console.log('📋 QuerySelector method found:', elements.length, 'total elements');
-  console.log('📋 Sections with required fields:', Object.keys(groupedByHeader).length);
-  return { elements, groupedByHeader };
-}, [getElementInfo, findNearestHeader]);
-
-  // Focus handler
+  // Focus handler (simplified since header is now included in getElementInfo)
   const handleFocus = useCallback((e) => {
-    const tagName = e.target.tagName.toLowerCase();
-    if (['input', 'select', 'textarea'].includes(tagName)) {
-      const elementInfo = getElementInfo(e.target);
-      const nearestHeader = findNearestHeader(e.target);
-      
-      const focusedElementWithHeader = {
-        ...elementInfo,
-        nearestHeader: nearestHeader
-      };
-      
-      console.log('🎯 Focused element:', focusedElementWithHeader);
-      setFocusedElement(focusedElementWithHeader);
+    try {
+      // Ensure we have a valid DOM element
+      if (!e || !e.target || !e.target.nodeType || e.target.nodeType !== Node.ELEMENT_NODE) {
+        return;
+      }
+
+      const tagName = e.target.tagName ? e.target.tagName.toLowerCase() : '';
+      if (['input', 'select', 'textarea'].includes(tagName)) {
+        const elementInfo = getElementInfo(e.target);
+        if (!elementInfo) return;
+
+        console.log('🎯 Focused element:', elementInfo);
+
+        // Also get all elements in the same section (now filtered for visibility)
+        const sectionElements = getElementsInContainer(e.target);
+        console.log('📋 Section elements (visible only):', sectionElements);
+
+        setSectionElements(sectionElements);
+        setFocusedElement(elementInfo);
+      }
+    } catch (error) {
+      console.warn('Error in handleFocus:', error);
     }
-  }, [getElementInfo, findNearestHeader]);
+  }, [getElementInfo, getElementsInContainer]); // Updated dependencies
 
   const handleBlur = useCallback(() => {
     // Simple version - just clear focused element immediately
@@ -238,100 +336,8 @@ const extractAllFormElements = useCallback(() => {
     };
   }, [handleFocus, handleBlur]);
 
-  // Function to get a summary of form elements and their state
-  const getFormSummary = useCallback(() => {
-    const sections = Object.keys(formElementsByHeader).map(headerKey => {
-      const section = formElementsByHeader[headerKey];
-      const requiredElements = section.elements.filter(el => el.required);
-      const emptyRequired = requiredElements.filter(el => !el.value || el.value.trim() === '');
-      
-      return {
-        header: headerKey,
-        elementCount: section.elements.length,
-        requiredCount: requiredElements.length,
-        emptyRequiredCount: emptyRequired.length,
-        completion: requiredElements.length > 0 
-          ? Math.round(((requiredElements.length - emptyRequired.length) / requiredElements.length) * 100)
-          : 100
-      };
-    });
-
-    const totalElements = allFormElements.length;
-    const requiredElements = allFormElements.filter(el => el.required).length;
-    const emptyRequired = allFormElements.filter(el => el.required && (!el.value || el.value.trim() === '')).length;
-    const totalSections = Object.keys(formElementsByHeader).length;
-
-    return {
-      totalSections,
-      totalElements,
-      requiredElements,
-      emptyRequired,
-      completion: requiredElements > 0 
-        ? Math.round(((requiredElements - emptyRequired) / requiredElements) * 100)
-        : 100,
-      sections
-    };
-  }, [allFormElements, formElementsByHeader]);
-
-    // Function to show detailed form analysis
-  const showFormAnalysis = useCallback(() => {
-    const summary = getFormSummary();
-    return {
-      ...summary,
-      details: summary.sections.map(section => ({
-        ...section,
-        fields: formElementsByHeader[section.header]?.elements.map(el => {
-          // Get current value from the actual DOM element if available
-          const currentValue = el.element ? (el.element.value || '') : el.value;
-          const isFilled = !!(currentValue && currentValue.trim());
-          
-          return {
-            id: el.id,
-            label: el.label,
-            tagName: el.tagName,
-            type: el.type,
-            required: el.required,
-            disabled: el.disabled,
-            readonly: el.readonly,
-            tabIndex: el.tabIndex,
-            placeholder: el.placeholder,
-            currentValue: currentValue,
-            originalValue: el.value, // Original value when detected
-            filled: isFilled,
-            isEmpty: !isFilled,
-            className: el.className,
-            // Select options if it's a dropdown
-            options: el.options || null,
-            // Validation status
-            validationStatus: el.required ? (isFilled ? '✅ Valid' : '❌ Required but empty') : '➖ Optional',
-            // Field state summary
-            status: {
-              isRequired: el.required,
-              isFilled: isFilled,
-              isDisabled: el.disabled,
-              isReadonly: el.readonly,
-              hasPlaceholder: !!(el.placeholder && el.placeholder.trim()),
-              hasOptions: !!(el.options && el.options.length > 0)
-            },
-            // Accessibility info
-            accessibility: {
-              hasLabel: !!(el.label && el.label !== 'Unknown field'),
-              hasAriaLabel: !!(el.element && el.element.getAttribute('aria-label')),
-              hasAriaLabelledBy: !!(el.element && el.element.getAttribute('aria-labelledby')),
-              tabOrder: el.tabIndex
-            }
-          };
-        }) || []
-      }))
-    };
-  }, [getFormSummary, formElementsByHeader]);
-
   return {
     focusedElement,
-    allFormElements,
-    formElementsByHeader,
-    extractAllFormElements,
-    getFormSummary,
-    showFormAnalysis
+    sectionElements
   };
 };
