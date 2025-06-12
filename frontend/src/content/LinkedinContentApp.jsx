@@ -19,6 +19,8 @@ const LinkedinContentApp = () => {
     console.log("focusedElement changed")
 
     let fieldsToAutoFill = []
+    let idToDomMap = {}
+
     if ((focusedElement?.label || focusedElement?.placeholder) &&
       focusedElement?.label !== "Unknown field" &&
       focusedElement?.placeholder !== "Ask me anything..." &&
@@ -26,16 +28,90 @@ const LinkedinContentApp = () => {
 
       for (const element of sectionElements) {
         if (element.tagName === 'textarea' || element.tagName === 'input') {
-          console.log('Found textarea, setting placeholder...');
-          element.element.placeholder = "Please describe your experience and why you're interested in this position...";
+          console.log('Found form element, setting placeholder...');
+          element.element.placeholder = "";
 
           // Destructure to exclude the 'element' property
           const { element: _, ...elementWithoutDomRef } = element;
           fieldsToAutoFill.push(elementWithoutDomRef);
+          idToDomMap[elementWithoutDomRef.id] = element;
         }
       }
-
       console.log(fieldsToAutoFill)
+
+      const getSuggestion = async () => {
+        console.log("getSuggestion")
+        if (fieldsToAutoFill.length === 0) return;
+        console.log("getSuggestion2")
+
+        // Get resume content
+        const fileContents = await getAllContentAsString();
+        if (!fileContents) {
+          chatHook.addAssistantMessage("Please upload a resume")
+          return;
+        }
+
+        // Build message with all fields
+        let message = `<job>${JSON.stringify(jobObject, null, 2)}</job>`
+        message += `<resume>${fileContents}</resume>`
+        message += `<fields>${JSON.stringify(fieldsToAutoFill.map(field => ({
+          id: field.id || "unknown",
+          label: field.label || "unknown",
+          header: field.nearestHeader?.text || "unknown",
+          value: field.value || "unknown",
+          tagName: field.tagName || "unknown",
+          required: field.required || false
+        })), null, 2)}</fields>`
+        message += "<request>job apply, fill in ALL the fields using resume data</request>"
+        message += "<rules>Reply with JSON format: [{\"id\": \"field_id\", \"suggestion\": \"your_answer_here\"}] for each field. No explanations.</rules>"
+
+        const suggestion = await chatHook.sendMessage(message);
+
+        try {
+          // Parse JSON response
+          let suggestions = [];
+
+          // Try to extract JSON from response
+          const jsonMatch = suggestion.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            suggestions = JSON.parse(jsonMatch[0]);
+          } else {
+            // Fallback: try to parse the entire response
+            suggestions = JSON.parse(suggestion);
+          }
+
+          console.log(suggestions)
+
+          // Update placeholders/values for each field
+          suggestions.forEach(({ id, suggestion: fieldSuggestion }) => {
+            const fieldElement = fieldsToAutoFill.find(field => field.id === id);
+            const domElement = idToDomMap[id];
+            console.log("find", fieldElement, domElement)
+            if (fieldElement && domElement) {
+              // Clean the suggestion
+              const cleanSuggestion = fieldSuggestion
+                .replace(/['"]/g, '')
+                .trim();
+
+              // Handle textarea vs input differently
+              if (fieldElement.tagName === 'textarea') {
+                // For textarea, set the value directly
+                domElement.element.placeholder = cleanSuggestion;
+              } else {
+                domElement.element.placeholder = `${cleanSuggestion} (Press Tab to auto-fill)`;
+              }
+
+              console.log('🤖 AI suggestion for', fieldElement.label || fieldElement.nearestHeader?.text, ':', cleanSuggestion);
+
+            }
+          });
+
+        } catch (error) {
+          console.error('Error parsing AI suggestions:', error);
+        }
+      };
+
+      getSuggestion();
     }
   }, [focusedElement, sectionElements]);
 
