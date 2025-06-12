@@ -338,6 +338,7 @@ export const useSimpleFormDetector = () => {
 
   return {
     focusedElement,
-    sectionElements
+    sectionElements,
+    getElementsInContainer
   };
 };

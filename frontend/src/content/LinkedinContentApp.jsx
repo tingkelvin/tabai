@@ -10,118 +10,138 @@ import { useFileContext } from './contexts/FileProvider';
 const LinkedinContentApp = () => {
   const { jobObject, formattedTitle } = useLinkedInUrlTracking();
   const { getAllContentAsString } = useFileContext();
-  const { focusedElement, sectionElements } = useSimpleFormDetector();
+  const { focusedElement, sectionElements, getElementsInContainer } = useSimpleFormDetector();
   const userFilledElementsRef = useRef(new Map());
+  const userCachedElementsRef = useRef(new Map());
+  const childToParentRef = useRef(new Map());
   const chatHook = useChat();
 
+  // Helper function to build the message for AI
+  const buildAIMessage = (jobObject, fileContents, fieldsToAutoFill) => {
+    let message = `<job>${JSON.stringify(jobObject, null, 2)}</job>`;
+    message += `<resume>${fileContents}</resume>`;
+    message += `<fields>${JSON.stringify(fieldsToAutoFill.map(field => ({
+      id: field.id || "unknown",
+      label: field.label || "unknown",
+      placeholder: field.placeholder || "unknown",
+      header: field.nearestHeader?.text || "unknown",
+      value: field.value || "",
+      tagName: field.tagName || "unknown",
+      required: field.required || false,
+    })), null, 2)}</fields>`;
+    message += "<request>job apply, fill in ALL the fields using resume data if value is not already filled</request>";
+    message += "<rules>Reply with JSON format: [{\"id\": \"field_id\", \"suggestion\": \"your_answer_here\"}] for each field. No explanations.</rules>";
+    return message;
+  };
+
+  // Helper function to parse AI response
+  const parseAISuggestions = (suggestion) => {
+    try {
+      const jsonMatch = suggestion.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+      return JSON.parse(suggestion);
+    } catch (error) {
+      console.error('Error parsing AI suggestions:', error);
+      return [];
+    }
+  };
+
+  // Helper function to update field with suggestion
+  const updateFieldWithSuggestion = (fieldElement, domElement, suggestion, userCachedElementsRef) => {
+    if (!fieldElement || !domElement) return;
+
+    const cleanSuggestion = suggestion.replace(/['"]/g, '').trim();
+    domElement.element.placeholder = `${cleanSuggestion} (Press Tab to auto-fill)`;
+
+    const maxHistory = 5;
+    const existing = userCachedElementsRef.current.get(domElement.element) || [];
+    const updated = [...existing, { value: cleanSuggestion, timestamp: new Date() }].slice(-maxHistory);
+    userCachedElementsRef.current.set(domElement.element, updated);
+
+    console.log('🤖 AI suggestion for', fieldElement.label || fieldElement.nearestHeader?.text, ':', cleanSuggestion);
+  };
+
+  // Main function to get suggestions
+  const getSuggestion = async (fieldsToAutoFill, idToDomMap) => {
+    console.log("getSuggestion fieldsToAutoFill", fieldsToAutoFill)
+    if (fieldsToAutoFill.length === 0) return;
+
+    // Get resume content
+    const fileContents = fileContentsRef.current;
+    if (!fileContents) {
+      chatHook.addAssistantMessage("Please upload a resume");
+      return;
+    }
+
+    // Build and send message
+    const message = buildAIMessage(jobObject, fileContents, fieldsToAutoFill);
+    const suggestion = await chatHook.sendMessage(message);
+
+    // Process suggestions
+    const suggestions = parseAISuggestions(suggestion);
+
+    // Update fields with suggestions
+    suggestions.forEach(({ id, suggestion: fieldSuggestion }) => {
+      const fieldElement = fieldsToAutoFill.find(field => field.id === id);
+      const domElement = idToDomMap[id];
+      updateFieldWithSuggestion(fieldElement, domElement, fieldSuggestion, userCachedElementsRef);
+    });
+  };
+
+
+  // Helper function to gather fields to auto-fill
+  const gatherFieldsToAutoFill = (focusedElement, sectionElements) => {
+    console.log("gatherFieldsToAutoFill sectionElements", sectionElements)
+    const fieldsToAutoFill = [];
+    const idToDomMap = {};
+
+    for (const element of sectionElements) {
+      if ((element.tagName === 'textarea' || element.tagName === 'input') &&
+        element.nearestHeader?.text === focusedElement.nearestHeader?.text) {
+        const { element: _, ...elementWithoutDomRef } = element;
+        fieldsToAutoFill.push(elementWithoutDomRef);
+        idToDomMap[elementWithoutDomRef.id] = element;
+        childToParentRef.current.set(element.element, element);
+      }
+    }
+
+    return { fieldsToAutoFill, idToDomMap };
+  };
+
+  // Add this ref to cache file contents
+  const fileContentsRef = useRef('');
+
+  // Add this useEffect to cache file contents
   useEffect(() => {
-    console.log("focusedElement changed")
+    const updateFileContents = async () => {
+      const contents = await getAllContentAsString();
+      fileContentsRef.current = contents || '';
+    };
+    updateFileContents();
+  }, [getAllContentAsString]);
 
-    let fieldsToAutoFill = []
-    let idToDomMap = {}
-
-    if ((focusedElement?.label || focusedElement?.placeholder || focusedElement?.nearestHeader?.text) &&
-      focusedElement?.label !== "Unknown field" &&
+  useEffect(() => {
+    if (focusedElement?.label !== "Unknown field" &&
       focusedElement?.placeholder !== "Ask me anything..." &&
       !focusedElement?.className?.includes('chat-input') &&
-      focusedElement?.element) {
-
-      if (userFilledElementsRef.current.has(focusedElement.element)) {
-        console.log("user has filled this element")
-        return
-      }
-
-      console.log("focusedElement", focusedElement.nearestHeader?.text)
-
-      for (const element of sectionElements) {
-        if ((element.tagName === 'textarea' || element.tagName === 'input') && element.nearestHeader?.text === focusedElement.nearestHeader?.text) {
-          console.log('Found form element, setting placeholder...');
-          // Destructure to exclude the 'element' property
-          const { element: _, ...elementWithoutDomRef } = element;
-          fieldsToAutoFill.push(elementWithoutDomRef);
-          idToDomMap[elementWithoutDomRef.id] = element;
-        }
-      }
-      console.log(fieldsToAutoFill)
-
-      const getSuggestion = async () => {
-        console.log("getSuggestion")
-        if (fieldsToAutoFill.length === 0) return;
-        console.log("getSuggestion2")
-
-        // Get resume content
-        const fileContents = await getAllContentAsString();
-        if (!fileContents) {
-          chatHook.addAssistantMessage("Please upload a resume")
-          return;
-        }
-
-        // Build message with all fields
-        let message = `<job>${JSON.stringify(jobObject, null, 2)}</job>`
-        message += `<resume>${fileContents}</resume>`
-        message += `<fields>${JSON.stringify(fieldsToAutoFill.map(field => ({
-          id: field.id || "unknown",
-          label: field.label || "unknown",
-          header: field.nearestHeader?.text || "unknown",
-          value: field.value || "unknown",
-          tagName: field.tagName || "unknown",
-          required: field.required || false
-        })), null, 2)}</fields>`
-        message += "<request>job apply, fill in ALL the fields using resume data</request>"
-        message += "<rules>Reply with JSON format: [{\"id\": \"field_id\", \"suggestion\": \"your_answer_here\"}] for each field. No explanations.</rules>"
-
-        const suggestion = await chatHook.sendMessage(message);
-
-        try {
-          // Parse JSON response
-          let suggestions = [];
-
-          // Try to extract JSON from response
-          const jsonMatch = suggestion.match(/\[[\s\S]*\]/);
-          if (jsonMatch) {
-            suggestions = JSON.parse(jsonMatch[0]);
-          } else {
-            // Fallback: try to parse the entire response
-            suggestions = JSON.parse(suggestion);
-          }
-
-          console.log(suggestions)
-
-          // Update placeholders/values for each field
-          suggestions.forEach(({ id, suggestion: fieldSuggestion }) => {
-            const fieldElement = fieldsToAutoFill.find(field => field.id === id);
-            const domElement = idToDomMap[id];
-            console.log("find", fieldElement, domElement)
-            if (fieldElement && domElement) {
-              // Clean the suggestion
-              const cleanSuggestion = fieldSuggestion
-                .replace(/['"]/g, '')
-                .trim();
-
-              // Handle textarea vs input differently
-              if (fieldElement.tagName === 'textarea') {
-                // For textarea, set the value directly
-                domElement.element.placeholder = cleanSuggestion;
-              } else {
-                domElement.element.placeholder = `${cleanSuggestion} (Press Tab to auto-fill)`;
-              }
-
-              console.log('🤖 AI suggestion for', fieldElement.label || fieldElement.nearestHeader?.text, ':', cleanSuggestion);
-
-            }
-          });
-
-        } catch (error) {
-          console.error('Error parsing AI suggestions:', error);
-        }
-      };
-
-      getSuggestion();
+      focusedElement?.element &&
+      !userFilledElementsRef.current.has(focusedElement.element) &&
+      !userCachedElementsRef.current.has(focusedElement.element)) {
+      const { fieldsToAutoFill, idToDomMap } = gatherFieldsToAutoFill(focusedElement, sectionElements);
+      getSuggestion(fieldsToAutoFill, idToDomMap);
     }
   }, [focusedElement, sectionElements]);
 
   const handleKeyDown = useCallback((e) => {
-    if (e.key === 'Tab' && e.target.closest && e.target.placeholder && !e.target.closest('.extension-widget')) {
+    // Skip if not in a form field or inside extension widget
+    if (!e.target.closest || e.target.closest('.extension-widget')) return;
+
+    const isFormField = e.target.matches('input, textarea, select');
+    if (!isFormField) return;
+
+    if (e.key === 'Tab' && e.target.placeholder && !e.target.closest('.extension-widget')) {
       // Extract suggestion from placeholder (remove the instruction part)
       const placeholder = e.target.placeholder;
       const cleanSuggestion = placeholder.replace(/\s*\(Press Tab to auto-fill\)$/i, '').trim();
@@ -139,8 +159,6 @@ const LinkedinContentApp = () => {
         e.target.dispatchEvent(new Event('input', { bubbles: true }));
         e.target.dispatchEvent(new Event('change', { bubbles: true }));
         console.log('✅ Tab auto-filled input:', cleanSuggestion);
-
-        console.log("focusedElement?.id", e.target)
 
         userFilledElementsRef.current.set(e.target, {
           value: cleanSuggestion,
@@ -162,7 +180,54 @@ const LinkedinContentApp = () => {
         }, 100);
       }
     }
-  }, []);
+
+    else if (e.key === 'ArrowDown') {
+      console.log("arrow down")
+      // Fetch new suggestion for current field
+      e.preventDefault();
+
+      const currentElement = childToParentRef.current.get(e.target);
+      console.log("currentElement", currentElement, getElementsInContainer(e.target))
+
+      if (currentElement?.label !== "Unknown field" &&
+        currentElement?.placeholder !== "Ask me anything..." &&
+        !currentElement?.className?.includes('chat-input') &&
+        currentElement?.element &&
+        !userFilledElementsRef.current.has(currentElement.element)) {
+        console.log('🔄 Fetching new suggestion for field...');
+        // Find the current field in sectionElements to get fresh suggestions
+        const { fieldsToAutoFill, idToDomMap } = gatherFieldsToAutoFill(currentElement, getElementsInContainer(e.target));
+        console.log("fieldsToAutoFill", fieldsToAutoFill)
+        getSuggestion(fieldsToAutoFill, idToDomMap);
+      }
+    }
+
+    else if (e.key === 'ArrowUp') {
+      // Browse through history suggestions
+      e.preventDefault();
+
+      const cachedSuggestions = userCachedElementsRef.current.get(e.target);
+      if (!cachedSuggestions || cachedSuggestions.length === 0) {
+        console.log('📝 No suggestion history for this field');
+        return;
+      }
+
+      // Get current suggestion index (stored on the element)
+      let currentIndex = parseInt(e.target.getAttribute('data-suggestion-index') || '0');
+
+      // Move to previous suggestion (wrap around to end if at beginning)
+      currentIndex = currentIndex <= 0 ? cachedSuggestions.length - 1 : currentIndex - 1;
+
+      const suggestion = cachedSuggestions[currentIndex];
+      if (suggestion) {
+        // Update placeholder with history suggestion
+        e.target.placeholder = `${suggestion.value} (Press Tab to auto-fill) - History ${currentIndex + 1}/${cachedSuggestions.length}`;
+        e.target.setAttribute('data-suggestion-index', currentIndex.toString());
+
+        console.log(`📚 History suggestion ${currentIndex + 1}/${cachedSuggestions.length}:`, suggestion.value);
+      }
+    }
+  }, [focusedElement, sectionElements, userFilledElementsRef, userCachedElementsRef, getSuggestion, gatherFieldsToAutoFill]);
 
   useEffect(() => {
 
