@@ -9,11 +9,10 @@ import { useFileContext } from './contexts/FileProvider';
 
 const LinkedinContentApp = () => {
   const { jobObject, formattedTitle } = useLinkedInUrlTracking();
-  const chatHook = useChat();
-  const lastJobId = useRef(null);
-  const { getAllContentAsString, uploadedFiles } = useFileContext();
-
+  const { getAllContentAsString } = useFileContext();
   const { focusedElement, sectionElements } = useSimpleFormDetector();
+  const userFilledElementsRef = useRef(new Map());
+  const chatHook = useChat();
 
   useEffect(() => {
     console.log("focusedElement changed")
@@ -21,16 +20,22 @@ const LinkedinContentApp = () => {
     let fieldsToAutoFill = []
     let idToDomMap = {}
 
-    if ((focusedElement?.label || focusedElement?.placeholder) &&
+    if ((focusedElement?.label || focusedElement?.placeholder || focusedElement?.nearestHeader?.text) &&
       focusedElement?.label !== "Unknown field" &&
       focusedElement?.placeholder !== "Ask me anything..." &&
-      !focusedElement?.className?.includes('chat-input')) {
+      !focusedElement?.className?.includes('chat-input') &&
+      focusedElement?.element) {
+
+      if (userFilledElementsRef.current.has(focusedElement.element)) {
+        console.log("user has filled this element")
+        return
+      }
+
+      console.log("focusedElement", focusedElement.nearestHeader?.text)
 
       for (const element of sectionElements) {
-        if (element.tagName === 'textarea' || element.tagName === 'input') {
+        if ((element.tagName === 'textarea' || element.tagName === 'input') && element.nearestHeader?.text === focusedElement.nearestHeader?.text) {
           console.log('Found form element, setting placeholder...');
-          element.element.placeholder = "";
-
           // Destructure to exclude the 'element' property
           const { element: _, ...elementWithoutDomRef } = element;
           fieldsToAutoFill.push(elementWithoutDomRef);
@@ -134,6 +139,14 @@ const LinkedinContentApp = () => {
         e.target.dispatchEvent(new Event('input', { bubbles: true }));
         e.target.dispatchEvent(new Event('change', { bubbles: true }));
         console.log('✅ Tab auto-filled input:', cleanSuggestion);
+
+        console.log("focusedElement?.id", e.target)
+
+        userFilledElementsRef.current.set(e.target, {
+          value: cleanSuggestion,
+          timestamp: new Date(),
+          agreedByTab: true
+        });
 
         // Move focus to next field
         setTimeout(() => {
