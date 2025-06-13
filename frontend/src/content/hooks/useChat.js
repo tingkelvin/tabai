@@ -1,5 +1,5 @@
-// hooks/useChat.js - Fixed version
-import { useState, useCallback, useRef } from 'react';
+// hooks/useChat.js - With auto-initialization
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { MESSAGE_TYPES } from '../utils/constants';
 import { useFileContext } from '../contexts/FileProvider';
 
@@ -7,8 +7,14 @@ export const useChat = () => {
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
-  const getFileContentsFunctionRef = useRef(null);
   const { getAllContentAsString, uploadedFiles } = useFileContext();
+
+  // Auto-initialization effect
+  useEffect(() => {
+    setTimeout(() => {
+      sendMessage('hi');
+    }, 1000);
+  }, []);
 
   // Method to directly add assistant messages to the chat
   const addAssistantMessage = useCallback((content) => {
@@ -25,18 +31,29 @@ export const useChat = () => {
   const sendMessage = useCallback(async (messageOrInput) => {
     // Handle both direct message sending and chat input
     let message = messageOrInput;
-    
+
     // If no message is provided, use chatInput
     if (!message) {
       const chatInputTrimmed = chatInput.trim();
       if (!chatInputTrimmed) return;
-      
+
       const fileContents = await getAllContentAsString();
       message = `<user_message>${chatInputTrimmed}</user_message>`;
-      
+
       if (fileContents) {
         message += `<file_content>${fileContents}<file_content>`;
       }
+    }
+
+    // Only add user message to chat if it's from chatInput (not auto-init)
+    if (!messageOrInput && chatInput.trim()) {
+      const userMessage = {
+        id: Date.now(),
+        type: MESSAGE_TYPES.USER,
+        content: chatInput.trim(),
+        timestamp: new Date()
+      };
+      setChatMessages(prev => [...prev, userMessage]);
     }
 
     // Always show typing when sending a message
@@ -52,6 +69,10 @@ export const useChat = () => {
       });
 
       const responseContent = reply.content || "I do not find any response, sorry.";
+
+      // Add the assistant response to chat messages
+      addAssistantMessage(responseContent);
+
       return responseContent;
 
     } catch (error) {
@@ -59,21 +80,14 @@ export const useChat = () => {
       const errorContent = "Sorry, I'm experiencing technical difficulties. Please try again later.";
 
       // Always add error response to chat
-      const errorResponse = {
-        id: Date.now() + 1,
-        type: MESSAGE_TYPES.ASSISTANT,
-        content: errorContent,
-        timestamp: new Date()
-      };
-
-      setChatMessages(prev => [...prev, errorResponse]);
+      addAssistantMessage(errorContent);
 
       return errorContent;
 
     } finally {
       setIsTyping(false);
     }
-  }, [chatInput]); // Include chatInput as dependency since we use it
+  }, [chatInput, getAllContentAsString, addAssistantMessage]);
 
   const handleInputChange = useCallback((e) => {
     setChatInput(e.target.value);
@@ -94,20 +108,8 @@ export const useChat = () => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
 
-      // Add user message to chat
-      const userMessage = {
-        id: Date.now(),
-        type: MESSAGE_TYPES.USER,
-        content: chatInput.trim(),
-        timestamp: new Date()
-      };
-
-      setChatMessages(prev => [...prev, userMessage]);
-
-      // Send message and handle response
-      sendMessage().then(response => {
-        if (response) addAssistantMessage(response);
-      });
+      // Send message - user message and response will be added automatically
+      sendMessage();
 
       // Clear input and reset textarea height
       setChatInput('');
@@ -119,7 +121,7 @@ export const useChat = () => {
         }
       }, 0);
     }
-  }, [chatInput, sendMessage, addAssistantMessage]); // Add dependencies
+  }, [sendMessage]);
 
   // Method to directly add messages to the chat
   const addMessage = useCallback((message) => {
@@ -128,7 +130,7 @@ export const useChat = () => {
       type: message.type || MESSAGE_TYPES.ASSISTANT,
       content: message.content,
       timestamp: message.timestamp || new Date(),
-      ...message // Allow overriding any properties
+      ...message
     };
 
     setChatMessages(prev => [...prev, newMessage]);
@@ -162,6 +164,7 @@ export const useChat = () => {
   // Method to clear all messages
   const clearMessages = useCallback(() => {
     setChatMessages([]);
+    setIsInitialized(false); // Reset initialization state
   }, []);
 
   // Method to remove a specific message by ID
@@ -178,11 +181,6 @@ export const useChat = () => {
     );
   }, []);
 
-  // Stable function to set file contents getter
-  const setGetFileContentsFunction = useCallback((fn) => {
-    getFileContentsFunctionRef.current = fn;
-  }, []);
-
   return {
     chatInput,
     chatMessages,
@@ -197,7 +195,6 @@ export const useChat = () => {
     updateMessage,
     setIsTyping,
     addUserMessage,
-    addAssistantMessage,
-    setGetFileContentsFunction
+    addAssistantMessage
   };
 };

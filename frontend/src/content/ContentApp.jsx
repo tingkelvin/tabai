@@ -1,15 +1,16 @@
-// ContentApp.jsx - Fixed version
+// ContentApp.jsx - With Message Notifications
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TerminalIcon from './TerminalIcon';
 import { calculateInitialPositions } from './utils/helpers';
 import { WIDGET_CONFIG } from './utils/constants';
 import { getFileIcon, PlusIcon } from './components/Icons';
 
-// Import new components
+// Import components
 import WidgetHeader from './components/WidgetHeader';
 import ChatMessages from './components/ChatMessages';
 import ChatInput from './components/ChatInput';
 import ResizeHandles from './components/ResizeHandles';
+import MessageNotifications from './components/MessageNotifications';
 
 // Hooks
 import { useUrlTracking } from './hooks/useUrlTracking';
@@ -20,14 +21,14 @@ import { useFileManagement } from './hooks/useFileManagement';
 
 const ContentApp = ({
   customChatHook,
-  customActions = [], // Array of custom action objects
+  customActions = [],
   title = ""
 }) => {
   const [isMinimized, setIsMinimized] = useState(true);
   const fileInputRef = useRef(null);
   const cleanupRef = useRef(null);
 
-  // URL tracking - single source of truth
+  // URL tracking
   const currentUrl = useUrlTracking();
   const previousUrl = useRef(currentUrl);
 
@@ -44,7 +45,7 @@ const ContentApp = ({
     height: WIDGET_CONFIG.DEFAULT_HEIGHT
   });
 
-  // Use custom chat hook if provided, otherwise use default
+  // Chat functionality
   const chatHook = customChatHook || useChat();
   const {
     chatInput,
@@ -60,10 +61,10 @@ const ContentApp = ({
     updateMessage,
     setIsTyping,
     addUserMessage,
-    addAssistantMessage,
-    setGetFileContentsFunction
+    addAssistantMessage
   } = chatHook;
 
+  // File management
   const {
     uploadedFiles,
     formatFileName,
@@ -75,13 +76,13 @@ const ContentApp = ({
     cleanup: fileCleanup
   } = useFileManagement(addUserMessage);
 
-  // Store cleanup function for unmounting
+  // Component lifecycle
   useEffect(() => {
     console.log('🚀 Mounting component');
     cleanupRef.current = fileCleanup;
+    loadSessionFiles();
   }, [fileCleanup]);
 
-  // Component cleanup on unmount
   useEffect(() => {
     console.log('🚀 Unmounting component');
     return () => {
@@ -91,21 +92,9 @@ const ContentApp = ({
     };
   }, []);
 
-  // Load session files and set getFileContentsFunction - SIMPLE!
-  useEffect(() => {
-    console.log('🚀 Loading session files on mount');
-    loadSessionFiles();
-  }, []); // Empty dependency array - runs only once
-
-  useEffect(() => {
-    console.log('🚀 Updating file contents function');
-    setGetFileContentsFunction(getAllContentAsString);
-  }, [getAllContentAsString, setGetFileContentsFunction]);
-
   // Handle URL changes
   useEffect(() => {
     console.log('🚀 URL changed');
-    // Only process if URL actually changed
     if (currentUrl !== previousUrl.current) {
       previousUrl.current = currentUrl;
     }
@@ -170,7 +159,13 @@ const ContentApp = ({
     }, 100);
   }, [hasDragged, isMinimized, iconPosition, widgetSize, constrainWidgetPosition, updateWidgetPosition]);
 
-  // Optimized file upload handler with better error handling
+  // Handle notification clicks
+  const handleNotificationClick = useCallback((notification) => {
+    // Expand widget when notification is clicked
+    handleExpand();
+  }, [handleExpand]);
+
+  // File upload handler
   const handleOptimizedFileUpload = async (event) => {
     try {
       await handleFileUpload(event);
@@ -180,8 +175,8 @@ const ContentApp = ({
     }
   };
 
+  // File actions for the input area
   const fileActions = [
-    // Default upload action
     {
       id: 'upload-file',
       label: '',
@@ -189,7 +184,6 @@ const ContentApp = ({
       onClick: () => fileInputRef.current?.click(),
       className: 'upload-file-action'
     },
-    // File action buttons with dynamic icons based on file type
     ...uploadedFiles.map((file, index) => ({
       id: `file-${index}`,
       label: formatFileName(file.name),
@@ -206,74 +200,84 @@ const ContentApp = ({
     }))
   ];
 
-  // Filter and render visible custom actions
+  // Filter custom actions
   const actionButtons = customActions.filter(action =>
     typeof action.isVisible === 'function' ? action.isVisible() : action.isVisible !== false
   );
 
-  if (isMinimized) {
-    return (
-      <div
-        className={`extension-widget minimized ${dragging ? 'dragging' : ''}`}
-        style={{
-          top: iconPosition.top,
-          left: iconPosition.left,
-        }}
-        onMouseDown={(e) => startDrag(e, true)}
-      >
-        <TerminalIcon onClick={handleExpand} />
-      </div>
-    );
-  }
-
   return (
-    <div
-      className="extension-widget expanded"
-      style={{
-        top: widgetPosition.top,
-        left: widgetPosition.left,
-        width: widgetSize.width,
-        height: widgetSize.height,
-      }}
-    >
-      <WidgetHeader
-        dragging={dragging}
-        startDrag={startDrag}
-        handleMinimize={handleMinimize}
-        handleClose={handleClose}
-        title={title}
-        currentUrl={currentUrl}
+    <>
+      {/* Message Notifications - Always rendered to handle state */}
+      <MessageNotifications
+        iconPosition={iconPosition}
+        chatMessages={chatMessages}
+        isMinimized={isMinimized}
+        isTyping={isTyping}
+        onNotificationClick={handleNotificationClick}
       />
 
-      <div className="extension-content">
-        <div className="chat-section">
-          <ChatMessages
-            chatMessages={chatMessages}
-            isTyping={isTyping}
-            chatMessagesRef={chatMessagesRef}
+      {/* Main Widget */}
+      {isMinimized ? (
+        <div
+          className={`extension-widget minimized ${dragging ? 'dragging' : ''}`}
+          style={{
+            top: iconPosition.top,
+            left: iconPosition.left,
+          }}
+          onMouseDown={(e) => startDrag(e, true)}
+        >
+          <TerminalIcon onClick={handleExpand} />
+        </div>
+      ) : (
+        <div
+          className="extension-widget expanded"
+          style={{
+            top: widgetPosition.top,
+            left: widgetPosition.left,
+            width: widgetSize.width,
+            height: widgetSize.height,
+          }}
+        >
+          <WidgetHeader
+            dragging={dragging}
+            startDrag={startDrag}
+            handleMinimize={handleMinimize}
+            handleClose={handleClose}
+            title={title}
+            currentUrl={currentUrl}
           />
 
-          <ChatInput
-            fileActions={fileActions}
-            actionButtons={actionButtons}
-            chatInputRef={chatInputRef}
-            chatInput={chatInput}
-            handleInputChange={handleInputChange}
-            handleKeyPress={handleKeyPress}
+          <div className="extension-content">
+            <div className="chat-section">
+              <ChatMessages
+                chatMessages={chatMessages}
+                isTyping={isTyping}
+                chatMessagesRef={chatMessagesRef}
+              />
+
+              <ChatInput
+                fileActions={fileActions}
+                actionButtons={actionButtons}
+                chatInputRef={chatInputRef}
+                chatInput={chatInput}
+                handleInputChange={handleInputChange}
+                handleKeyPress={handleKeyPress}
+              />
+            </div>
+          </div>
+
+          <ResizeHandles startResize={startResize} />
+
+          {/* Hidden file input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleOptimizedFileUpload}
+            style={{ display: 'none' }}
           />
         </div>
-      </div>
-
-      <ResizeHandles startResize={startResize} />
-
-      {/* Hidden file input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleOptimizedFileUpload}
-        style={{ display: 'none' }}
-      />
-    </div>
+      )}
+    </>
   );
 };
 
