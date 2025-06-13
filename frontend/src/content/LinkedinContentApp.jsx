@@ -1,5 +1,5 @@
-// LinkedinContentApp.jsx - Much simpler!
-import React, { useEffect, useRef, useCallback } from 'react';
+// LinkedinContentApp.jsx - With thinking bubble indicators!
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { useLinkedInUrlTracking } from './hooks/useLinkedInUrlTracking';
 import { useSimpleFormDetector } from './hooks/useSimpleFormDetector';
 import { useChat } from './hooks/useChat';
@@ -16,20 +16,84 @@ const LinkedinContentApp = () => {
   const childToParentRef = useRef(new Map());
   const chatHook = useChat();
 
+  const thinkingIntervalRef = useRef(new Map());
+
+  // Thinking animation frames
+  const thinkingFrames = ['thinking', 'thinking.', 'thinking..', 'thinking...'];
+
+  // Helper function to start thinking animation for a field
+  const startThinkingAnimation = (element) => {
+    if (!element) return;
+
+    let frameIndex = 0;
+    const originalPlaceholder = element.placeholder || '';
+
+    const animate = () => {
+      const frame = thinkingFrames[frameIndex % thinkingFrames.length];
+      element.placeholder = frame;
+      frameIndex++;
+    };
+
+    // Start animation immediately
+    animate();
+
+    // Continue animation every 500ms
+    const intervalId = setInterval(animate, 500);
+
+    thinkingIntervalRef.current.set(element, {
+      intervalId,
+      originalPlaceholder
+    });
+  };
+
+  // Helper function to stop thinking animation for a field
+  const stopThinkingAnimation = (element, suggestion = null) => {
+    if (!element) return;
+
+    const thinkingData = thinkingIntervalRef.current.get(element);
+    if (thinkingData) {
+      clearInterval(thinkingData.intervalId);
+      thinkingIntervalRef.current.delete(element);
+
+      // Restore placeholder with suggestion or original
+      if (suggestion) {
+        element.placeholder = `${suggestion} (Press Tab to auto-fill)`;
+      } else {
+        element.placeholder = thinkingData.originalPlaceholder;
+      }
+    }
+  };
+
+  // Cleanup function for all thinking animations
+  const cleanupAllThinkingAnimations = () => {
+    thinkingIntervalRef.current.forEach(({ intervalId }) => {
+      clearInterval(intervalId);
+    });
+    thinkingIntervalRef.current.clear();
+  };
+
+  useEffect(() => {
+    return cleanupAllThinkingAnimations;
+  }, []);
+
   // Helper function to build the message for AI
-  const buildAIMessage = (jobObject, fileContents, fieldsToAutoFill) => {
+  const buildAIMessage = (jobObject, fileContents, fieldsToAutoFill, filledFields = [], indexToIdMap) => {
     let message = `<job>${JSON.stringify(jobObject, null, 2)}</job>`;
     message += `<resume>${fileContents}</resume>`;
-    message += `<fields>${JSON.stringify(fieldsToAutoFill.map(field => ({
-      id: field.id || "unknown",
+    message += `<filled_fields>${JSON.stringify(filledFields.map((field) => ({
       label: field.label || "unknown",
       placeholder: field.placeholder || "unknown",
       header: field.nearestHeader?.text || "unknown",
       value: field.value || "",
-      tagName: field.tagName || "unknown",
-      required: field.required || false,
+    })), null, 2)}</filled_fields>`;
+    message += `<fields>${JSON.stringify(fieldsToAutoFill.map((field, index) => ({
+      id: index,
+      label: field.label || "unknown",
+      placeholder: field.placeholder || "unknown",
+      header: field.nearestHeader?.text || "unknown",
+      value: field.value || "",
     })), null, 2)}</fields>`;
-    message += "<request>job apply, fill in ALL the fields using resume data if value is not already filled without repeating value</request>";
+    message += "<request>job apply, fill in ALL the fields using resume data if value is not already filled without using filled fields</request>";
     message += "<rules>Reply with JSON format: [{\"id\": \"field_id\", \"suggestion\": \"your_answer_here\"}] for each field. No explanations.</rules>";
     return message;
   };
@@ -53,7 +117,9 @@ const LinkedinContentApp = () => {
     if (!fieldElement || !domElement) return;
 
     const cleanSuggestion = suggestion.replace(/['"]/g, '').trim();
-    domElement.element.placeholder = `${cleanSuggestion} (Press Tab to auto-fill)`;
+
+    // Stop thinking animation and update with suggestion
+    stopThinkingAnimation(domElement.element, cleanSuggestion);
 
     const maxHistory = 5;
     const existing = userCachedElementsRef.current.get(domElement.element) || [];
@@ -64,49 +130,74 @@ const LinkedinContentApp = () => {
   };
 
   // Main function to get suggestions
-  const getSuggestion = async (fieldsToAutoFill, idToDomMap) => {
+  const getSuggestion = async (fieldsToAutoFill, idToDomMap, indexToIdMap, filledFields) => {
     console.log("getSuggestion fieldsToAutoFill", fieldsToAutoFill)
     if (fieldsToAutoFill.length === 0) return;
 
-    // Get resume content
-    const fileContents = fileContentsRef.current;
-    if (!fileContents) {
-      chatHook.addAssistantMessage("Please upload a resume");
-      return;
-    }
+    // Start thinking animations for all fields being processed
+    const fieldElements = fieldsToAutoFill.map(field => {
+      const originalId = indexToIdMap[fieldsToAutoFill.indexOf(field)];
+      return idToDomMap[originalId]?.element;
+    }).filter(Boolean);
 
-    // Build and send message
-    const message = buildAIMessage(jobObject, fileContents, fieldsToAutoFill);
-    const suggestion = await chatHook.sendMessage(message);
-
-    // Process suggestions
-    const suggestions = parseAISuggestions(suggestion);
-
-    // Update fields with suggestions
-    suggestions.forEach(({ id, suggestion: fieldSuggestion }) => {
-      const fieldElement = fieldsToAutoFill.find(field => field.id === id);
-      const domElement = idToDomMap[id];
-      updateFieldWithSuggestion(fieldElement, domElement, fieldSuggestion, userCachedElementsRef);
+    fieldElements.forEach(element => {
+      startThinkingAnimation(element);
     });
-  };
 
+    try {
+      // Get resume content
+      const fileContents = fileContentsRef.current;
+      if (!fileContents) {
+        // Stop all thinking animations
+        fieldElements.forEach(element => {
+          stopThinkingAnimation(element);
+        });
+        chatHook.addAssistantMessage("Please upload a resume");
+        return;
+      }
+
+      // Build and send message
+      const message = buildAIMessage(jobObject, fileContents, fieldsToAutoFill, filledFields, indexToIdMap);
+      const suggestion = await chatHook.sendMessage(message);
+
+      // Process suggestions
+      const suggestions = parseAISuggestions(suggestion);
+
+      // Update fields with suggestions
+      suggestions.forEach(({ id, suggestion: fieldSuggestion }) => {
+        const fieldElement = fieldsToAutoFill[id];
+        const originalId = indexToIdMap[id];
+        const domElement = idToDomMap[originalId];
+        updateFieldWithSuggestion(fieldElement, domElement, fieldSuggestion, userCachedElementsRef);
+      });
+
+    } catch (error) {
+      console.error('Error getting suggestions:', error);
+      // Stop all thinking animations on error
+      fieldElements.forEach(element => {
+        stopThinkingAnimation(element);
+      });
+    }
+  };
 
   // Helper function to gather fields to auto-fill
   const gatherFieldsToAutoFill = (focusedElement, sectionElements) => {
     console.log("gatherFieldsToAutoFill sectionElements", sectionElements)
     const fieldsToAutoFill = [];
+    const filledFields = [];
     const idToDomMap = {};
+    const indexToIdMap = {};
     console.log("current", userFilledElementsRef.current)
-    // First add cached elements with same header
+
+    // First add cached elements with same header 
     for (const [element, data] of userFilledElementsRef.current) {
       const parentElement = childToParentRef.current.get(element);
       if (parentElement?.nearestHeader?.text === focusedElement.nearestHeader?.text) {
         const { element: _, ...elementWithoutDomRef } = parentElement;
-        fieldsToAutoFill.push({
+        filledFields.push({
           ...elementWithoutDomRef,
           value: "" // Include the cached value
         });
-        idToDomMap[elementWithoutDomRef.id] = parentElement;
       }
     }
 
@@ -115,13 +206,14 @@ const LinkedinContentApp = () => {
       if ((element.tagName === 'textarea' || element.tagName === 'input') &&
         element.nearestHeader?.text === focusedElement.nearestHeader?.text) {
         const { element: _, ...elementWithoutDomRef } = element;
-        fieldsToAutoFill.push(elementWithoutDomRef);
         idToDomMap[elementWithoutDomRef.id] = element;
         childToParentRef.current.set(element.element, element);
+        indexToIdMap[fieldsToAutoFill.length] = elementWithoutDomRef.id;
+        fieldsToAutoFill.push(elementWithoutDomRef);
       }
     }
 
-    return { fieldsToAutoFill, idToDomMap };
+    return { fieldsToAutoFill, idToDomMap, indexToIdMap, filledFields };
   };
 
   // Add this ref to cache file contents
@@ -143,8 +235,8 @@ const LinkedinContentApp = () => {
       focusedElement?.element &&
       !userFilledElementsRef.current.has(focusedElement.element) &&
       !userCachedElementsRef.current.has(focusedElement.element)) {
-      const { fieldsToAutoFill, idToDomMap } = gatherFieldsToAutoFill(focusedElement, sectionElements);
-      getSuggestion(fieldsToAutoFill, idToDomMap);
+      const { fieldsToAutoFill, idToDomMap, indexToIdMap, filledFields } = gatherFieldsToAutoFill(focusedElement, sectionElements);
+      getSuggestion(fieldsToAutoFill, idToDomMap, indexToIdMap, filledFields);
     }
   }, [focusedElement, sectionElements]);
 
@@ -160,7 +252,7 @@ const LinkedinContentApp = () => {
       const placeholder = e.target.placeholder;
       const cleanSuggestion = placeholder.replace(/\s*\(Press Tab to auto-fill\)$/i, '').trim();
 
-      if (cleanSuggestion) {
+      if (cleanSuggestion && !cleanSuggestion.includes('Thinking')) {
         e.preventDefault(); // Prevent normal tab behavior
 
         // Store current value before overwriting
@@ -209,10 +301,14 @@ const LinkedinContentApp = () => {
         currentElement?.element &&
         !userFilledElementsRef.current.has(currentElement.element)) {
         console.log('🔄 Fetching new suggestion for field...');
+
+        // Start thinking animation for this specific field
+        startThinkingAnimation(e.target);
+
         // Find the current field in sectionElements to get fresh suggestions
-        const { fieldsToAutoFill, idToDomMap } = gatherFieldsToAutoFill(currentElement, getElementsInContainer(e.target));
+        const { fieldsToAutoFill, idToDomMap, indexToIdMap, filledFields } = gatherFieldsToAutoFill(currentElement, getElementsInContainer(e.target));
         console.log("fieldsToAutoFill", fieldsToAutoFill)
-        getSuggestion(fieldsToAutoFill, idToDomMap);
+        getSuggestion(fieldsToAutoFill, idToDomMap, indexToIdMap, filledFields);
       }
     }
 
@@ -244,7 +340,6 @@ const LinkedinContentApp = () => {
   }, [focusedElement, sectionElements, userFilledElementsRef, userCachedElementsRef, getSuggestion, gatherFieldsToAutoFill]);
 
   useEffect(() => {
-
     document.addEventListener('keydown', handleKeyDown, true); // Use capture phase
 
     return () => {
@@ -253,7 +348,6 @@ const LinkedinContentApp = () => {
   }, []);
 
   // Auto-extract when new job is detected
-
   const ask = async (question, resumeNeeded = false, ansOnly = false) => {
     if (!jobObject) {
       chatHook.addAssistantMessage("No job posting found to analyze.");
@@ -277,6 +371,7 @@ const LinkedinContentApp = () => {
       message += `<resume>${resumeNeeded && fileContents ? `Resume: ${fileContents}` : ''} </resume>`
       message += `<request>${question}</request>`
       if (ansOnly) message += "<rules>no other text</rules>"
+
       console.log('🚀 Message:', message);
       const response = await chatHook.sendMessage(message);
 
