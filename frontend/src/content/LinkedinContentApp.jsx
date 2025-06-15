@@ -38,7 +38,7 @@ const LinkedinContentApp = () => {
     animate();
 
     // Continue animation every 500ms
-    const intervalId = setInterval(animate, 500);
+    const intervalId = setInterval(animate, 1000);
 
     thinkingIntervalRef.current.set(element, {
       intervalId,
@@ -46,35 +46,24 @@ const LinkedinContentApp = () => {
     });
   };
 
-  // Helper function to stop thinking animation for a field
-  const stopThinkingAnimation = (element, suggestion = null) => {
-    if (!element) return;
-
-    const thinkingData = thinkingIntervalRef.current.get(element);
-    if (thinkingData) {
-      clearInterval(thinkingData.intervalId);
-      thinkingIntervalRef.current.delete(element);
-
-      // Restore placeholder with suggestion or original
-      if (suggestion) {
-        element.placeholder = `${suggestion} (Press Tab to auto-fill)`;
-      } else {
-        element.placeholder = thinkingData.originalPlaceholder;
-      }
-    }
-  };
-
   // Cleanup function for all thinking animations
+  // Improved cleanup function for all thinking animations
   const cleanupAllThinkingAnimations = () => {
-    thinkingIntervalRef.current.forEach(({ intervalId }) => {
+    thinkingIntervalRef.current.forEach(({ intervalId }, element) => {
+      // Stop the interval
       clearInterval(intervalId);
+      
+      // Clear the placeholder for each element
+      if (element && element.placeholder !== undefined) {
+        element.placeholder = "";
+      }
     });
+    
+    // Clear the entire map
     thinkingIntervalRef.current.clear();
+    
+    console.log('🧹 Cleaned up all thinking animations');
   };
-
-  useEffect(() => {
-    return cleanupAllThinkingAnimations;
-  }, []);
 
   // Helper function to build the message for AI
   const buildAIMessage = (jobObject, fileContents, fieldsToAutoFill, filledFields = [], indexToIdMap) => {
@@ -117,9 +106,7 @@ const LinkedinContentApp = () => {
     if (!fieldElement || !domElement) return;
 
     const cleanSuggestion = suggestion.replace(/['"]/g, '').trim();
-
-    // Stop thinking animation and update with suggestion
-    stopThinkingAnimation(domElement.element, cleanSuggestion);
+    domElement.element.placeholder = `${suggestion}`;
 
     const maxHistory = 5;
     const existing = userCachedElementsRef.current.get(domElement.element) || [];
@@ -149,9 +136,7 @@ const LinkedinContentApp = () => {
       const fileContents = fileContentsRef.current;
       if (!fileContents) {
         // Stop all thinking animations
-        fieldElements.forEach(element => {
-          stopThinkingAnimation(element);
-        });
+        cleanupAllThinkingAnimations()
         chatHook.addAssistantMessage("Please upload a resume");
         return;
       }
@@ -159,7 +144,7 @@ const LinkedinContentApp = () => {
       // Build and send message
       const message = buildAIMessage(jobObject, fileContents, fieldsToAutoFill, filledFields, indexToIdMap);
       const suggestion = await chatHook.sendMessage(message);
-
+      cleanupAllThinkingAnimations()
       // Process suggestions
       const suggestions = parseAISuggestions(suggestion);
 
@@ -174,9 +159,7 @@ const LinkedinContentApp = () => {
     } catch (error) {
       console.error('Error getting suggestions:', error);
       // Stop all thinking animations on error
-      fieldElements.forEach(element => {
-        stopThinkingAnimation(element);
-      });
+      cleanupAllThinkingAnimations()
     }
   };
 
@@ -204,7 +187,8 @@ const LinkedinContentApp = () => {
     // Then add current section elements
     for (const element of sectionElements) {
       if ((element.tagName === 'textarea' || element.tagName === 'input') &&
-        element.nearestHeader?.text === focusedElement.nearestHeader?.text) {
+        element.nearestHeader?.text === focusedElement.nearestHeader?.text &&
+        !element.value) {
         const { element: _, ...elementWithoutDomRef } = element;
         idToDomMap[elementWithoutDomRef.id] = element;
         childToParentRef.current.set(element.element, element);
@@ -250,24 +234,22 @@ const LinkedinContentApp = () => {
     if (e.key === 'Tab' && e.target.placeholder && !e.target.closest('.extension-widget')) {
       // Extract suggestion from placeholder (remove the instruction part)
       const placeholder = e.target.placeholder;
-      const cleanSuggestion = placeholder.replace(/\s*\(Press Tab to auto-fill\)$/i, '').trim();
 
-      if (cleanSuggestion && !cleanSuggestion.includes('Thinking')) {
+      if (placeholder) {
         e.preventDefault(); // Prevent normal tab behavior
-
         // Store current value before overwriting
         const currentValue = e.target.getAttribute('value') || e.target.value || '';
         e.target.setAttribute('data-original-value', currentValue);
 
         // Fill the field with suggestion
-        e.target.value = cleanSuggestion;
-        e.target.setAttribute('value', cleanSuggestion);
+        e.target.value = placeholder;
+        e.target.setAttribute('value', placeholder);
         e.target.dispatchEvent(new Event('input', { bubbles: true }));
         e.target.dispatchEvent(new Event('change', { bubbles: true }));
-        console.log('✅ Tab auto-filled input:', cleanSuggestion);
+        chatHook.addAssistantMessage("tab to fill")
 
         userFilledElementsRef.current.set(e.target, {
-          value: cleanSuggestion,
+          value: placeholder,
           timestamp: new Date(),
           agreedByTab: true
         });
@@ -301,14 +283,11 @@ const LinkedinContentApp = () => {
         currentElement?.element &&
         !userFilledElementsRef.current.has(currentElement.element)) {
         console.log('🔄 Fetching new suggestion for field...');
-
-        // Start thinking animation for this specific field
-        startThinkingAnimation(e.target);
-
         // Find the current field in sectionElements to get fresh suggestions
         const { fieldsToAutoFill, idToDomMap, indexToIdMap, filledFields } = gatherFieldsToAutoFill(currentElement, getElementsInContainer(e.target));
         console.log("fieldsToAutoFill", fieldsToAutoFill)
         getSuggestion(fieldsToAutoFill, idToDomMap, indexToIdMap, filledFields);
+
       }
     }
 
@@ -331,7 +310,7 @@ const LinkedinContentApp = () => {
       const suggestion = cachedSuggestions[currentIndex];
       if (suggestion) {
         // Update placeholder with history suggestion
-        e.target.placeholder = `${suggestion.value} (Press Tab to auto-fill) - History ${currentIndex + 1}/${cachedSuggestions.length}`;
+        e.target.placeholder = suggestion
         e.target.setAttribute('data-suggestion-index', currentIndex.toString());
 
         console.log(`📚 History suggestion ${currentIndex + 1}/${cachedSuggestions.length}:`, suggestion.value);

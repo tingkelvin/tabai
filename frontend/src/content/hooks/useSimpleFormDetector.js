@@ -263,7 +263,7 @@ export const useSimpleFormDetector = () => {
         let current = element.parentElement;
         while (current && current !== document.body) {
           if (current.querySelectorAll) {
-            const formElementsCount = current.querySelectorAll('input, select, textarea').length;
+            const formElementsCount = current.querySelectorAll('input, textarea').length;
             if (formElementsCount > 1) {
               container = current;
               break;
@@ -274,7 +274,7 @@ export const useSimpleFormDetector = () => {
       }
 
       if (container && container.querySelectorAll) {
-        const formElements = container.querySelectorAll('input, select, textarea');
+        const formElements = container.querySelectorAll('input, textarea');
         formElements.forEach(el => {
           // Filter out hidden elements before processing
           if (isElementVisible(el)) {
