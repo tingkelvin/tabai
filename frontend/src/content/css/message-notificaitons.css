@@ -18,14 +18,6 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-
-/* Assistant message notifications */
-.message-notification.assistant {
-  background: #2a2a2a;
-  color: #e6e6e6;
-  border: 1px solid #404040;
-}
-
 .notification-content {
   position: relative;
   padding: 12px 16px;
@@ -46,23 +38,11 @@
   margin-top: 2px;
 }
 
-.pulse-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #00ff88;
-  animation: pulseGlow 2s infinite ease-in-out;
-}
 .message-notification:hover {
   transform: scale(1.02);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
   transition: all 0.2s ease;
 }
-
-.message-notification.assistant:hover {
-  background: #333333;
-}
-
 /* Animations */
 @keyframes notificationSlideIn {
   0% {
@@ -92,9 +72,6 @@
 
 /* Typing notification styles */
 .message-notification.typing {
-  background: #2a2a2a;
-  color: #e6e6e6;
-  border: 1px solid #404040;
   min-width: 80px;
   max-width: 80px;
 }
@@ -114,7 +91,6 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #666;
   animation: typingPulse 1.4s infinite ease-in-out;
 }
 

@@ -2,153 +2,184 @@
    DARK THEME - WITH STRATEGIC !important
    ==================================== */
 
-  @media (prefers-color-scheme: dark) {
-  /* ✅ HIGH PRIORITY - ALWAYS use !important */
+   @media (prefers-color-scheme: dark) {
+    /* ✅ HIGH PRIORITY - ALWAYS use !important */
+    
+    /* Main widget - critical positioning and colors */
+    .extension-widget.expanded {
+      background: #262624 !important;
+      border: 1px solid #333333 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    }
   
-  /* Main widget - critical positioning and colors */
-  .extension-widget.expanded {
-    background: #262624 !important;
-    border: 1px solid #333333 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-  }
-
-  /* All text colors - websites commonly override these */
-  .extension-widget .chat-message.user .message-text,
-  .extension-widget .chat-message.user .message-text * {
-    background: #141413 !important;
-    color: #ffffff !important;
-    border: none !important;
-  }
-
+    /* All text colors - websites commonly override these */
+    .extension-widget .chat-message.user .message-text,
+    .extension-widget .chat-message.user .message-text * {
+      background: #141413 !important;
+      color: #ffffff !important;
+      border: none !important;
+    }
   
-  .extension-widget .chat-message.assistant .message-text,
-  .extension-widget .chat-message.assistant .message-text *:not(.typing-indicator):not(.typing-dot) {
-    background: transparent !important;
-    color: #ffffff !important;
-    border: none !important;
-  }
-
-  /* Header colors - websites often override headers */
-  .extension-header {
-    background: #222222 !important;
-    border-bottom: 1px solid #333333 !important;
-    color: #e6e6e6 !important;
-  }
-
-  .extension-header h3 {
-    color: #e6e6e6 !important;
-  }
-
-  /* Content area colors */
-  .extension-content {
-    background: #262624 !important;
-    color: #ffffff !important;
-  }
-
-  .chat-messages {
-    background: #262624 !important;
-    color: #ffffff !important;
-  }
-
-  /* Input styling - forms are heavily styled by websites */
-  .chat-input-container {
-    background: #30302e !important;
-    border: 1px solid #444444 !important;
-    box-shadow: none !important;
-  }
-
-  .chat-input,
-  .chat-input:not(:focus),
-  .chat-input:not(:hover),
-  .chat-input:not(:active) {
-    background: transparent !important;
-    border: none !important;
-    color: #ffffff !important;
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    appearance: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-  }
-
-  .chat-input:hover,
-  .chat-input:focus,
-  .chat-input:active {
-    border: none !important;
-    outline: none !important;
-    box-shadow: none !important;
-    color: #ffffff !important;
-    background: transparent !important;
-  }
-
-  .chat-input::placeholder {
-    color: #888888 !important;
-  }
-
-  /* Button colors - websites have global button styles */
-  .custom-action-btn {
-    background: transparent !important;
-    color: #e6e6e6 !important;
-    border: 1px solid #444444 !important;
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    appearance: none !important;
-    box-shadow: none !important;
-  }
-
-  /* Terminal icon - can be overridden */
-  .terminal-icon {
-    background-color: #2a2a2a !important;
-    border: 1px solid #333333 !important;
-    color: #ffffff !important;
-  }
-
-  /* Typing indicator */
-  .chat-message.typing .message-text {
-    background: #2a2a2a !important;
-    border: 1px solid #333333 !important;
-    color: #ffffff !important;
-  }
-
-  .typing-dot {
-    background: #666666 !important;
-  }
-
-  /* ✅ MEDIUM PRIORITY - Use !important for key functionality */
+    
+    .extension-widget .chat-message.assistant .message-text,
+    .extension-widget .chat-message.assistant .message-text *:not(.typing-indicator):not(.typing-dot) {
+      background: transparent !important;
+      color: #ffffff !important;
+      border: none !important;
+    }
   
-  .custom-action-btn:hover {
-    background: #262624 !important;
-    border-color: #555555 !important;
-  }
-
-  .save-timestamp-action {
-    background: #d97706 !important;
-    color: #ffffff !important;
-    border: 1px solid #b45309 !important;
-    box-shadow: none !important;
-  }
-
-  .save-timestamp-action:hover {
-    background: #b45309 !important;
-    border-color: #92400e !important;
-  }
-
-  /* ❌ LOW PRIORITY - Usually don't need !important */
+    /* Header colors - websites often override headers */
+    .extension-header {
+      background: #222222 !important;
+      border-bottom: 1px solid #333333 !important;
+      color: #e6e6e6 !important;
+    }
   
-  /* Scrollbar - rarely overridden */
-  .chat-messages::-webkit-scrollbar-track,
-  .chat-input::-webkit-scrollbar-track {
-    background: #1a1a1a;
-  }
-
-  .chat-messages::-webkit-scrollbar-thumb,
-  .chat-input::-webkit-scrollbar-thumb {
-    background: #444444;
-  }
-
-  /* Resize handle - decorative */
-  .resize-handle.se::after {
-    border-bottom-color: #64748b;
-  }
-}
+    .extension-header h3 {
+      color: #e6e6e6 !important;
+    }
   
+    /* Content area colors */
+    .extension-content {
+      background: #262624 !important;
+      color: #ffffff !important;
+    }
+  
+    .chat-messages {
+      background: #262624 !important;
+      color: #ffffff !important;
+    }
+  
+    /* Input styling - forms are heavily styled by websites */
+    .chat-input-container {
+      background: #30302e !important;
+      border: 1px solid #444444 !important;
+      box-shadow: none !important;
+    }
+  
+    .chat-input,
+    .chat-input:not(:focus),
+    .chat-input:not(:hover),
+    .chat-input:not(:active) {
+      background: transparent !important;
+      border: none !important;
+      color: #ffffff !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      appearance: none !important;
+      box-shadow: none !important;
+      outline: none !important;
+    }
+  
+    .chat-input:hover,
+    .chat-input:focus,
+    .chat-input:active {
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      color: #ffffff !important;
+      background: transparent !important;
+    }
+  
+    .chat-input::placeholder {
+      color: #888888 !important;
+    }
+  
+    /* Button colors - websites have global button styles */
+    .custom-action-btn {
+      background: transparent !important;
+      color: #e6e6e6 !important;
+      border: 1px solid #444444 !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      appearance: none !important;
+      box-shadow: none !important;
+    }
+  
+    /* Terminal icon - can be overridden */
+    .terminal-icon {
+      background-color: #2a2a2a !important;
+      border: 1px solid #333333 !important;
+      color: #ffffff !important;
+    }
+  
+    /* Typing indicator */
+    .chat-message.typing .message-text {
+      background: #2a2a2a !important;
+      border: 1px solid #333333 !important;
+      color: #ffffff !important;
+    }
+  
+    .typing-dot {
+      background: #666666 !important;
+    }
+  
+    /* ✅ MESSAGE NOTIFICATIONS - Dark Theme Colors */
+    
+    /* Assistant message notifications */
+    .message-notification.assistant {
+      background: #2a2a2a !important;
+      color: #e6e6e6 !important;
+      border: 1px solid #404040 !important;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+    }
+  
+    .message-notification.assistant:hover {
+      background: #333333 !important;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2) !important;
+    }
+  
+    /* Typing notification */
+    .message-notification.typing {
+      background: #2a2a2a !important;
+      color: #e6e6e6 !important;
+      border: 1px solid #404040 !important;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+    }
+  
+    /* Notification text */
+    .notification-text {
+      color: #e6e6e6 !important;
+    }
+    /* Typing dots in notifications */
+    .message-notification.typing .typing-dot {
+      background: #666 !important;
+    }
+  
+    /* ✅ MEDIUM PRIORITY - Use !important for key functionality */
+    
+    .custom-action-btn:hover {
+      background: #262624 !important;
+      border-color: #555555 !important;
+    }
+  
+    .save-timestamp-action {
+      background: #d97706 !important;
+      color: #ffffff !important;
+      border: 1px solid #b45309 !important;
+      box-shadow: none !important;
+    }
+  
+    .save-timestamp-action:hover {
+      background: #b45309 !important;
+      border-color: #92400e !important;
+    }
+  
+    /* ❌ LOW PRIORITY - Usually don't need !important */
+    
+    /* Scrollbar - rarely overridden */
+    .chat-messages::-webkit-scrollbar-track,
+    .chat-input::-webkit-scrollbar-track {
+      background: #1a1a1a;
+    }
+  
+    .chat-messages::-webkit-scrollbar-thumb,
+    .chat-input::-webkit-scrollbar-thumb {
+      background: #444444;
+    }
+  
+    /* Resize handle - decorative */
+    .resize-handle.se::after {
+      border-bottom-color: #64748b;
+    }
+  }

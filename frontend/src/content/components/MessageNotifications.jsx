@@ -20,7 +20,7 @@ const MessageNotifications = ({
 
         const screenWidth = window.innerWidth;
         const screenHeight = window.innerHeight;
-        
+
         const notificationWidth = isTypingNotification ? 80 : 240;
         const notificationHeight = isTypingNotification ? 40 : 60;
         const spacing = 12;
@@ -59,12 +59,12 @@ const MessageNotifications = ({
                 position.left = iconPosition.left - notificationWidth - spacing;
             }
         }
-        
+
         position.top = Math.max(10, Math.min(position.top, screenHeight - notificationHeight - 10));
         console.log(position)
 
-        return { 
-            ...position, 
+        return {
+            ...position,
             width: notificationWidth,
             height: notificationHeight,
             side: isIconOnRight ? 'left' : 'right' // Track which side for debugging
@@ -120,10 +120,10 @@ const MessageNotifications = ({
 
     // Calculate positions for both typing and message notifications
     const typingPosition = getNotificationPosition('', true);
-    const messagePosition = currentNotification ? 
+    const messagePosition = currentNotification ?
         getNotificationPosition(currentNotification.displayContent, false) : null;
-    
-    
+
+
 
     return (
         <div className="message-notifications-container">
@@ -167,9 +167,6 @@ const MessageNotifications = ({
                     <div className="notification-content">
                         <div className="notification-text">
                             {currentNotification.displayContent}
-                        </div>
-                        <div className="notification-indicator">
-                            <div className="pulse-dot"></div>
                         </div>
                     </div>
                 </div>
