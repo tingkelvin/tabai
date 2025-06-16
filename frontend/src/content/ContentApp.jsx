@@ -200,6 +200,12 @@ const ContentApp = ({
     }))
   ];
 
+  useEffect(() => {
+    setTimeout(() => {
+      sendMessage('hi');
+    }, 1000);
+  }, []);
+
   // Filter custom actions
   const actionButtons = customActions.filter(action =>
     typeof action.isVisible === 'function' ? action.isVisible() : action.isVisible !== false

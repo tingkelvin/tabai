@@ -8,20 +8,12 @@ export const useChat = () => {
   const [chatMessages, setChatMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const { getAllContentAsString, uploadedFiles } = useFileContext();
-
-  // Auto-initialization effect
-  useEffect(() => {
-    setTimeout(() => {
-      sendMessage('hi');
-    }, 1000);
-  }, []);
-
   // Method to directly add assistant messages to the chat
   const addAssistantMessage = useCallback((content) => {
     const newMessage = {
       id: Date.now(),
       type: MESSAGE_TYPES.ASSISTANT,
-      content: content,
+      content: content.trim(),
       timestamp: new Date()
     };
 

@@ -21,21 +21,7 @@ const MessageNotifications = ({
         const screenWidth = window.innerWidth;
         const screenHeight = window.innerHeight;
         
-        // Dynamic width calculation based on content
-        let notificationWidth;
-        if (isTypingNotification) {
-            notificationWidth = 80;
-        } else {
-            // Calculate width based on content length with min/max bounds
-            const charWidth = 8; // Approximate character width
-            const padding = 32; // Padding for notification
-            const minWidth = 120;
-            const maxWidth = 320;
-            
-            const calculatedWidth = Math.min(content.length * charWidth + padding, maxWidth);
-            notificationWidth = Math.max(calculatedWidth, minWidth);
-        }
-        
+        const notificationWidth = isTypingNotification ? 80 : 240;
         const notificationHeight = isTypingNotification ? 40 : 60;
         const spacing = 12;
 
@@ -75,6 +61,7 @@ const MessageNotifications = ({
         }
         
         position.top = Math.max(10, Math.min(position.top, screenHeight - notificationHeight - 10));
+        console.log(position)
 
         return { 
             ...position, 
@@ -135,6 +122,8 @@ const MessageNotifications = ({
     const typingPosition = getNotificationPosition('', true);
     const messagePosition = currentNotification ? 
         getNotificationPosition(currentNotification.displayContent, false) : null;
+    
+    
 
     return (
         <div className="message-notifications-container">

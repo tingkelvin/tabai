@@ -2,7 +2,7 @@
    DARK THEME - WITH STRATEGIC !important
    ==================================== */
 
-:root[data-theme="dark"] {
+  @media (prefers-color-scheme: dark) {
   /* ✅ HIGH PRIORITY - ALWAYS use !important */
   
   /* Main widget - critical positioning and colors */

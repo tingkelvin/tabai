@@ -182,7 +182,6 @@ const LinkedinContentApp = () => {
 
     for (const element of sectionElements) {
       if ((element.tagName === 'textarea' || element.tagName === 'input') &&
-        (element.type === 'textarea' || element.type === 'text') &&
         element.nearestHeader?.text === focusedElement.nearestHeader?.text) {
 
         // Set original placeholder if not already set
