@@ -13,6 +13,7 @@ const LinkedinContentApp = () => {
   const { focusedElement, sectionElements, getElementsInContainer } = useSimpleFormDetector();
   const userFilledElementsRef = useRef(new Map());
   const userCachedElementsRef = useRef(new Map());
+  const idToPlaceholderMap = useRef(new Map());
   const childToParentRef = useRef(new Map());
   const chatHook = useChat();
 
@@ -52,36 +53,47 @@ const LinkedinContentApp = () => {
     thinkingIntervalRef.current.forEach(({ intervalId }, element) => {
       // Stop the interval
       clearInterval(intervalId);
-      
+
       // Clear the placeholder for each element
       if (element && element.placeholder !== undefined) {
         element.placeholder = "";
       }
     });
-    
+
     // Clear the entire map
     thinkingIntervalRef.current.clear();
-    
+
     console.log('🧹 Cleaned up all thinking animations');
   };
 
   // Helper function to build the message for AI
-  const buildAIMessage = (jobObject, fileContents, fieldsToAutoFill, filledFields = [], indexToIdMap) => {
+  const buildAIMessage = (jobObject, fileContents, fields) => {
+    const filledFields = [];
+    const fieldsToAutoFill = [];
+
+    for (let i = 0; i < fields.length; i++) {
+
+      const field = fields[i];
+      console.log("field", field)
+      const fieldData = {
+        id: i,
+        label: field.label || "unknown",
+        placeholder: field.placeholder || "unknown",
+        header: field.nearestHeader?.text || "unknown",
+        value: field.value || "",
+      };
+
+      if (field.value && field.value.trim() !== '') {
+        filledFields.push(fieldData);
+      } else {
+        fieldsToAutoFill.push(fieldData);
+      }
+    }
+
     let message = `<job>${JSON.stringify(jobObject, null, 2)}</job>`;
     message += `<resume>${fileContents}</resume>`;
-    message += `<filled_fields>${JSON.stringify(filledFields.map((field) => ({
-      label: field.label || "unknown",
-      placeholder: field.placeholder || "unknown",
-      header: field.nearestHeader?.text || "unknown",
-      value: field.value || "",
-    })), null, 2)}</filled_fields>`;
-    message += `<fields>${JSON.stringify(fieldsToAutoFill.map((field, index) => ({
-      id: index,
-      label: field.label || "unknown",
-      placeholder: field.placeholder || "unknown",
-      header: field.nearestHeader?.text || "unknown",
-      value: field.value || "",
-    })), null, 2)}</fields>`;
+    message += `<filled_fields>${JSON.stringify(filledFields, null, 2)}</filled_fields>\n`;
+    message += `<fields>${JSON.stringify(fieldsToAutoFill, null, 2)}</fields>\n`;
     message += "<request>job apply, fill in ALL the fields using resume data if value is not already filled without using filled fields</request>";
     message += "<rules>Reply with JSON format: [{\"id\": \"field_id\", \"suggestion\": \"your_answer_here\"}] for each field. No explanations.</rules>";
     return message;
@@ -117,13 +129,12 @@ const LinkedinContentApp = () => {
   };
 
   // Main function to get suggestions
-  const getSuggestion = async (fieldsToAutoFill, idToDomMap, indexToIdMap, filledFields) => {
-    console.log("getSuggestion fieldsToAutoFill", fieldsToAutoFill)
-    if (fieldsToAutoFill.length === 0) return;
+  const getSuggestion = async (fields, idToDomMap, indexToIdMap) => {
+    if (fields.length === 0) return;
 
     // Start thinking animations for all fields being processed
-    const fieldElements = fieldsToAutoFill.map(field => {
-      const originalId = indexToIdMap[fieldsToAutoFill.indexOf(field)];
+    const fieldElements = fields.map(field => {
+      const originalId = indexToIdMap[fields.indexOf(field)];
       return idToDomMap[originalId]?.element;
     }).filter(Boolean);
 
@@ -142,7 +153,7 @@ const LinkedinContentApp = () => {
       }
 
       // Build and send message
-      const message = buildAIMessage(jobObject, fileContents, fieldsToAutoFill, filledFields, indexToIdMap);
+      const message = buildAIMessage(jobObject, fileContents, fields, indexToIdMap);
       const suggestion = await chatHook.sendMessage(message);
       cleanupAllThinkingAnimations()
       // Process suggestions
@@ -150,7 +161,7 @@ const LinkedinContentApp = () => {
 
       // Update fields with suggestions
       suggestions.forEach(({ id, suggestion: fieldSuggestion }) => {
-        const fieldElement = fieldsToAutoFill[id];
+        const fieldElement = fields[id];
         const originalId = indexToIdMap[id];
         const domElement = idToDomMap[originalId];
         updateFieldWithSuggestion(fieldElement, domElement, fieldSuggestion, userCachedElementsRef);
@@ -165,39 +176,42 @@ const LinkedinContentApp = () => {
 
   // Helper function to gather fields to auto-fill
   const gatherFieldsToAutoFill = (focusedElement, sectionElements) => {
-    console.log("gatherFieldsToAutoFill sectionElements", sectionElements)
-    const fieldsToAutoFill = [];
-    const filledFields = [];
+    const fields = [];
     const idToDomMap = {};
     const indexToIdMap = {};
-    console.log("current", userFilledElementsRef.current)
 
-    // First add cached elements with same header 
-    for (const [element, data] of userFilledElementsRef.current) {
-      const parentElement = childToParentRef.current.get(element);
-      if (parentElement?.nearestHeader?.text === focusedElement.nearestHeader?.text) {
-        const { element: _, ...elementWithoutDomRef } = parentElement;
-        filledFields.push({
-          ...elementWithoutDomRef,
-          value: "" // Include the cached value
-        });
-      }
-    }
-
-    // Then add current section elements
     for (const element of sectionElements) {
       if ((element.tagName === 'textarea' || element.tagName === 'input') &&
-        element.nearestHeader?.text === focusedElement.nearestHeader?.text &&
-        !element.value) {
-        const { element: _, ...elementWithoutDomRef } = element;
-        idToDomMap[elementWithoutDomRef.id] = element;
-        childToParentRef.current.set(element.element, element);
-        indexToIdMap[fieldsToAutoFill.length] = elementWithoutDomRef.id;
-        fieldsToAutoFill.push(elementWithoutDomRef);
+        (element.type === 'textarea' || element.type === 'text') &&
+        element.nearestHeader?.text === focusedElement.nearestHeader?.text) {
+
+        // Set original placeholder if not already set
+        if (!idToPlaceholderMap.current.has(element.id)) {
+          idToPlaceholderMap.current.set(element.id, element.placeholder);
+        }
+
+        // Create a deep copy of element data without DOM reference
+        const { element: domElement, ...rest } = element;
+        const elementWithoutDomRef = {
+          ...rest,
+          // Explicitly copy these to avoid reference sharing
+          placeholder: idToPlaceholderMap.current.get(element.id)
+        };
+
+        // Store mappings
+        idToDomMap[element.id] = element;
+
+        indexToIdMap[fields.length] = elementWithoutDomRef.id;
+
+        // Store parent reference using the actual DOM element
+        childToParentRef.current.set(domElement, element);
+
+        fields.push(elementWithoutDomRef);
       }
     }
+    console.log(fields)
 
-    return { fieldsToAutoFill, idToDomMap, indexToIdMap, filledFields };
+    return { fields, idToDomMap, indexToIdMap };
   };
 
   // Add this ref to cache file contents
@@ -219,8 +233,8 @@ const LinkedinContentApp = () => {
       focusedElement?.element &&
       !userFilledElementsRef.current.has(focusedElement.element) &&
       !userCachedElementsRef.current.has(focusedElement.element)) {
-      const { fieldsToAutoFill, idToDomMap, indexToIdMap, filledFields } = gatherFieldsToAutoFill(focusedElement, sectionElements);
-      getSuggestion(fieldsToAutoFill, idToDomMap, indexToIdMap, filledFields);
+      const { fields, idToDomMap, indexToIdMap } = gatherFieldsToAutoFill(focusedElement, sectionElements);
+      getSuggestion(fields, idToDomMap, indexToIdMap);
     }
   }, [focusedElement, sectionElements]);
 
@@ -281,13 +295,9 @@ const LinkedinContentApp = () => {
         currentElement?.placeholder !== "Ask me anything..." &&
         !currentElement?.className?.includes('chat-input') &&
         currentElement?.element &&
-        !userFilledElementsRef.current.has(currentElement.element)) {
-        console.log('🔄 Fetching new suggestion for field...');
-        // Find the current field in sectionElements to get fresh suggestions
-        const { fieldsToAutoFill, idToDomMap, indexToIdMap, filledFields } = gatherFieldsToAutoFill(currentElement, getElementsInContainer(e.target));
-        console.log("fieldsToAutoFill", fieldsToAutoFill)
-        getSuggestion(fieldsToAutoFill, idToDomMap, indexToIdMap, filledFields);
-
+        !userFilledElementsRef.current.has(currentElement.element)) {// Find the current field in sectionElements to get fresh suggestions
+        const { fields, idToDomMap, indexToIdMap } = gatherFieldsToAutoFill(currentElement, getElementsInContainer(e.target));
+        getSuggestion(fields, idToDomMap, indexToIdMap);
       }
     }
 
@@ -310,7 +320,7 @@ const LinkedinContentApp = () => {
       const suggestion = cachedSuggestions[currentIndex];
       if (suggestion) {
         // Update placeholder with history suggestion
-        e.target.placeholder = suggestion
+        e.target.placeholder = suggestion.value
         e.target.setAttribute('data-suggestion-index', currentIndex.toString());
 
         console.log(`📚 History suggestion ${currentIndex + 1}/${cachedSuggestions.length}:`, suggestion.value);

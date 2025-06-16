@@ -1,6 +1,6 @@
 const API_BASE_URL = 'https://tubetor-backend-234898757030.us-central1.run.app';
 
-export const chatWithLlm = async(message, appToken) => {
+export const chatWithLlm = async (message, appToken) => {
   const payload = {
     message: message,
   };
@@ -29,13 +29,13 @@ export const chatWithLlm = async(message, appToken) => {
 
   const data = await response.json();
   console.log('📦 API response data:', data);
-  
+
   if (!data || !data.reply) {
     const error = new Error("No response from API");
     error.status = 'NO_RESPONSE';
     throw error;
   }
-  
+
   return data;
 }
 
@@ -70,11 +70,11 @@ export const verifyGoogleAccessToken = async (token) => {
   console.log("Response status text:", response.statusText);
   console.log("Response ok:", response.ok);
   console.log("Response headers:", Object.fromEntries(response.headers));
-  
+
   const data = await response.json();
   console.log("Response data:", data);
   console.log("=== End Debug ===");
-  
+
   if (!response.ok || !data.user || !data.appSessionToken) {
     console.error("Error details:", {
       status: response.status,

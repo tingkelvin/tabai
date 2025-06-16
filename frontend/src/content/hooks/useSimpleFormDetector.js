@@ -46,12 +46,6 @@ export const useSimpleFormDetector = () => {
         return false;
       }
 
-      // Check if element is outside the viewport (optional - uncomment if needed)
-      // if (rect.bottom < 0 || rect.right < 0 || 
-      //     rect.left > window.innerWidth || rect.top > window.innerHeight) {
-      //   return false;
-      // }
-
       return true;
     } catch (error) {
       console.warn('Error checking element visibility:', error);
@@ -110,7 +104,7 @@ export const useSimpleFormDetector = () => {
   }, []);
 
   // Simple function to extract element information (now includes header)
-  const getElementInfo = useCallback((element) => {
+  const getElementInfo = useCallback((element, index = null) => {
     if (!element || !element.nodeType || element.nodeType !== Node.ELEMENT_NODE) {
       return null;
     }
@@ -221,7 +215,7 @@ export const useSimpleFormDetector = () => {
 
     try {
       return {
-        id: element.id || `generated-id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: index !== null ? index : (element.id || `generated-id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`),
         tagName: element.tagName ? element.tagName.toLowerCase() : '',
         type: element.type || '',
         label: getLabel(),
@@ -233,16 +227,16 @@ export const useSimpleFormDetector = () => {
         tabIndex: element.tabIndex,
         className: element.className || '',
         options: getOptions(),
-        nearestHeader: findNearestHeader(element), // Added header information
+        nearestHeader: findNearestHeader(element),
         element: element // Keep reference to the actual DOM element
       };
     } catch (error) {
       console.warn('Error creating element info:', error);
       return null;
     }
-  }, [findNearestHeader]); // Added findNearestHeader to dependencies
+  }, [findNearestHeader]);
 
-  // Get elements in the same container (now filters hidden elements)
+  // Get elements in the same container (now filters hidden elements and sorts by visual position)
   const getElementsInContainer = useCallback((element) => {
     if (!element || !element.nodeType || element.nodeType !== Node.ELEMENT_NODE) {
       return [];
@@ -275,14 +269,40 @@ export const useSimpleFormDetector = () => {
 
       if (container && container.querySelectorAll) {
         const formElements = container.querySelectorAll('input, textarea');
-        formElements.forEach(el => {
+
+        // First, collect visible elements with their position info
+        const elementsWithPosition = [];
+
+        formElements.forEach((el, index) => {
           // Filter out hidden elements before processing
           if (isElementVisible(el)) {
-            const elementInfo = getElementInfo(el);
+            const elementInfo = getElementInfo(el, index); // Pass index as ID
             if (elementInfo) {
-              elements.push(elementInfo);
+              // Get the element's position on the page
+              const rect = el.getBoundingClientRect();
+              elementsWithPosition.push({
+                ...elementInfo,
+                top: rect.top + window.scrollY,
+                left: rect.left + window.scrollX,
+                rect: rect
+              });
             }
           }
+        });
+
+        // Sort by visual position: first by top position (Y), then by left position (X)
+        elementsWithPosition.sort((a, b) => {
+          const topDiff = a.top - b.top;
+          // If elements are roughly on the same horizontal line (within 10px), sort by left position
+          if (Math.abs(topDiff) < 10) {
+            return a.left - b.left;
+          }
+          return topDiff;
+        });
+
+        // Remove the position data and return clean element info
+        elementsWithPosition.forEach(({ top, left, rect, ...elementInfo }) => {
+          elements.push(elementInfo);
         });
       }
 
@@ -318,7 +338,7 @@ export const useSimpleFormDetector = () => {
     } catch (error) {
       console.warn('Error in handleFocus:', error);
     }
-  }, [getElementInfo, getElementsInContainer]); // Updated dependencies
+  }, [getElementInfo, getElementsInContainer]);
 
   const handleBlur = useCallback(() => {
     // Simple version - just clear focused element immediately
