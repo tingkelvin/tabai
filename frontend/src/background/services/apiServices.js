@@ -1,43 +1,168 @@
-const API_BASE_URL = 'https://tubetor-backend-234898757030.us-central1.run.app';
+const API_BASE_URL = "http://192.168.1.136:8000";
 
-export const chatWithLlm = async (message, appToken) => {
-  const payload = {
-    message: message,
+const createHeaders = (appToken, includeContentType = true) => {
+  const headers = {
+    accept: "application/json",
+    Authorization: `Bearer ${appToken}`,
   };
 
-  console.log('🔄 Calling chat API with payload:', payload);
+  if (includeContentType) {
+    headers["Content-Type"] = "application/json";
+  }
 
-  const response = await fetch(`${API_BASE_URL}/chat-with-llm`, {
-    method: "POST",
-    headers: {
-      accept: "application/json",
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${appToken}`,
-    },
-    body: JSON.stringify(payload),
-  });
+  return headers;
+};
 
-  console.log('📡 API response status:', response.status);
+const handleApiResponse = async (response, errorContext = "API request") => {
+  console.log(`📡 ${errorContext} response status:`, response.status);
 
-  // Just throw with status info - let handler decide what to do
   if (!response.ok) {
-    const error = new Error(`API request failed`);
+    let errorDetail = "Unknown error";
+    try {
+      const errorData = await response.json();
+      errorDetail = errorData.detail || errorData.message || errorDetail;
+    } catch (e) {
+      // If we can't parse error JSON, use status text
+      errorDetail = response.statusText;
+    }
+
+    const error = new Error(`${errorContext} failed: ${errorDetail}`);
     error.status = response.status;
     error.statusText = response.statusText;
     throw error;
   }
 
   const data = await response.json();
-  console.log('📦 API response data:', data);
+  console.log(`📦 ${errorContext} response data:`, data);
 
   if (!data || !data.reply) {
-    const error = new Error("No response from API");
-    error.status = 'NO_RESPONSE';
+    const error = new Error(`No response from ${errorContext}`);
+    error.status = "NO_RESPONSE";
     throw error;
   }
 
   return data;
-}
+};
+
+// ===================================
+// 1. Basic Chat (Original function)
+// ===================================
+
+export const chatWithLlm = async (message, appToken) => {
+  const payload = {
+    message: message,
+  };
+
+  console.log("🔄 Calling basic chat API with payload:", payload);
+
+  const response = await fetch(`${API_BASE_URL}/chat`, {
+    method: "POST",
+    headers: createHeaders(appToken),
+    body: JSON.stringify(payload),
+  });
+
+  return handleApiResponse(response, "Basic chat");
+};
+
+// ===================================
+// 2. Chat with Search
+// ===================================
+
+export const chatWithSearch = async (message, appToken, options = {}) => {
+  const payload = {
+    message: message,
+    temperature: options.temperature || 0.7,
+    max_tokens: options.maxTokens || null,
+  };
+
+  console.log("🔄 Calling chat with search API with payload:", payload);
+
+  const response = await fetch(`${API_BASE_URL}/chat/search`, {
+    method: "POST",
+    headers: createHeaders(appToken),
+    body: JSON.stringify(payload),
+  });
+
+  return handleApiResponse(response, "Chat with search");
+};
+
+// ===================================
+// 3. Chat with Base64 Images
+// ===================================
+
+export const chatWithImages = async (
+  message,
+  images,
+  appToken,
+  options = {}
+) => {
+  const payload = {
+    message: message,
+    images: images, // Array of {data: base64String, mime_type: string}
+    use_search: options.useSearch || false,
+    temperature: options.temperature || 0.7,
+    max_tokens: options.maxTokens || null,
+  };
+
+  console.log("🔄 Calling chat with images API with payload:", {
+    ...payload,
+    images: `${payload.images.length} images`,
+  });
+
+  const response = await fetch(`${API_BASE_URL}/chat/image`, {
+    method: "POST",
+    headers: createHeaders(appToken),
+    body: JSON.stringify(payload),
+  });
+
+  return handleApiResponse(response, "Chat with images");
+};
+
+// ===================================
+// 4. Chat with File Upload
+// ===================================
+
+export const chatWithUpload = async (
+  message,
+  files,
+  appToken,
+  options = {}
+) => {
+  const formData = new FormData();
+
+  // Add text fields
+  formData.append("message", message);
+  formData.append("use_search", options.useSearch || false);
+  formData.append("temperature", options.temperature || 0.7);
+
+  if (options.maxTokens) {
+    formData.append("max_tokens", options.maxTokens);
+  }
+
+  // Add files
+  if (Array.isArray(files)) {
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
+  } else {
+    formData.append("files", files);
+  }
+
+  console.log("🔄 Calling chat with upload API with:", {
+    message: message.substring(0, 50) + "...",
+    fileCount: Array.isArray(files) ? files.length : 1,
+    options,
+  });
+
+  const response = await fetch(`${API_BASE_URL}/chat/upload`, {
+    method: "POST",
+    headers: createHeaders(appToken, false), // Don't include Content-Type for FormData
+    body: formData,
+  });
+
+  return handleApiResponse(response, "Chat with upload");
+};
+
 
 export const verifyGoogleToken = async (idToken) => {
   const response = await fetch(`${API_BASE_URL}/auth/google/verify-token`, {

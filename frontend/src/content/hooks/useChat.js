@@ -7,7 +7,7 @@ export const useChat = () => {
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
-  const { getAllContentAsString, uploadedFiles } = useFileContext();
+  const { getAllContentAsString } = useFileContext();
   // Method to directly add assistant messages to the chat
   const addAssistantMessage = useCallback((content) => {
     const newMessage = {

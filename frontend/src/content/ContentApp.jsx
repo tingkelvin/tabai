@@ -18,7 +18,6 @@ import { usePosition } from './hooks/usePosition';
 import { useDragAndResize } from './hooks/useDragAndResize';
 import { useChat } from './hooks/useChat';
 import { useFileManagement } from './hooks/useFileManagement';
-import { SearchCodeIcon } from 'lucide-react';
 
 const ContentApp = ({
   customChatHook,
@@ -54,12 +53,6 @@ const ContentApp = ({
     isTyping,
     handleInputChange,
     handleKeyPress,
-    sendMessage,
-    addMessage,
-    addMessages,
-    clearMessages,
-    removeMessage,
-    updateMessage,
     setIsTyping,
     addUserMessage,
     addAssistantMessage
@@ -71,8 +64,6 @@ const ContentApp = ({
     formatFileName,
     handleFileUpload,
     loadSessionFiles,
-    displayFileContent,
-    getAllContentAsString,
     removeFile,
     cleanup: fileCleanup
   } = useFileManagement(addUserMessage);
@@ -81,8 +72,11 @@ const ContentApp = ({
   useEffect(() => {
     console.log('🚀 Mounting component');
     cleanupRef.current = fileCleanup;
-    loadSessionFiles();
   }, [fileCleanup]);
+
+  useEffect(() => {
+    loadSessionFiles();
+  }, []);
 
   useEffect(() => {
     console.log('🚀 Unmounting component');
@@ -168,8 +162,12 @@ const ContentApp = ({
 
   // File upload handler
   const handleOptimizedFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
     try {
-      await handleFileUpload(event);
+      await handleFileUpload(file);
+      event.target.value = ''; // Clear input
     } catch (error) {
       console.error('File upload failed:', error);
       addUserMessage(`❌ Upload failed: ${error.message}`);
