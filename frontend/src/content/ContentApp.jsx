@@ -18,6 +18,7 @@ import { usePosition } from './hooks/usePosition';
 import { useDragAndResize } from './hooks/useDragAndResize';
 import { useChat } from './hooks/useChat';
 import { useFileManagement } from './hooks/useFileManagement';
+import { SearchCodeIcon } from 'lucide-react';
 
 const ContentApp = ({
   customChatHook,
@@ -201,11 +202,27 @@ const ContentApp = ({
   ];
 
   useEffect(() => {
-    setTimeout(() => {
-      sendMessage('hi');
+    setTimeout(async () => {
+      const reply = await chrome.runtime.sendMessage({
+        type: 'GET_CHAT_SETTINGS'
+      });
+
+      if (!reply.hasGreeting) {
+        setIsTyping(true);
+
+        // Add a delay to simulate typing
+        setTimeout(() => {
+          setIsTyping(false);
+          addAssistantMessage('Hello! I am Taber, How can I help you today?');
+        }, 1000);
+
+        await chrome.runtime.sendMessage({
+          type: 'SAVE_CHAT_SETTINGS',
+          data: { settings: { hasGreeting: true } }
+        });
+      }
     }, 1000);
   }, []);
-
   // Filter custom actions
   const actionButtons = customActions.filter(action =>
     typeof action.isVisible === 'function' ? action.isVisible() : action.isVisible !== false

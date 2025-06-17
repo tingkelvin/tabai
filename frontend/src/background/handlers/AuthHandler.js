@@ -6,7 +6,7 @@ export const authHandler = {
   checkAuth: async (sendResponse) => {
     try {
       console.log('🔍 Checking auth status...');
-      
+
       if (!AuthManager) {
         sendResponse({
           isAuthenticated: false,
@@ -32,7 +32,7 @@ export const authHandler = {
   authenticate: async (sendResponse) => {
     try {
       console.log('🔐 Authentication requested...');
-      
+
       if (!AuthManager) {
         sendResponse({
           success: false,
@@ -42,11 +42,11 @@ export const authHandler = {
       }
 
       const result = await AuthManager.authenticateWithGoogle();
-      
+
       if (result.success) {
         await AuthManager.notifyContentScripts('AUTH_SUCCESS', { user: result.user });
         notificationService.notifyExtensionParts('AUTH_SUCCESS', { user: result.user });
-        
+
         sendResponse({
           success: true,
           user: result.user,
@@ -54,7 +54,7 @@ export const authHandler = {
         });
       } else {
         notificationService.notifyExtensionParts('AUTH_ERROR', { error: result.error });
-        
+
         sendResponse({
           success: false,
           error: result.error,
@@ -63,9 +63,9 @@ export const authHandler = {
       }
     } catch (error) {
       console.error('❌ Authentication error:', error);
-      
+
       notificationService.notifyExtensionParts('AUTH_ERROR', { error: error.message });
-      
+
       sendResponse({
         success: false,
         error: error.message,
@@ -77,7 +77,7 @@ export const authHandler = {
   logout: async (sendResponse) => {
     try {
       console.log('👋 Logout requested...');
-      
+
       if (!AuthManager) {
         sendResponse({
           success: false,
@@ -86,12 +86,14 @@ export const authHandler = {
         return;
       }
 
+      await chrome.storage.sync.set({ chatSettings: { hasGreeting: false } });
+
       const success = await AuthManager.logout();
-      
+
       if (success) {
         await AuthManager.notifyContentScripts('AUTH_LOGOUT');
         notificationService.notifyExtensionParts('AUTH_LOGOUT');
-        
+
         sendResponse({
           success: true,
           message: 'Logged out successfully'
@@ -115,7 +117,7 @@ export const authHandler = {
   refreshToken: async (sendResponse) => {
     try {
       console.log('🔄 Token refresh requested...');
-      
+
       if (!AuthManager) {
         sendResponse({ success: false, error: 'AuthManager not available' });
         return;
