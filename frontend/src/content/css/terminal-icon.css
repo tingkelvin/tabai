@@ -50,6 +50,11 @@
     hsl(120, 100%, 70%) 100%
   );
   background-size: 300% 100%;
-  animation: holographicShiftHorizontal 4s ease-in-out infinite;
+  animation: holographicShiftHorizontal 16s ease-in-out infinite;
   filter: brightness(1.2) contrast(1.1);
 } 
+
+/* Or if you want it much faster */
+.terminal-icon.holographic.typing {
+  animation-duration: 0.5s; /* Very fast */
+}

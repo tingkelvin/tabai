@@ -207,14 +207,14 @@ const ContentApp = ({
         type: 'GET_CHAT_SETTINGS'
       });
 
-      if (!reply.hasGreeting) {
+      if (reply.hasGreeting) {
         setIsTyping(true);
 
         // Add a delay to simulate typing
         setTimeout(() => {
           setIsTyping(false);
           addAssistantMessage('Hello! I am Taber, How can I help you today?');
-        }, 1000);
+        }, 1500);
 
         await chrome.runtime.sendMessage({
           type: 'SAVE_CHAT_SETTINGS',
@@ -249,7 +249,7 @@ const ContentApp = ({
           }}
           onMouseDown={(e) => startDrag(e, true)}
         >
-          <TerminalIcon onClick={handleExpand} />
+          <TerminalIcon onClick={handleExpand} isTyping={isTyping} />
         </div>
       ) : (
         <div
