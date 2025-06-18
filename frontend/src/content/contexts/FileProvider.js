@@ -1,4 +1,4 @@
-// contexts/FileProvider.js - Consolidated
+// contexts/FileProvider.js - Consolidated with PDF support
 import React, { createContext, useContext, useState, useRef, useCallback, useMemo, useEffect } from 'react';
 
 const FileContext = createContext(null);
@@ -7,13 +7,8 @@ const SUPPORTED_FILE_TYPES = {
     'text/plain': ['.txt', '.md', '.log'],
     'text/csv': ['.csv'],
     'application/json': ['.json'],
-    // 'text/javascript': ['.js', '.jsx'],
-    // 'text/html': ['.html', '.htm'],
-    // 'text/css': ['.css'],
-    // 'application/xml': ['.xml'],
-    // 'text/xml': ['.xml'],
-    // 'application/yaml': ['.yml', '.yaml'],
     'text/markdown': ['.md'],
+    'application/pdf': ['.pdf'], // Added PDF support
     // Images
     'image/jpeg': ['.jpg', '.jpeg'],
     'image/png': ['.png'],
@@ -35,6 +30,26 @@ export const useFileContext = () => {
         throw new Error('useFileContext must be used within a FileProvider');
     }
     return context;
+};
+
+// PDF text extraction helper
+const extractTextFromPDF = async (file) => {
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            fullText += `Page ${pageNum}:\n${pageText}\n\n`;
+        }
+
+        return fullText;
+    } catch (error) {
+        throw new Error(`Failed to extract PDF text: ${error.message}`);
+    }
 };
 
 // FileStorage class with arrow functions
@@ -177,12 +192,20 @@ export const FileProvider = ({ children }) => {
                 return fileContentsRef.current.get(cacheKey);
             }
 
-            const content = file.text ? await file.text() : await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.onerror = () => reject(new Error('Failed to read file'));
-                reader.readAsText(file);
-            });
+            let content;
+
+            // Handle PDF files
+            if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                content = await extractTextFromPDF(file);
+            } else {
+                // Handle text files
+                content = file.text ? await file.text() : await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = () => reject(new Error('Failed to read file'));
+                    reader.readAsText(file);
+                });
+            }
 
             // Cache management
             if (fileContentsRef.current.size >= 10) {

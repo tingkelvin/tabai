@@ -24,7 +24,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["vendor.js", "content.js"],
+      "js": ["vendor.js", "content.js","lib/pdf.min.js", "lib/pdf.worker.js"],
       "run_at": "document_end",
       "all_frames": false
     }

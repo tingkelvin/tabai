@@ -63,6 +63,10 @@ module.exports = {
         {
           from: 'public/icons/',
           to: 'icons/'
+        },
+        {
+          from: 'public/lib/',
+          to: 'lib'
         }
       ]
     }),
