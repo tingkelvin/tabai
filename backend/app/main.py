@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import logging
 
 from app.core.config import settings
-from app.api import auth, youtube, llm
+from app.api import auth, llm
 from app.utils.logger import setup_logging, get_logger
 
 # Setup logging before anything else
@@ -32,11 +32,10 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(youtube.router, tags=["YouTube Processing"])
 app.include_router(llm.router, tags=["Llm Processing"])
 
 # Example of a root endpoint (optional)
 @app.get("/")
 async def read_root():
     logger.info("Root endpoint accessed.")
-    return {"message": "Welcome to the YouTube Video Processor API! Use /process-youtube-video endpoint."}
+    return {"message": "Welcome to the Taber API!"}
