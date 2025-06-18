@@ -20,7 +20,7 @@ export const useChat = () => {
     setChatMessages(prev => [...prev, newMessage]);
   }, []);
 
-  const sendMessage = useCallback(async (messageOrInput) => {
+  const sendMessage = useCallback(async (messageOrInput, addToChat = true) => {
     // Handle both direct message sending and chat input
     let message = messageOrInput;
 
@@ -63,7 +63,7 @@ export const useChat = () => {
       const responseContent = reply.content || "I do not find any response, sorry.";
 
       // Add the assistant response to chat messages
-      addAssistantMessage(responseContent);
+      if (addToChat) addAssistantMessage(responseContent);
 
       return responseContent;
 
@@ -71,8 +71,9 @@ export const useChat = () => {
       console.error('❌ Error sending message:', error);
       const errorContent = "Sorry, I'm experiencing technical difficulties. Please try again later.";
 
-      // Always add error response to chat
       addAssistantMessage(errorContent);
+
+      // Always add error response to chat
 
       return errorContent;
 

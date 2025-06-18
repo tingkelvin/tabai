@@ -50,13 +50,13 @@ const LinkedinContentApp = () => {
   // Cleanup function for all thinking animations
   // Improved cleanup function for all thinking animations
   const cleanupAllThinkingAnimations = () => {
-    thinkingIntervalRef.current.forEach(({ intervalId }, element) => {
+    thinkingIntervalRef.current.forEach(({ intervalId, originalPlaceholder }, element) => {
       // Stop the interval
       clearInterval(intervalId);
 
-      // Clear the placeholder for each element
+      // Restore original placeholder for each element
       if (element && element.placeholder !== undefined) {
-        element.placeholder = "";
+        element.placeholder = originalPlaceholder || "";
       }
     });
 
@@ -118,14 +118,18 @@ const LinkedinContentApp = () => {
     if (!fieldElement || !domElement) return;
 
     const cleanSuggestion = suggestion.replace(/['"]/g, '').trim();
-    domElement.element.placeholder = `${suggestion}`;
 
-    const maxHistory = 5;
-    const existing = userCachedElementsRef.current.get(domElement.element) || [];
-    const updated = [...existing, { value: cleanSuggestion, timestamp: new Date() }].slice(-maxHistory);
-    userCachedElementsRef.current.set(domElement.element, updated);
+    if (cleanSuggestion) {
+      domElement.element.placeholder = `${cleanSuggestion}`;
 
-    console.log('🤖 AI suggestion for', fieldElement.label || fieldElement.nearestHeader?.text, ':', cleanSuggestion);
+
+      const maxHistory = 5;
+      const existing = userCachedElementsRef.current.get(domElement.element) || [];
+      const updated = [...existing, { value: cleanSuggestion, timestamp: new Date() }].slice(-maxHistory);
+      userCachedElementsRef.current.set(domElement.element, updated);
+
+      console.log('🤖 AI suggestion for', fieldElement.label || fieldElement.nearestHeader?.text, ':', cleanSuggestion);
+    }
   };
 
   // Main function to get suggestions
@@ -154,7 +158,7 @@ const LinkedinContentApp = () => {
 
       // Build and send message
       const message = buildAIMessage(jobObject, fileContents, fields, indexToIdMap);
-      const suggestion = await chatHook.sendMessage(message);
+      const suggestion = await chatHook.sendMessage(message, false);
       cleanupAllThinkingAnimations()
       // Process suggestions
       const suggestions = parseAISuggestions(suggestion);
@@ -166,6 +170,8 @@ const LinkedinContentApp = () => {
         const domElement = idToDomMap[originalId];
         updateFieldWithSuggestion(fieldElement, domElement, fieldSuggestion, userCachedElementsRef);
       });
+
+      chatHook.addAssistantMessage("tab to fill, ⬇️ for new query, ⬆️ for history queries");
 
     } catch (error) {
       console.error('Error getting suggestions:', error);
@@ -259,7 +265,6 @@ const LinkedinContentApp = () => {
         e.target.setAttribute('value', placeholder);
         e.target.dispatchEvent(new Event('input', { bubbles: true }));
         e.target.dispatchEvent(new Event('change', { bubbles: true }));
-        chatHook.addAssistantMessage("tab to fill")
 
         userFilledElementsRef.current.set(e.target, {
           value: placeholder,
@@ -354,6 +359,11 @@ const LinkedinContentApp = () => {
         return;
       }
 
+      if (resumeNeeded && (!fileContents || !fileContents.trim() || fileContents.length !== 1)) {
+        chatHook.addAssistantMessage("Please upload one resume.");
+        return;
+      }
+
       let message = `<job>${jobContext}</job>`
       message += "<platform>linkedin<</platform>"
       message += `<resume>${resumeNeeded && fileContents ? `Resume: ${fileContents}` : ''} </resume>`
@@ -364,7 +374,6 @@ const LinkedinContentApp = () => {
       const response = await chatHook.sendMessage(message);
 
       if (response) {
-        chatHook.addAssistantMessage(response);
         console.log('🚀 Response:', response);
       }
     } catch (error) {
