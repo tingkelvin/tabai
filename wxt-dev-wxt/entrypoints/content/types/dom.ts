@@ -8,4 +8,4 @@ export interface Position {
 export interface WindowDimensions {
     width: number;
     height: number;
-} 
+}

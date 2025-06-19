@@ -11,7 +11,8 @@ types/
 ├── widget.ts         # Widget and positioning types
 ├── actions.ts        # Action types
 ├── components.ts     # React component prop types
-├── hooks.ts          # Hook types
+├── hooks.ts          # Hook return types
+├── constants.ts      # Constants and enums
 └── README.md         # This file
 ```
 
@@ -21,6 +22,9 @@ types/
 DOM manipulation and positioning related types:
 - `Position` - x,y coordinates for positioning
 - `WindowDimensions` - window size dimensions
+- `PositionConstraints` - positioning constraints and limits
+- `Size` - width and height dimensions
+- `RelativePosition` - relative x,y coordinates
 
 ### 2. **Widget Types** (`widget.ts`)
 Widget and positioning specific types:
@@ -36,14 +40,22 @@ React component prop types:
 - `TerminalIconProps` - terminal icon component props
 
 ### 5. **Hook Types** (`hooks.ts`)
-Hook-related types:
-- `DragState` - drag state management
+Custom hook return types:
+- `UsePositionReturn` - position hook return type
+- `UseDragParams` & `UseDragReturn` - drag hook parameters and return
+- `UseResizeParams` & `UseResizeReturn` - resize hook parameters and return
+
+### 6. **Constants** (`constants.ts`)
+Constants and enums used across the content script:
+- `RESIZE_TYPES` - resize direction constants
+- `ResizeType` - type-safe resize direction type
 
 ## 🔄 Import Patterns
 
 ### Import from Main Index (Recommended)
 ```typescript
-import type { Position, CustomAction, ContentAppProps, DragState } from '../types';
+import type { Position, CustomAction, ContentAppProps } from '../types';
+import { RESIZE_TYPES } from '../types';
 ```
 
 ### Import from Specific Files (For Tree Shaking)
@@ -51,7 +63,7 @@ import type { Position, CustomAction, ContentAppProps, DragState } from '../type
 import type { Position } from '../types/dom';
 import type { CustomAction } from '../types/actions';
 import type { ContentAppProps } from '../types/components';
-import type { DragState } from '../types/hooks';
+import { RESIZE_TYPES } from '../types/constants';
 ```
 
 ## 📋 Currently Used Types
@@ -59,8 +71,11 @@ import type { DragState } from '../types/hooks';
 These are the types that are actually being used in the content script:
 
 ### From `dom.ts`:
-- ✅ `Position` - Used in ContentApp.tsx, helper.ts, dragUtils.ts
+- ✅ `Position` - Used in helper.ts, usePosition.ts, useDrag.ts, useResize.ts
 - ✅ `WindowDimensions` - Used in helper.ts
+- ✅ `PositionConstraints` - Used in usePosition.ts
+- ✅ `Size` - Used in useDrag.ts, useResize.ts
+- ✅ `RelativePosition` - Used in useDrag.ts, useResize.ts
 
 ### From `widget.ts`:
 - ✅ `InitialPositions` - Used in helper.ts
@@ -73,7 +88,13 @@ These are the types that are actually being used in the content script:
 - ✅ `TerminalIconProps` - Used in TerminalIcon.tsx
 
 ### From `hooks.ts`:
-- ✅ `DragState` - Used in ContentApp.tsx, dragUtils.ts
+- ✅ `UsePositionReturn` - Used in usePosition.ts
+- ✅ `UseDragParams` & `UseDragReturn` - Used in useDrag.ts
+- ✅ `UseResizeParams` & `UseResizeReturn` - Used in useResize.ts
+
+### From `constants.ts`:
+- ✅ `RESIZE_TYPES` - Used in useResize.ts
+- ✅ `ResizeType` - Used in useResize.ts
 
 ## 🚀 Benefits
 
@@ -101,4 +122,5 @@ When adding new types:
 - ✅ Keep types focused and minimal
 - ✅ Document complex types with comments
 - ✅ Use consistent naming conventions
-- ✅ Remove unused types regularly 
+- ✅ Use const assertions for constants
+- ✅ Prefer explicit type checks over array includes 

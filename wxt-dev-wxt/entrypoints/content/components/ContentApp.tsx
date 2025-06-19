@@ -2,12 +2,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import TerminalIcon from "./TerminalIcon";
 import { calculateInitialPositions } from "../utils/helper";
-import { createDragHandlers } from "../utils/dragUtils";
-import type { ContentAppProps, Position, DragState } from '../types';
+import { createDragHandlers, DragState, DragHandlers } from "../utils/dragUtils";
+import type { ContentAppProps, Position } from '../types';
 import { WIDGET_CONFIG } from "../utils/constant";
 
 const ContentApp: React.FC<ContentAppProps> = ({
-  customActions = [],
   title = "",
 }) => {
   const [isMinimized, setIsMinimized] = useState<boolean>(true);
@@ -21,7 +20,7 @@ const ContentApp: React.FC<ContentAppProps> = ({
   console.log(`ContentApp render #${renderCount.current} - This should be minimal now!`);
 
   // Create drag handlers
-  const dragHandlers = createDragHandlers(
+  const dragHandlers: DragHandlers = createDragHandlers(
     widgetRef,
     currentPosition,
     isDragging,
