@@ -4,6 +4,7 @@ export interface ContentAppProps {
 
 export interface TerminalIconProps {
     isTyping: boolean;
+    onClick?: (e: React.MouseEvent) => void;
 }
 
 export interface TerminalHeaderProps {

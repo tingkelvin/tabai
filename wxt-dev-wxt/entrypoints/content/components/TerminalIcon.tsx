@@ -1,8 +1,17 @@
 import type { TerminalIconProps } from '../types';
 
-const TerminalIcon: React.FC<TerminalIconProps> = ({ isTyping }) => {
+const TerminalIcon: React.FC<TerminalIconProps> = ({ isTyping, onClick }) => {
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onClick) onClick(e);
+  };
+
   return (
-    <div className={`terminal-icon holographic ${isTyping ? "typing" : ""}`}>
+    <div
+      className={`terminal-icon holographic ${isTyping ? "typing" : ""}`}
+      onClick={onClick}
+    >
       <svg
         version="1.2"
         xmlns="http://www.w3.org/2000/svg"
@@ -22,7 +31,7 @@ const TerminalIcon: React.FC<TerminalIconProps> = ({ isTyping }) => {
         <style></style>
         <use id="Layer 1" href="#img1" x="0" y="5" />
       </svg>
-    </div>
+    </div >
   );
 };
 

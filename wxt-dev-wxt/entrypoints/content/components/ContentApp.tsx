@@ -15,12 +15,13 @@ import { createDragHandlers, DragState, DragHandlers } from "../utils/dragUtils"
 import type { ContentAppProps, Position } from '../types';
 import type { ChatMessage } from '../types/chat';
 import { WIDGET_CONFIG } from "../utils/constant";
+import { usePosition } from "../hooks/useHooks";
 
 const ContentApp: React.FC<ContentAppProps> = ({
   title = "",
 }) => {
   console.log("contentscript loaded")
-  const [isMinimized, setIsMinimized] = useState<boolean>(false);
+  const [isMinimized, setIsMinimized] = useState<boolean>(true);
   const [chatInput, setChatInput] = useState<string>("");
 
   const widgetRef = useRef<HTMLDivElement>(null);
@@ -29,7 +30,16 @@ const ContentApp: React.FC<ContentAppProps> = ({
   const renderCount = useRef(0);
   const isDragging = useRef(false);
   const dragState = useRef<DragState>({ startX: 0, startY: 0, elementX: 0, elementY: 0 });
-  const currentPosition = useRef<Position>({ x: 0, y: 0 });
+  const currentPosition = useRef<Position>({ top: 0, left: 0 });
+  const hasDragged = useRef(false);
+
+  const { widgetPosition: initialWidgetPos, iconPosition: initialIconPos } = calculateInitialPositions();
+  const [iconPosition, updateIconPosition, constrainIconPosition] = usePosition(initialIconPos);
+  const [widgetPosition, updateWidgetPosition, constrainWidgetPosition] = usePosition(initialWidgetPos);
+  const [widgetSize, setWidgetSize] = useState({
+    width: WIDGET_CONFIG.DEFAULT_WIDTH,
+    height: WIDGET_CONFIG.DEFAULT_HEIGHT
+  });
 
   const messages: ChatMessage[] = [
     {
@@ -85,7 +95,7 @@ const ContentApp: React.FC<ContentAppProps> = ({
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      console.log('Sending:', chatInput);
+      console.log('Sendings:', chatInput);
       setChatInput('');
     }
   };
@@ -93,30 +103,68 @@ const ContentApp: React.FC<ContentAppProps> = ({
   renderCount.current++;
   console.log(`ContentApp render #${renderCount.current}`);
 
-  const dragHandlers: DragHandlers = createDragHandlers(
-    widgetRef,
-    currentPosition,
-    isDragging,
-    dragState,
-    { width: WIDGET_CONFIG.ICON_SIZE, height: WIDGET_CONFIG.ICON_SIZE }
-  );
 
-  const handleMinimize = () => {
-    setIsMinimized(!isMinimized);
-  };
-
-  useEffect(() => {
-    const { iconPosition } = calculateInitialPositions();
-    currentPosition.current = { x: iconPosition.x, y: iconPosition.y };
-
-    if (widgetRef.current) {
-      widgetRef.current.style.transform = `translate(${iconPosition.x}px, ${iconPosition.y}px)`;
+  const handleToggle = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isDragging.current || hasDragged.current) {
+      hasDragged.current = false;
+      return;
     }
 
-    return () => {
-      dragHandlers.cleanup();
-    };
-  }, [isMinimized]);
+    if (isMinimized) {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const isOnRightSide = iconPosition.left > screenWidth / 2;
+      const isOnBottomHalf = iconPosition.top > screenHeight / 2;
+
+      let widgetLeft, widgetTop;
+
+      // Horizontal positioning
+      if (isOnRightSide) {
+        // Expand to left
+        widgetLeft = iconPosition.left - widgetSize.width + WIDGET_CONFIG.ICON_SIZE;
+      } else {
+        // Expand to right
+        widgetLeft = iconPosition.left;
+      }
+
+      // Vertical positioning
+      if (isOnBottomHalf) {
+        // Expand upward
+        widgetTop = iconPosition.top - widgetSize.height + WIDGET_CONFIG.ICON_SIZE;
+      } else {
+        // Expand downward
+        widgetTop = iconPosition.top;
+      }
+
+      const constrainedPosition = constrainWidgetPosition(
+        { top: widgetTop, left: widgetLeft },
+        { elementWidth: widgetSize.width, elementHeight: widgetSize.height }
+      );
+
+      updateWidgetPosition(constrainedPosition);
+    }
+
+    setIsMinimized(!isMinimized);
+  }, [isMinimized, iconPosition, widgetSize, constrainWidgetPosition, updateWidgetPosition]);
+
+  const dragHandlers: DragHandlers = createDragHandlers(
+    widgetRef,
+    isMinimized ? { current: iconPosition } : { current: widgetPosition },
+    isDragging,
+    dragState,
+    isMinimized ?
+      { width: WIDGET_CONFIG.ICON_SIZE, height: WIDGET_CONFIG.ICON_SIZE } :
+      { width: widgetSize.width, height: widgetSize.height },
+    hasDragged,
+    isMinimized ? updateIconPosition : updateWidgetPosition
+  );
+  useEffect(() => {
+    const currentPos = isMinimized ? iconPosition : widgetPosition;
+    if (widgetRef.current) {
+      widgetRef.current.style.transform = `translate(${currentPos.left}px, ${currentPos.top}px)`;
+    }
+  }, [isMinimized, iconPosition, widgetPosition]);
 
   return (
     <>
@@ -126,7 +174,7 @@ const ContentApp: React.FC<ContentAppProps> = ({
           className={`terminal-widget minimized ${isDragging.current ? 'dragging' : ''}`}
           onMouseDown={dragHandlers.handleMouseDown}
         >
-          <TerminalIcon isTyping={true} />
+          <TerminalIcon isTyping={true} onClick={handleToggle} />
         </div>
       ) : (
         <div
@@ -137,7 +185,7 @@ const ContentApp: React.FC<ContentAppProps> = ({
           <TerminalHeader
             dragging={isDragging.current}
             startDrag={dragHandlers.handleMouseDown}
-            handleMinimize={handleMinimize}
+            handleMinimize={handleToggle}
             title={title}
           />
           <div className="terminal-content">

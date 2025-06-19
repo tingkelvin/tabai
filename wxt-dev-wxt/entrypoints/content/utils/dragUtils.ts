@@ -18,18 +18,21 @@ export const createDragHandlers = (
     currentPosition: React.RefObject<Position>,
     isDragging: React.RefObject<boolean>,
     dragState: React.RefObject<DragState>,
-    constraintSize: { width: number; height: number }
+    constraintSize: { width: number; height: number },
+    hasDragged: React.RefObject<boolean>,
+    updatePosition?: (newPos: Partial<Position>) => void
 ): DragHandlers => {
 
     const handleMouseDown = (e: React.MouseEvent) => {
         if (e.button !== 0 || !elementRef.current) return;
 
         isDragging.current = true;
+        hasDragged.current = false; // Reset flag on mouse down
         dragState.current = {
             startX: e.clientX,
             startY: e.clientY,
-            elementX: currentPosition.current.x,
-            elementY: currentPosition.current.y
+            elementX: currentPosition.current.left,
+            elementY: currentPosition.current.top
         };
 
         e.preventDefault();
@@ -42,6 +45,11 @@ export const createDragHandlers = (
         const deltaX = e.clientX - dragState.current.startX;
         const deltaY = e.clientY - dragState.current.startY;
 
+        // Mark as dragged if movement exceeds threshold
+        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+            hasDragged.current = true;
+        }
+
         const newX = dragState.current.elementX + deltaX;
         const newY = dragState.current.elementY + deltaY;
 
@@ -51,13 +59,21 @@ export const createDragHandlers = (
         const constrainedX = Math.max(0, Math.min(newX, maxX));
         const constrainedY = Math.max(0, Math.min(newY, maxY));
 
-        currentPosition.current = { x: constrainedX, y: constrainedY };
+        currentPosition.current = { left: constrainedX, top: constrainedY };
         elementRef.current.style.transform = `translate(${constrainedX}px, ${constrainedY}px)`;
     };
 
     const handleMouseUp = () => {
         isDragging.current = false;
         document.body.style.userSelect = '';
+
+        // Update the position state when drag ends
+        if (updatePosition && hasDragged.current) {
+            updatePosition({
+                left: currentPosition.current.left,
+                top: currentPosition.current.top
+            });
+        }
     };
 
     const addListeners = () => {

@@ -1,7 +1,7 @@
-    // utils/constants.js
+// utils/constants.js
 export const WIDGET_CONFIG = {
-  DEFAULT_WIDTH: 800,
-  DEFAULT_HEIGHT: 600,
+  DEFAULT_WIDTH: 480,
+  DEFAULT_HEIGHT: 800,
   MIN_WIDTH: 300,
   MIN_HEIGHT: 200,
   ICON_SIZE: 48,

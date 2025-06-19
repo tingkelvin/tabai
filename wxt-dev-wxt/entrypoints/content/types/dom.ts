@@ -1,8 +1,8 @@
 // DOM and positioning types
 
 export interface Position {
-    x: number;
-    y: number;
+    left: number;
+    top: number;
 }
 
 export interface WindowDimensions {
