@@ -454,6 +454,51 @@
   font-style: italic;
 }
 
+/* Resize handle styles */
+.resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.terminal-widget:hover .resize-handle {
+  opacity: 1;
+}
+
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+}
+
+.resize-se {
+  bottom: 0;
+  right: 0;
+  cursor: nw-resize;
+}
+
+.resize-sw {
+  bottom: 0;
+  left: 0;
+  cursor: ne-resize;
+}
+
+.resize-ne {
+  top: 0;
+  right: 0;
+  cursor: sw-resize;
+}
+
+.resize-nw {
+  top: 0;
+  left: 0;
+  cursor: se-resize;
+}
 /* Responsive */
 @media (max-width: 520px) {
   .terminal-widget.expanded {
