@@ -10,4 +10,6 @@ export * from './widget';
 export * from './components';
 
 // Constants
-export * from './constants'; 
+export * from './constants';
+
+export * from './chat'
