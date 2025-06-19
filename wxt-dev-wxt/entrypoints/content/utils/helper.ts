@@ -3,13 +3,13 @@ import type { Position, WindowDimensions, InitialPositions } from '../types';
 
 export const calculateInitialPositions = (): InitialPositions => {
   const widgetPosition: Position = {
-    top: WIDGET_CONFIG.MARGINS.DEFAULT,
-    left: window.innerWidth - WIDGET_CONFIG.DEFAULT_WIDTH - WIDGET_CONFIG.MARGINS.DEFAULT
+    x: window.innerWidth - WIDGET_CONFIG.DEFAULT_WIDTH - WIDGET_CONFIG.MARGINS.DEFAULT,
+    y: WIDGET_CONFIG.MARGINS.DEFAULT
   };
 
   const iconPosition: Position = {
-    top: WIDGET_CONFIG.MARGINS.DEFAULT,
-    left: window.innerWidth - WIDGET_CONFIG.ICON_SIZE - WIDGET_CONFIG.MARGINS.DEFAULT
+    x: window.innerWidth - WIDGET_CONFIG.ICON_SIZE - WIDGET_CONFIG.MARGINS.DEFAULT,
+    y: WIDGET_CONFIG.MARGINS.DEFAULT
   };
 
   return { widgetPosition, iconPosition };
@@ -23,8 +23,8 @@ export const getWindowDimensions = (): WindowDimensions => ({
 
 // Add a type-safe function to validate positions
 export const isValidPosition = (position: Position): boolean => {
-  return typeof position.top === 'number' &&
-    typeof position.left === 'number' &&
-    position.top >= 0 &&
-    position.left >= 0;
+  return typeof position.x === 'number' &&
+    typeof position.y === 'number' &&
+    position.x >= 0 &&
+    position.y >= 0;
 };

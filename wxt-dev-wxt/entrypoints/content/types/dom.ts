@@ -1,8 +1,8 @@
 // DOM and positioning types
 
 export interface Position {
-    top: number;
-    left: number;
+    x: number;
+    y: number;
 }
 
 export interface WindowDimensions {
@@ -15,4 +15,14 @@ export interface PositionConstraints {
     maxHeight?: number;
     elementWidth?: number;
     elementHeight?: number;
+}
+
+export interface Size {
+    width: number;
+    height: number;
+}
+
+export interface RelativePosition {
+    x: number;
+    y: number;
 } 

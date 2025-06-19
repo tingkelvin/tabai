@@ -12,6 +12,7 @@ types/
 ├── actions.ts        # Action types
 ├── components.ts     # React component prop types
 ├── hooks.ts          # Hook return types
+├── constants.ts      # Constants and enums
 └── README.md         # This file
 ```
 
@@ -22,6 +23,8 @@ DOM manipulation and positioning related types:
 - `Position` - x,y coordinates for positioning
 - `WindowDimensions` - window size dimensions
 - `PositionConstraints` - positioning constraints and limits
+- `Size` - width and height dimensions
+- `RelativePosition` - relative x,y coordinates
 
 ### 2. **Widget Types** (`widget.ts`)
 Widget and positioning specific types:
@@ -39,12 +42,20 @@ React component prop types:
 ### 5. **Hook Types** (`hooks.ts`)
 Custom hook return types:
 - `UsePositionReturn` - position hook return type
+- `UseDragParams` & `UseDragReturn` - drag hook parameters and return
+- `UseResizeParams` & `UseResizeReturn` - resize hook parameters and return
+
+### 6. **Constants** (`constants.ts`)
+Constants and enums used across the content script:
+- `RESIZE_TYPES` - resize direction constants
+- `ResizeType` - type-safe resize direction type
 
 ## 🔄 Import Patterns
 
 ### Import from Main Index (Recommended)
 ```typescript
 import type { Position, CustomAction, ContentAppProps } from '../types';
+import { RESIZE_TYPES } from '../types';
 ```
 
 ### Import from Specific Files (For Tree Shaking)
@@ -52,16 +63,19 @@ import type { Position, CustomAction, ContentAppProps } from '../types';
 import type { Position } from '../types/dom';
 import type { CustomAction } from '../types/actions';
 import type { ContentAppProps } from '../types/components';
+import { RESIZE_TYPES } from '../types/constants';
 ```
 
 ## 📋 Currently Used Types
 
-These are the only types that are actually being used in the content script:
+These are the types that are actually being used in the content script:
 
 ### From `dom.ts`:
-- ✅ `Position` - Used in helper.ts and usePosition.ts
+- ✅ `Position` - Used in helper.ts, usePosition.ts, useDrag.ts, useResize.ts
 - ✅ `WindowDimensions` - Used in helper.ts
 - ✅ `PositionConstraints` - Used in usePosition.ts
+- ✅ `Size` - Used in useDrag.ts, useResize.ts
+- ✅ `RelativePosition` - Used in useDrag.ts, useResize.ts
 
 ### From `widget.ts`:
 - ✅ `InitialPositions` - Used in helper.ts
@@ -75,6 +89,12 @@ These are the only types that are actually being used in the content script:
 
 ### From `hooks.ts`:
 - ✅ `UsePositionReturn` - Used in usePosition.ts
+- ✅ `UseDragParams` & `UseDragReturn` - Used in useDrag.ts
+- ✅ `UseResizeParams` & `UseResizeReturn` - Used in useResize.ts
+
+### From `constants.ts`:
+- ✅ `RESIZE_TYPES` - Used in useResize.ts
+- ✅ `ResizeType` - Used in useResize.ts
 
 ## 🚀 Benefits
 
@@ -83,6 +103,7 @@ These are the only types that are actually being used in the content script:
 3. **🔍 Easy Maintenance** - Clear separation of concerns
 4. **⚡ Tree Shaking** - Import only what you need
 5. **📚 Clear Documentation** - Each file has a specific purpose
+6. **🔒 Type Safety** - Proper type constraints and validation
 
 ## 🔧 Adding New Types
 
@@ -100,4 +121,6 @@ When adding new types:
 - ✅ Import from specific files for tree-shaking
 - ✅ Keep types focused and minimal
 - ✅ Document complex types with comments
-- ✅ Use consistent naming conventions 
+- ✅ Use consistent naming conventions
+- ✅ Use const assertions for constants
+- ✅ Prefer explicit type checks over array includes 
