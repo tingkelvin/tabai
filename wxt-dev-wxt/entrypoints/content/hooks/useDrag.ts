@@ -1,139 +1,150 @@
-import { useRef, useCallback } from "react";
-import type { Position } from "../types";
+import { useRef, useCallback } from 'react'
+import type { Position } from '../types'
 
 export const useDrag = (
-  elementRef: React.RefObject<HTMLElement | null>,
-  onDragEnd?: (position: Position) => void
+    elementRef: React.RefObject<HTMLElement | null>,
+    onDragEnd?: (position: Position) => void
 ) => {
-  const isDragging = useRef(false);
-  const hasDragged = useRef(false);
-  const dragState = useRef({ startX: 0, startY: 0, elementX: 0, elementY: 0 });
-  const animationFrameId = useRef<number | null>(null);
+    const isDragging = useRef(false)
+    const hasDragged = useRef(false)
+    const dragState = useRef({ startX: 0, startY: 0, elementX: 0, elementY: 0 })
+    const animationFrameId = useRef<number | null>(null)
 
-  const constrainPosition = useCallback((x: number, y: number) => {
-    if (!elementRef.current) return { x, y };
-    
-    const element = elementRef.current;
-    const rect = element.getBoundingClientRect();
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-    
-    const constrainedX = Math.max(0, Math.min(screenWidth - rect.width, x));
-    const constrainedY = Math.max(0, Math.min(screenHeight - rect.height, y));
-    
-    return { x: constrainedX, y: constrainedY };
-  }, [elementRef]);
+    const constrainPosition = useCallback(
+        (x: number, y: number) => {
+            if (!elementRef.current) return { x, y }
 
-  const updateElementPosition = useCallback(
-    (x: number, y: number) => {
-      if (!elementRef.current) return;
-      const { x: constrainedX, y: constrainedY } = constrainPosition(x, y);
-      elementRef.current.style.transform = `translate(${constrainedX}px, ${constrainedY}px)`;
-    },
-    [elementRef, constrainPosition]
-  );
+            const element = elementRef.current
+            const rect = element.getBoundingClientRect()
+            const screenWidth = window.innerWidth
+            const screenHeight = window.innerHeight
 
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
-      if (!isDragging.current || !elementRef.current) return;
+            const constrainedX = Math.max(
+                0,
+                Math.min(screenWidth - rect.width, x)
+            )
+            const constrainedY = Math.max(
+                0,
+                Math.min(screenHeight - rect.height, y)
+            )
 
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-      }
+            return { x: constrainedX, y: constrainedY }
+        },
+        [elementRef]
+    )
 
-      animationFrameId.current = requestAnimationFrame(() => {
-        const deltaX = e.clientX - dragState.current.startX;
-        const deltaY = e.clientY - dragState.current.startY;
-        const newX = dragState.current.elementX + deltaX;
-        const newY = dragState.current.elementY + deltaY;
+    const updateElementPosition = useCallback(
+        (x: number, y: number) => {
+            if (!elementRef.current) return
+            const { x: constrainedX, y: constrainedY } = constrainPosition(x, y)
+            elementRef.current.style.transform = `translate(${constrainedX}px, ${constrainedY}px)`
+        },
+        [elementRef, constrainPosition]
+    )
 
-        updateElementPosition(newX, newY);
+    const handleMouseMove = useCallback(
+        (e: MouseEvent) => {
+            if (!isDragging.current || !elementRef.current) return
 
-        if (
-          !hasDragged.current &&
-          (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3)
-        ) {
-          hasDragged.current = true;
-          elementRef.current?.classList.add("dragging");
-        }
-      });
-    },
-    [elementRef, updateElementPosition]
-  );
+            if (animationFrameId.current) {
+                cancelAnimationFrame(animationFrameId.current)
+            }
 
-  const handleMouseUp = useCallback(
-    (e: MouseEvent) => {
-      if (!isDragging.current) return;
+            animationFrameId.current = requestAnimationFrame(() => {
+                const deltaX = e.clientX - dragState.current.startX
+                const deltaY = e.clientY - dragState.current.startY
+                const newX = dragState.current.elementX + deltaX
+                const newY = dragState.current.elementY + deltaY
 
-      isDragging.current = false;
+                updateElementPosition(newX, newY)
 
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-        animationFrameId.current = null;
-      }
+                if (
+                    !hasDragged.current &&
+                    (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3)
+                ) {
+                    hasDragged.current = true
+                    elementRef.current?.classList.add('dragging')
+                }
+            })
+        },
+        [elementRef, updateElementPosition]
+    )
 
-      elementRef.current?.classList.remove("dragging");
+    const handleMouseUp = useCallback(
+        (e: MouseEvent) => {
+            if (!isDragging.current) return
 
-      if (elementRef.current && onDragEnd) {
-        const computedStyle = getComputedStyle(elementRef.current);
-        const transform = computedStyle.transform;
-        let finalX = 0, finalY = 0;
+            isDragging.current = false
 
-        if (transform && transform !== "none") {
-          const matrix = new DOMMatrix(transform);
-          finalX = matrix.m41;
-          finalY = matrix.m42;
-        }
+            if (animationFrameId.current) {
+                cancelAnimationFrame(animationFrameId.current)
+                animationFrameId.current = null
+            }
 
-        onDragEnd({ left: finalX, top: finalY });
-      }
+            elementRef.current?.classList.remove('dragging')
 
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+            if (elementRef.current && onDragEnd) {
+                const computedStyle = getComputedStyle(elementRef.current)
+                const transform = computedStyle.transform
+                let finalX = 0,
+                    finalY = 0
 
-      setTimeout(() => {
-        hasDragged.current = false;
-      }, 10);
-    },
-    [elementRef, onDragEnd, handleMouseMove]
-  );
+                if (transform && transform !== 'none') {
+                    const matrix = new DOMMatrix(transform)
+                    finalX = matrix.m41
+                    finalY = matrix.m42
+                }
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      if (!elementRef.current) return;
+                onDragEnd({ left: finalX, top: finalY })
+            }
 
-      e.preventDefault();
-      e.stopPropagation();
+            document.removeEventListener('mousemove', handleMouseMove)
+            document.removeEventListener('mouseup', handleMouseUp)
 
-      isDragging.current = true;
-      hasDragged.current = false;
+            setTimeout(() => {
+                hasDragged.current = false
+            }, 10)
+        },
+        [elementRef, onDragEnd, handleMouseMove]
+    )
 
-      const computedStyle = getComputedStyle(elementRef.current);
-      const transform = computedStyle.transform;
-      let currentX = 0, currentY = 0;
+    const handleMouseDown = useCallback(
+        (e: React.MouseEvent) => {
+            if (!elementRef.current) return
 
-      if (transform && transform !== "none") {
-        const matrix = new DOMMatrix(transform);
-        currentX = matrix.m41;
-        currentY = matrix.m42;
-      }
+            e.preventDefault()
+            e.stopPropagation()
 
-      dragState.current = {
-        startX: e.clientX,
-        startY: e.clientY,
-        elementX: currentX,
-        elementY: currentY,
-      };
+            isDragging.current = true
+            hasDragged.current = false
 
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-    },
-    [elementRef, handleMouseMove, handleMouseUp]
-  );
+            const computedStyle = getComputedStyle(elementRef.current)
+            const transform = computedStyle.transform
+            let currentX = 0,
+                currentY = 0
 
-  return {
-    handleMouseDown,
-    isDragging: isDragging.current,
-    hasDragged: hasDragged.current,
-  };
-};
+            if (transform && transform !== 'none') {
+                const matrix = new DOMMatrix(transform)
+                currentX = matrix.m41
+                currentY = matrix.m42
+            }
+
+            dragState.current = {
+                startX: e.clientX,
+                startY: e.clientY,
+                elementX: currentX,
+                elementY: currentY,
+            }
+
+            document.addEventListener('mousemove', handleMouseMove)
+            document.addEventListener('mouseup', handleMouseUp)
+        },
+        [elementRef, handleMouseMove, handleMouseUp]
+    )
+
+    return {
+        handleMouseDown,
+        isDragging: isDragging.current,
+        hasDragged: hasDragged.current,
+    }
+}
