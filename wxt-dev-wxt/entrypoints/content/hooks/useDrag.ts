@@ -2,7 +2,7 @@ import { useRef, useCallback } from "react";
 import type { Position } from "../types";
 
 export const useDrag = (
-  elementRef: React.RefObject<HTMLElement>,
+  elementRef: React.RefObject<HTMLElement | null>,
   onDragEnd?: (position: Position) => void
 ) => {
   const isDragging = useRef(false);

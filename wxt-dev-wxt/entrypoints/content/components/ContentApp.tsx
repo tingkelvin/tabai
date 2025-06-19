@@ -1,10 +1,9 @@
-// ContentApp.tsx - Optimized with DOM-based dragging
+// ContentApp.tsx - Simplified with single position
 import React, {
   useState,
   useEffect,
   useRef,
   useCallback,
-  useMemo,
 } from "react";
 
 // Components import
@@ -15,7 +14,6 @@ import ChatInput from "./ChatInput";
 
 // Utils
 import { calculateInitialPositions } from "../utils/helper";
-import { usePosition } from "../hooks/usePosition";
 
 // Types import
 import type { ContentAppProps, Position } from "../types";
@@ -24,27 +22,27 @@ import { WIDGET_CONFIG } from "../utils/constant";
 import { useDrag } from "../hooks/useDrag";
 
 const ContentApp: React.FC<ContentAppProps> = ({ title = "" }) => {
-  console.log("contentscript loaded");
+  // console.log("contentscript loaded");
 
   const [isMinimized, setIsMinimized] = useState<boolean>(true);
   const [chatInput, setChatInput] = useState<string>("");
+  const [position, setPosition] = useState<Position>(() => {
+    const { iconPosition } = calculateInitialPositions();
+    return iconPosition;
+  });
 
   const widgetRef = useRef<HTMLDivElement>(null);
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
   const renderCount = useRef(0);
 
-  const { widgetPosition: initialWidgetPos, iconPosition: initialIconPos } =
-    calculateInitialPositions();
-  const [iconPosition, updateIconPosition] = usePosition(initialIconPos);
-  const [widgetPosition, updateWidgetPosition, constrainWidgetPosition] =
-    usePosition(initialWidgetPos);
   const [widgetSize, setWidgetSize] = useState({
     width: WIDGET_CONFIG.DEFAULT_WIDTH,
     height: WIDGET_CONFIG.DEFAULT_HEIGHT,
   });
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setChatInput(e.target.value);
   };
@@ -57,21 +55,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ title = "" }) => {
     }
   };
 
-  const handleDragEnd = useCallback(
-    (position: Position) => {
-      if (isMinimized) {
-        updateIconPosition(position);
-      } else {
-        updateWidgetPosition(position);
-      }
-    },
-    [isMinimized, updateIconPosition, updateWidgetPosition]
-  );
-
-  const { handleMouseDown, hasDragged } = useDrag(
-    widgetRef,
-    handleDragEnd,
-  );
+  const { handleMouseDown, hasDragged } = useDrag(widgetRef, setPosition);
 
   const handleToggle = useCallback(
     (e: React.MouseEvent) => {
@@ -79,57 +63,74 @@ const ContentApp: React.FC<ContentAppProps> = ({ title = "" }) => {
       if (hasDragged) return;
 
       if (isMinimized) {
+        // Expanding: Calculate widget position based on icon location
         const screenWidth = window.innerWidth;
         const screenHeight = window.innerHeight;
-        const isOnRightSide = iconPosition.left > screenWidth / 2;
-        const isOnBottomHalf = iconPosition.top > screenHeight / 2;
+        const isOnRightSide = position.left > screenWidth / 2;
+        const isOnBottomHalf = position.top > screenHeight / 2;
 
         let widgetLeft, widgetTop;
 
         if (isOnRightSide) {
-          widgetLeft =
-            iconPosition.left - widgetSize.width + WIDGET_CONFIG.ICON_SIZE;
+          widgetLeft = position.left - widgetSize.width + WIDGET_CONFIG.ICON_SIZE;
         } else {
-          widgetLeft = iconPosition.left;
+          widgetLeft = position.left;
         }
 
         if (isOnBottomHalf) {
-          widgetTop =
-            iconPosition.top - widgetSize.height + WIDGET_CONFIG.ICON_SIZE;
+          console.log("isOnBottomHalf")
+          widgetTop = position.top - widgetSize.height + WIDGET_CONFIG.ICON_SIZE;
         } else {
-          widgetTop = iconPosition.top;
+          console.log("isOnTopHalf")
+          widgetTop = position.top;
         }
 
-        const constrainedPosition = constrainWidgetPosition(
-          { top: widgetTop, left: widgetLeft },
-          { elementWidth: widgetSize.width, elementHeight: widgetSize.height }
-        );
+        const constrainedLeft = Math.max(0, Math.min(screenWidth - widgetSize.width, widgetLeft));
+        const constrainedTop = Math.max(0, Math.min(screenHeight - widgetSize.height, widgetTop));
 
-        updateWidgetPosition(constrainedPosition);
+        setPosition({ left: constrainedLeft, top: constrainedTop });
+      } else {
+        // Minimizing: Calculate icon position based on widget location
+        const isOnRightSide = position.left + widgetSize.width > window.innerWidth / 2;
+        const isOnBottomHalf = position.top - widgetSize.height> window.innerHeight / 2;
+
+        let iconLeft, iconTop;
+
+        if (isOnRightSide) {
+          // Icon at right edge of widget
+          iconLeft = position.left + widgetSize.width - WIDGET_CONFIG.ICON_SIZE;
+        } else {
+          // Icon at left edge of widget
+          iconLeft = position.left;
+        }
+
+        if (isOnBottomHalf) {
+          console.log("isOnBottomHalf")
+          // Icon at bottom edge of widget
+          iconTop = position.top + widgetSize.height - WIDGET_CONFIG.ICON_SIZE;
+        } else {
+          console.log("isOnTopHalf")
+          // Icon at top edge of widget
+          iconTop = position.top;
+        }
+
+        setPosition({ left: iconLeft, top: iconTop });
       }
 
       setIsMinimized(!isMinimized);
     },
-    [
-      isMinimized,
-      iconPosition,
-      widgetSize,
-      constrainWidgetPosition,
-      updateWidgetPosition,
-      hasDragged,
-    ]
+    [isMinimized, position, widgetSize, hasDragged]
   );
 
-  // Initialize position on mount
+  // Update DOM position when position state changes
   useEffect(() => {
-    const currentPos = isMinimized ? iconPosition : widgetPosition;
     if (widgetRef.current) {
-      widgetRef.current.style.transform = `translate(${currentPos.left}px, ${currentPos.top}px)`;
+      widgetRef.current.style.transform = `translate(${position.left}px, ${position.top}px)`;
     }
-  }, [isMinimized, iconPosition, widgetPosition]);
+  }, [position]);
 
-  renderCount.current++;
-  console.log(`ContentApp render #${renderCount.current}`);
+  // renderCount.current++;
+  // console.log(`ContentApp render #${renderCount.current}`);
 
   return (
     <>
