@@ -15,7 +15,7 @@ import ChatInput from "./ChatInput";
 
 // Utils
 import { calculateInitialPositions } from "../utils/helper";
-import { usePosition } from "../hooks/useHooks";
+import { usePosition } from "../hooks/usePosition";
 
 // Types import
 import type { ContentAppProps, Position } from "../types";
@@ -68,28 +68,9 @@ const ContentApp: React.FC<ContentAppProps> = ({ title = "" }) => {
     [isMinimized, updateIconPosition, updateWidgetPosition]
   );
 
-  const dragConstraints = useMemo(() => {
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-    const elementWidth = isMinimized
-      ? WIDGET_CONFIG.ICON_SIZE
-      : widgetSize.width;
-    const elementHeight = isMinimized
-      ? WIDGET_CONFIG.ICON_SIZE
-      : widgetSize.height;
-
-    return {
-      minX: 0,
-      maxX: screenWidth - elementWidth,
-      minY: 0,
-      maxY: screenHeight - elementHeight,
-    };
-  }, [isMinimized, widgetSize]);
-
   const { handleMouseDown, hasDragged } = useDrag(
     widgetRef,
     handleDragEnd,
-    dragConstraints
   );
 
   const handleToggle = useCallback(
