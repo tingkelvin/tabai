@@ -1,17 +1,17 @@
 export interface ContentAppProps {
-    title?: string;
+    title?: string
 }
 
 export interface TerminalIconProps {
-    isTyping: boolean;
-    onClick?: (e: React.MouseEvent) => void;
+    isTyping: boolean
+    onClick?: (e: React.MouseEvent) => void
 }
 
 export interface TerminalHeaderProps {
-    dragging: boolean;
-    startDrag: (e: React.MouseEvent) => void;
-    handleMinimize: () => void;
-    handleClose?: () => void;
-    title: string;
-    currentUrl?: string;
+    dragging: boolean
+    startDrag: (e: React.MouseEvent) => void
+    handleMinimize: (e: React.MouseEvent) => void
+    handleClose?: () => void
+    title: string
+    currentUrl?: string
 }

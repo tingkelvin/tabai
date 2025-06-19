@@ -26,12 +26,9 @@ const ContentApp: React.FC<ContentAppProps> = ({ title = '' }) => {
     const chatInputRef = useRef<HTMLTextAreaElement>(null)
 
     // Enhanced useDrag hook now handles all position logic and toggle functionality
-    const { handleMouseDown, handleToggle, hasDragged, isMinimized } = useDrag(
-        widgetRef,
-        {
-            widgetSize,
-        }
-    )
+    const { handleMouseDown, handleToggle, isMinimized } = useDrag(widgetRef, {
+        widgetSize,
+    })
 
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setChatInput(e.target.value)

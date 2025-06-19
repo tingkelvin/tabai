@@ -226,7 +226,6 @@ export const useDrag = (
         handleMouseDown,
         handleToggle,
         isDragging: isDragging.current,
-        hasDragged: hasDragged.current,
         isMinimized,
         currentPosition,
         iconPosition,
