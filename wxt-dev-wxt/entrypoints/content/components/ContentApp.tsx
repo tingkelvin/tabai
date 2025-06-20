@@ -23,7 +23,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const {
     chatInput,
     chatMessages,
-    isTyping,
+    isThinking,
     handleInputChange,
     handleKeyPress,
   } = chatHook
@@ -57,7 +57,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         iconPosition={iconPosition}
         chatMessages={chatMessages}
         isMinimized={isMinimized}
-        isTyping={isTyping}
+        isThinking={isThinking}
         onNotificationClick={handleToggle}
       />
       {isMinimized ? (
@@ -66,7 +66,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
           className='terminal-widget minimized'
           onMouseDown={handleMouseDown}
         >
-          <TerminalIcon isTyping={isTyping} onClick={handleToggle} />
+          <TerminalIcon isThinking={isThinking} onClick={handleToggle} />
         </div>
 
       ) : (
@@ -89,7 +89,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
               <ChatHistory
                 chatMessagesRef={chatMessagesRef}
                 chatMessages={chatMessages}
-                isTyping={isTyping}
+                isThinking={isThinking}
               />
               <ChatInput
                 fileActions={[]}

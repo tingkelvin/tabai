@@ -28,7 +28,7 @@ interface NotificationsProps {
     iconPosition: IconPosition;
     chatMessages: ChatMessage[];
     isMinimized: boolean;
-    isTyping: boolean;
+    isThinking: boolean;
     onNotificationClick?: (e: React.MouseEvent) => void
 }
 
@@ -36,14 +36,14 @@ const Notifications: React.FC<NotificationsProps> = ({
     iconPosition,
     chatMessages,
     isMinimized,
-    isTyping,
+    isThinking,
     onNotificationClick
 }) => {
     const [currentNotification, setCurrentNotification] = useState<CurrentNotification | null>(null);
     const [lastProcessedMessageId, setLastProcessedMessageId] = useState<string | null>(null);
 
     // Calculate notification positioning based on content length
-    const getNotificationPosition = (content: string = '', isTypingNotification: boolean = false): NotificationPosition => {
+    const getNotificationPosition = (content: string = '', isThinkingNotification: boolean = false): NotificationPosition => {
         const iconWidth = 48;
         const iconHeight = 48;
         const iconCenterX = iconPosition.left + (iconWidth / 2);
@@ -52,8 +52,8 @@ const Notifications: React.FC<NotificationsProps> = ({
         const screenWidth = window.innerWidth;
         const screenHeight = window.innerHeight;
 
-        const notificationWidth = isTypingNotification ? 80 : 240;
-        const notificationHeight = isTypingNotification ? 40 : 60;
+        const notificationWidth = isThinkingNotification ? 80 : 240;
+        const notificationHeight = isThinkingNotification ? 40 : 60;
         const spacing = 12;
 
         let position = { top: 0, left: 0 };
@@ -145,42 +145,42 @@ const Notifications: React.FC<NotificationsProps> = ({
         }
     }, [isMinimized]);
 
-    if (!isMinimized || (!isTyping && !currentNotification)) {
+    if (!isMinimized || (!isThinking && !currentNotification)) {
         return null;
     }
 
-    // Calculate positions for both typing and message notifications
-    const typingPosition = getNotificationPosition('', true);
+    // Calculate positions for both thinking and message notifications
+    const thinkingPosition = getNotificationPosition('', true);
     const messagePosition = currentNotification ?
         getNotificationPosition(currentNotification.displayContent, false) : null;
 
     return (
         <div className="message-notifications-container">
-            {/* Typing indicator */}
-            {isTyping && (
+            {/* thinking indicator */}
+            {isThinking && (
                 <div
-                    className="message-notification typing"
+                    className="message-notification thinking"
                     style={{
                         position: 'fixed',
-                        top: typingPosition.top,
-                        left: typingPosition.left,
-                        width: typingPosition.width,
-                        height: typingPosition.height,
+                        top: thinkingPosition.top,
+                        left: thinkingPosition.left,
+                        width: thinkingPosition.width,
+                        height: thinkingPosition.height,
                         zIndex: 10000,
                     }}
                 >
                     <div className="notification-content">
-                        <div className="typing-indicator">
-                            <div className="typing-dot"></div>
-                            <div className="typing-dot"></div>
-                            <div className="typing-dot"></div>
+                        <div className="thinking-indicator">
+                            <div className="thinking-dot"></div>
+                            <div className="thinking-dot"></div>
+                            <div className="thinking-dot"></div>
                         </div>
                     </div>
                 </div>
             )}
 
             {/* Latest assistant message */}
-            {!isTyping && currentNotification && messagePosition && (
+            {!isThinking && currentNotification && messagePosition && (
                 <div
                     className="message-notification assistant"
                     style={{

@@ -6,7 +6,7 @@ export interface ContentAppProps {
 }
 
 export interface TerminalIconProps {
-    isTyping: boolean
+    isThinking: boolean
     onClick?: (e: React.MouseEvent) => void
 }
 
@@ -41,6 +41,6 @@ export interface ChatInputProps {
 
 export interface ChatHistoryProps {
     chatMessages: ChatMessage[];
-    isTyping: boolean;
+    isThinking: boolean;
     chatMessagesRef: React.RefObject<HTMLDivElement | null>;
 }

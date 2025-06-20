@@ -11,7 +11,7 @@ const getAllContentAsString = async (): Promise<string> => {
 export const useChat = (): ChatHookReturn => {
     const [chatInput, setChatInput] = useState<string>('');
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-    const [isTyping, setIsTyping] = useState<boolean>(false);
+    const [isThinking, setIsThinking] = useState<boolean>(true);
 
     // Method to directly add assistant messages to the chat
     const addAssistantMessage = useCallback((content: string) => {
@@ -53,8 +53,8 @@ export const useChat = (): ChatHookReturn => {
             setChatMessages(prev => [...prev, userMessage]);
         }
 
-        // Always show typing when sending a message
-        setIsTyping(true);
+        // Always show Thinking when sending a message
+        setIsThinking(true);
 
         try {
             console.log('🚀 Sending to backend:', message.substring(0, 100) + '...');
@@ -81,7 +81,7 @@ export const useChat = (): ChatHookReturn => {
             return errorContent;
 
         } finally {
-            setIsTyping(false);
+            setIsThinking(false);
         }
     }, [chatInput, addAssistantMessage]);
 
@@ -180,7 +180,7 @@ export const useChat = (): ChatHookReturn => {
     return {
         chatInput,
         chatMessages,
-        isTyping,
+        isThinking,
         handleInputChange,
         handleKeyPress,
         sendMessage,
@@ -189,7 +189,7 @@ export const useChat = (): ChatHookReturn => {
         clearMessages,
         removeMessage,
         updateMessage,
-        setIsTyping,
+        setIsThinking,
         addUserMessage,
         addAssistantMessage
     };

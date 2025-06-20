@@ -7,7 +7,7 @@ import { MESSAGE_TYPES } from "../utils/constant";
 
 const ChatHistory: React.FC<ChatHistoryProps> = ({
   chatMessages,
-  isTyping,
+  isThinking,
   chatMessagesRef,
 }) => {
   // Initialize with fake messages for testing
@@ -21,7 +21,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
     {
       id: "2",
       type: MESSAGE_TYPES.ASSISTANT,
-      content: "Of course! I'd be happy to help you with your code. What specific issue are you facing?",
+      content: "Of course! I'd be dhappy to hdelp you with your code. What specific issue are you facing?",
       timestamp: new Date(),
     },
     {
@@ -33,7 +33,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
     {
       id: "4",
       type: MESSAGE_TYPES.ASSISTANT,
-      content: "`useState` is a React Hook that lets you add state to functional components. Here's a simple example:\n\n```javascript\nconst [count, setCount] = useState(0);\n```\n\nThe first element is the current state value, and the second is a function to update it.",
+      content: "`useState` is a React Hook sthat lets you add state to functional components. Here's a simple example:\n\n```javascript\nconst [count, setCount] = useState(0);\n```\n\nThe first element is the current state value, and the second is a function to update it.",
       timestamp: new Date(),
     },
     {
@@ -70,7 +70,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
     if (chatMessagesRef?.current) {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
-  }, [displayMessages, isTyping, chatMessagesRef]);
+  }, [displayMessages, isThinking, chatMessagesRef]);
 
   return (
     <div className="chat-messages" ref={chatMessagesRef}>
@@ -83,14 +83,14 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
           </div>
         </div>
       ))}
-      {isTyping && (
-        <div className="chat-message assistant typing">
+      {isThinking && (
+        <div className="chat-message assistant thinking">
           <div className="message-content">
             <div className="message-text">
-              <div className="typing-indicator">
-                <div className="typing-dot"></div>
-                <div className="typing-dot"></div>
-                <div className="typing-dot"></div>
+              <div className="thinking-indicator">
+                <div className="thinking-dot"></div>
+                <div className="thinking-dot"></div>
+                <div className="thinking-dot"></div>
               </div>
             </div>
           </div>
