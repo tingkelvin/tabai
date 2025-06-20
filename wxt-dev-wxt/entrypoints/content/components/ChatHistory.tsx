@@ -15,13 +15,13 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
     {
       id: "1",
       type: MESSAGE_TYPES.USER,
-      content: "Hello! sCasn yosu helps2dds me swistdh3ds my cswode?",
+      content: "Hello! sCasn yosu sshelssps2ddsds dme swsistdh3ds my cswode?",
       timestamp: new Date(),
     },
     {
       id: "2",
       type: MESSAGE_TYPES.ASSISTANT,
-      content: "Of course! I'd be dhappy to hdelp you with your code. What specific issue are you facing?",
+      content: "Of course! I'd be dhapspy to hdedlp you with your code. What specific issue are you facing?",
       timestamp: new Date(),
     },
     {

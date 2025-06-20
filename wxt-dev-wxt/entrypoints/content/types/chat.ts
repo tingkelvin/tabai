@@ -19,7 +19,7 @@ export interface ChatHookReturn {
     clearMessages: () => void;
     removeMessage: (messageId: string) => void;
     updateMessage: (messageId: string, updates: Partial<ChatMessage>) => void;
-    setisThinking: (typing: boolean) => void;
+    setIsThinking: (typing: boolean) => void;
     addUserMessage: (content: string) => void;
     addAssistantMessage: (content: string) => void;
 }

@@ -3,7 +3,7 @@ import type { TerminalIconProps } from '../types'
 const TerminalIcon: React.FC<TerminalIconProps> = ({ isThinking, onClick }) => {
     return (
         <div
-            className={`terminal-icon holographic ${isThinking ? 'typing' : ''}`}
+            className={`terminal-icon holographic ${isThinking ? 'thinking' : ''}`}
             onClick={onClick}
         >
             <svg

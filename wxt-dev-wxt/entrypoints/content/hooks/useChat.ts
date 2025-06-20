@@ -11,7 +11,7 @@ const getAllContentAsString = async (): Promise<string> => {
 export const useChat = (): ChatHookReturn => {
     const [chatInput, setChatInput] = useState<string>('');
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-    const [isThinking, setIsThinking] = useState<boolean>(true);
+    const [isThinking, setIsThinking] = useState<boolean>(false);
 
     // Method to directly add assistant messages to the chat
     const addAssistantMessage = useCallback((content: string) => {
