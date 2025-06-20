@@ -15,8 +15,11 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.1.10",
+    "lucide-react": "^0.518.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "tailwindcss": "^4.1.10"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.326",
