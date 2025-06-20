@@ -319,20 +319,8 @@ export const useDrag = (
                 // Calculate widget position based on current icon location
                 const { innerWidth: screenWidth, innerHeight: screenHeight } =
                     window
-                const isOnRightSide = iconPosition.left > screenWidth / 2
-                const isOnBottomHalf = iconPosition.top > screenHeight / 2
-
-                const widgetLeft = isOnRightSide
-                    ? iconPosition.left -
-                    currentSize.width +
-                    WIDGET_CONFIG.ICON_SIZE
-                    : iconPosition.left
-
-                const widgetTop = isOnBottomHalf
-                    ? iconPosition.top -
-                    currentSize.height +
-                    WIDGET_CONFIG.ICON_SIZE
-                    : iconPosition.top
+                const widgetTop = iconPosition.top;
+                const widgetLeft = iconPosition.left - widgetSize.width + WIDGET_CONFIG.ICON_SIZE;
 
                 setWidgetPosition({
                     left: Math.max(

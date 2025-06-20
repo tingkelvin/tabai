@@ -1,47 +1,57 @@
 // hooks/usePosition.ts
 import { useState, useCallback } from 'react';
 
-// Types
 interface Position {
     left: number;
     top: number;
 }
 
-interface PositionConstraints {
-    maxWidth?: number;
-    maxHeight?: number;
-    elementWidth?: number;
-    elementHeight?: number;
+interface ConstrainOptions {
+    elementWidth: number;
+    elementHeight: number;
 }
 
-type UpdatePositionFunction = (newPosition: Partial<Position>) => void;
-type ConstrainPositionFunction = (pos: Position, constraints: PositionConstraints) => Position;
-
-type UsePositionReturn = [Position, UpdatePositionFunction, ConstrainPositionFunction];
-
-export const usePosition = (initialPosition: Position): UsePositionReturn => {
+export const usePosition = (initialPosition: Position) => {
     const [position, setPosition] = useState<Position>(initialPosition);
 
-    const updatePosition = useCallback<UpdatePositionFunction>((newPosition: Partial<Position>): void => {
-        setPosition(prev => ({ ...prev, ...newPosition }));
-    }, []);
+    const updatePosition = useCallback((newPosition: Partial<Position>) => {
+        console.log('Updating position:', { current: position, new: newPosition });
 
-    const constrainPosition = useCallback<ConstrainPositionFunction>((
-        pos: Position,
-        constraints: PositionConstraints
+        setPosition(prevPosition => {
+            const updatedPosition = {
+                ...prevPosition,
+                ...newPosition
+            };
+
+            console.log('Position updated:', { from: prevPosition, to: updatedPosition });
+            return updatedPosition;
+        });
+    }, [position]);
+
+    const constrainPosition = useCallback((
+        targetPosition: Position,
+        options: ConstrainOptions
     ): Position => {
-        const {
-            maxWidth = window.innerWidth,
-            maxHeight = window.innerHeight,
-            elementWidth = 0,
-            elementHeight = 0
-        } = constraints;
+        const { elementWidth, elementHeight } = options;
 
-        return {
-            left: Math.max(0, Math.min(pos.left, maxWidth - elementWidth)),
-            top: Math.max(0, Math.min(pos.top, maxHeight - elementHeight))
+        const maxLeft = Math.max(0, window.innerWidth - elementWidth);
+        const maxTop = Math.max(0, window.innerHeight - elementHeight);
+
+        const constrainedPosition = {
+            left: Math.max(0, Math.min(targetPosition.left, maxLeft)),
+            top: Math.max(0, Math.min(targetPosition.top, maxTop))
         };
+
+        console.log('Constraining position:', {
+            target: targetPosition,
+            options,
+            viewport: { width: window.innerWidth, height: window.innerHeight },
+            maxBounds: { maxLeft, maxTop },
+            result: constrainedPosition
+        });
+
+        return constrainedPosition;
     }, []);
 
-    return [position, updatePosition, constrainPosition];
+    return [position, updatePosition, constrainPosition] as const;
 };
