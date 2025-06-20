@@ -55,7 +55,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 {action.icon && (
                     <span className="action-icon">
                         {isFileAction && isHovered ? (
-                            <RemoveIcon size={16} />
+                            <RemoveIcon />
                         ) : (
                             action.icon
                         )}

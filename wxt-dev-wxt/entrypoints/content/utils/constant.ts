@@ -17,6 +17,6 @@ export const RESIZE_TYPES = {
 };
 
 export const MESSAGE_TYPES = {
-  USER: 'user',
-  ASSISTANT: 'assistant'
-};
+  USER: 'USER',
+  ASSISTANT: 'ASSISTANT'
+} as const;

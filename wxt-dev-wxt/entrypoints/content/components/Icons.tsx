@@ -61,8 +61,8 @@ export const TranscriptIcon = () => (
 );
 
 // If you want different icons based on file type:
-export const getFileIcon = (fileName) => {
-    const extension = fileName.split('.').pop().toLowerCase();
+export const getFileIcon = (fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase() || '';
 
     switch (extension) {
         case 'pdf':

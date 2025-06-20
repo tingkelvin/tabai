@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react'
 // Components import
 import TerminalIcon from './TerminalIcon'
 import TerminalHeader from './TerminalHeader'
-import Chat from './Chat'
+import ChatHistory from './ChatHistory'
 import ChatInput from './ChatInput'
 import ResizeHandle from './ResizeHandle' // You'll need to create this component
 
@@ -11,21 +11,32 @@ import ResizeHandle from './ResizeHandle' // You'll need to create this componen
 import type { ContentAppProps } from '../types'
 import type { ChatMessage } from '../types/chat'
 import { WIDGET_CONFIG, RESIZE_TYPES } from '../utils/constant'
-import { useDrag } from '../hooks/useDrag'
+import { useDragAndResize } from '../hooks/useDragAndResize'
+import { useChat } from '../hooks/useChat'
 
-const ContentApp: React.FC<ContentAppProps> = ({ title = '' }) => {
-  const [chatInput, setChatInput] = useState<string>('')
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
+
+  // Chat
+  const chatMessagesRef = useRef<HTMLDivElement>(null)
+  const chatInputRef = useRef<HTMLTextAreaElement>(null)
+  const chatHook = customChatHook ? customChatHook() : useChat()
+  const {
+    chatInput,
+    chatMessages,
+    isTyping,
+    handleInputChange,
+    handleKeyPress,
+  } = chatHook
+
   const [widgetSize, setWidgetSize] = useState({
     width: WIDGET_CONFIG.DEFAULT_WIDTH,
     height: WIDGET_CONFIG.DEFAULT_HEIGHT,
   })
+  // Chat
 
+  // Drag and resize
   const widgetRef = useRef<HTMLDivElement>(null)
-  const chatMessagesRef = useRef<HTMLDivElement>(null)
-  const chatInputRef = useRef<HTMLTextAreaElement>(null)
 
-  // Enhanced useDrag hook now handles all position logic, toggle functionality, and resize
   const {
     handleMouseDown,
     handleToggle,
@@ -34,23 +45,11 @@ const ContentApp: React.FC<ContentAppProps> = ({ title = '' }) => {
     isDragging,
     isResizing,
     currentSize,
-    hasDragged
-  } = useDrag(widgetRef, {
+  } = useDragAndResize(widgetRef, {
     widgetSize,
     onSizeChange: setWidgetSize,
   })
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setChatInput(e.target.value)
-  }
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      console.log('Sending:', chatInput)
-      setChatInput('')
-    }
-  }
+  // Drag and resize
 
   return (
     <>
@@ -60,7 +59,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ title = '' }) => {
           className='terminal-widget minimized'
           onMouseDown={handleMouseDown}
         >
-          <TerminalIcon isTyping={true} onClick={handleToggle} />
+          <TerminalIcon isTyping={isTyping} onClick={handleToggle} />
         </div>
       ) : (
         <div
@@ -79,10 +78,10 @@ const ContentApp: React.FC<ContentAppProps> = ({ title = '' }) => {
           />
           <div className='terminal-content'>
             <div className='chat-section'>
-              <Chat
+              <ChatHistory
                 chatMessagesRef={chatMessagesRef}
-                chatMessages={messages}
-                isTyping={false}
+                chatMessages={chatMessages}
+                isTyping={isTyping}
               />
               <ChatInput
                 fileActions={[]}

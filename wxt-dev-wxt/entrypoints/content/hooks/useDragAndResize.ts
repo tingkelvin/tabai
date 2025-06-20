@@ -11,7 +11,7 @@ interface UseDragOptions {
 
 type ResizeType = typeof RESIZE_TYPES[keyof typeof RESIZE_TYPES]
 
-export const useDrag = (
+export const useDragAndResize = (
     elementRef: React.RefObject<HTMLElement | null>,
     options: UseDragOptions = {}
 ) => {

@@ -1,4 +1,7 @@
+import { ChatHookReturn } from "../hooks/useChat";
+
 export interface ContentAppProps {
+    customChatHook?: () => ChatHookReturn;
     title?: string
 }
 

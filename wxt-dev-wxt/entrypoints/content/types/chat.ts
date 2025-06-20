@@ -1,6 +1,8 @@
+import { MESSAGE_TYPES } from "../utils/constant";
+
 export interface ChatMessage {
     id: string;
-    type: 'user' | 'assistant';
+    type: keyof typeof MESSAGE_TYPES;
     content: string;
-    timestamp: number;
+    timestamp: Date;
 }
