@@ -37,7 +37,7 @@ export const useDragAndResize = (
     const animationFrameId = useRef<number | null>(null)
 
     // Manage minimized state and positions
-    const [isMinimized, setIsMinimized] = useState<boolean>(true)
+    const [isMinimized, setIsMinimized] = useState<boolean>(false)
     const [currentSize, setCurrentSize] = useState(widgetSize)
 
     // Separate positions for icon and widget

@@ -8,8 +8,8 @@
   transition: opacity 0.2s ease;
 }
 
-.terminal-widget:hover .resize-handle {
-  opacity: 0.6;
+.resize-handle:hover {
+  opacity: 0.8;
 }
 
 .resize-handle::after {

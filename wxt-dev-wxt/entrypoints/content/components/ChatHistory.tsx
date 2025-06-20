@@ -3,14 +3,64 @@ import React, { useEffect, useState } from "react";
 import MessageContent from "./MessageContent";
 import type { ChatMessage } from "../types/chat";
 import { ChatHistoryProps } from "../types/components";
+import { MESSAGE_TYPES } from "../utils/constant";
 
 const ChatHistory: React.FC<ChatHistoryProps> = ({
   chatMessages,
   isTyping,
   chatMessagesRef,
 }) => {
-  // Initialize with default messages
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Initialize with fake messages for testing
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: "1",
+      type: MESSAGE_TYPES.USER,
+      content: "Hello! sCasn yosu helps2dds me swistdh3ds my cswode?",
+      timestamp: new Date(),
+    },
+    {
+      id: "2",
+      type: MESSAGE_TYPES.ASSISTANT,
+      content: "Of course! I'd be happy to help you with your code. What specific issue are you facing?",
+      timestamp: new Date(),
+    },
+    {
+      id: "3",
+      type: MESSAGE_TYPES.USER,
+      content: "I'm having trouble with React hooks. Can you explain useState?",
+      timestamp: new Date(),
+    },
+    {
+      id: "4",
+      type: MESSAGE_TYPES.ASSISTANT,
+      content: "`useState` is a React Hook that lets you add state to functional components. Here's a simple example:\n\n```javascript\nconst [count, setCount] = useState(0);\n```\n\nThe first element is the current state value, and the second is a function to update it.",
+      timestamp: new Date(),
+    },
+    {
+      id: "5",
+      type: MESSAGE_TYPES.USER,
+      content: "Hello! sCasn yosu helps2dds me swistdh3ds my cswode?",
+      timestamp: new Date(),
+    },
+    {
+      id: "6",
+      type: MESSAGE_TYPES.ASSISTANT,
+      content: "Of course! I'd be happy to help you with your code. What specific issue are you facing?",
+      timestamp: new Date(),
+    },
+    {
+      id: "7",
+      type: MESSAGE_TYPES.USER,
+      content: "I'm having trouble with React hooks. Can you explain useState?",
+      timestamp: new Date(),
+    },
+    {
+      id: "8",
+      type: MESSAGE_TYPES.ASSISTANT,
+      content: "`useState` is a React Hook that lets you add state to functional components. Here's a simple example:\n\n```javascript\nconst [count, setCount] = useState(0);\n```\n\nThe first element is the current state value, and the second is a function to update it.",
+      timestamp: new Date(),
+    },
+  ]);
 
   // Use chatMessages prop if provided, otherwise use default messages
   const displayMessages = chatMessages.length > 0 ? chatMessages : messages;
