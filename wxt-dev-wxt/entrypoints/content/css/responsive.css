@@ -1,0 +1,26 @@
+/* Responsive */
+@media (max-width: 520px) {
+  .terminal-widget.expanded {
+    width: calc(100vw - 20px);
+    height: calc(100vh - 100px);
+    margin: 10px;
+  }
+  
+  .chat-messages {
+    padding: 16px;
+  }
+  
+  .chat-input-container {
+    margin: 0 16px 16px 16px;
+  }
+}
+
+/* Utility Animations */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

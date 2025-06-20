@@ -1,0 +1,45 @@
+/* Resize handle styles */
+.resize-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.terminal-widget:hover .resize-handle {
+  opacity: 0.6;
+}
+
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: #6366f1;
+  border-radius: 2px;
+}
+
+.resize-se {
+  bottom: 0;
+  right: 0;
+  cursor: nw-resize;
+}
+
+.resize-sw {
+  bottom: 0;
+  left: 0;
+  cursor: ne-resize;
+}
+
+.resize-ne {
+  top: 0;
+  right: 0;
+  cursor: sw-resize;
+}
+
+.resize-nw {
+  top: 0;
+  left: 0;
+  cursor: se-resize;
+}

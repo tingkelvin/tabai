@@ -1,0 +1,48 @@
+/* Base Container & Global Styles */
+.terminal-widget {
+  position: fixed;
+  z-index: 2147483647;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Inter', system-ui, sans-serif;
+  overflow: hidden;
+  backdrop-filter: blur(16px) saturate(180%);
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+.terminal-widget * {
+  box-sizing: border-box;
+}
+
+/* Expanded State */
+.terminal-widget.expanded {
+  width: 480px;
+  height: 800px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.06),
+    0 16px 48px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.terminal-widget.expanded:hover {
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.08),
+    0 20px 64px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+/* Drag States */
+.terminal-widget.dragging {
+  cursor: grabbing;
+  user-select: none;
+  transition: none;
+  opacity: 0.95;
+}
+
+.terminal-widget.dragging * {
+  pointer-events: none;
+}

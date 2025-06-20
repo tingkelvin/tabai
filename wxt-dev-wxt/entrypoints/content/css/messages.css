@@ -1,0 +1,68 @@
+/* Chat Messages */
+.chat-message {
+  display: flex;
+  align-items: flex-start;
+  animation: messageSlideIn 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  width: 100%;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chat-message.user {
+  justify-content: flex-start;
+}
+
+.chat-message.assistant {
+  justify-content: flex-start;
+}
+
+.message-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.message-text {
+  padding: 14px 18px;
+  font-size: 14px;
+  line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  word-wrap: break-word;
+  width: fit-content;
+  max-width: 85%;
+  box-sizing: border-box;
+  border-radius: 16px;
+  position: relative;
+}
+
+/* User Messages */
+.chat-message.user .message-text {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #ffffff;
+  margin-left: auto;
+  border-bottom-right-radius: 6px;
+  box-shadow: 
+    0 2px 8px rgba(99, 102, 241, 0.15),
+    0 4px 16px rgba(99, 102, 241, 0.1);
+}
+
+/* Assistant Messages */
+.chat-message.assistant .message-text {
+  background: #ffffff;
+  color: #1f2937;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  margin-right: auto;
+  border-bottom-left-radius: 6px;
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.02),
+    0 2px 8px rgba(0, 0, 0, 0.03);
+}

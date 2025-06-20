@@ -1,25 +1,7 @@
 import React, { useState } from 'react';
 import { RemoveIcon } from './Icons';
+import { ActionButton, ChatInputProps } from '../types/components';
 
-interface ActionButton {
-    id: string;
-    icon?: React.ReactNode;
-    label?: string;
-    onClick: () => void;
-    title?: string;
-    disabled?: boolean;
-    style?: React.CSSProperties;
-    className?: string;
-}
-
-interface ChatInputProps {
-    fileActions?: ActionButton[];
-    buttons?: ActionButton[];
-    chatInputRef: React.RefObject<HTMLTextAreaElement | null>;
-    chatInput: string;
-    handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-    handleKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-}
 
 const ChatInput: React.FC<ChatInputProps> = ({
     fileActions = [],

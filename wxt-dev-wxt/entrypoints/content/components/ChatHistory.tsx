@@ -2,12 +2,7 @@
 import React, { useEffect, useState } from "react";
 import MessageContent from "./MessageContent";
 import type { ChatMessage } from "../types/chat";
-
-interface ChatHistoryProps {
-  chatMessages: ChatMessage[];
-  isTyping: boolean;
-  chatMessagesRef: React.RefObject<HTMLDivElement | null>;
-}
+import { ChatHistoryProps } from "../types/components";
 
 const ChatHistory: React.FC<ChatHistoryProps> = ({
   chatMessages,

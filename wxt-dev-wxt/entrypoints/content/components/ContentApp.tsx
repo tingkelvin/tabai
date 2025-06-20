@@ -9,13 +9,12 @@ import ResizeHandle from './ResizeHandle'
 import Notifications from './Notifications'
 
 // Types import
-import type { ContentAppProps } from '../types'
+import type { ContentAppProps } from '../types/components'
 import { WIDGET_CONFIG, RESIZE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
-
   // Chat
   const chatMessagesRef = useRef<HTMLDivElement>(null)
   const chatInputRef = useRef<HTMLTextAreaElement>(null)
@@ -53,19 +52,19 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
   return (
     <>
+      <Notifications
+        iconPosition={iconPosition}
+        chatMessages={chatMessages}
+        isMinimized={isMinimized}
+        isTyping={isTyping}
+        onNotificationClick={handleToggle}
+      />
       {isMinimized ? (
         <div
           ref={widgetRef}
           className='terminal-widget minimized'
           onMouseDown={handleMouseDown}
         >
-          <Notifications
-            iconPosition={iconPosition}
-            chatMessages={chatMessages}
-            isMinimized={isMinimized}
-            isTyping={isTyping}
-            onNotificationClick={handleToggle}
-          />
           <TerminalIcon isTyping={isTyping} onClick={handleToggle} />
         </div>
 

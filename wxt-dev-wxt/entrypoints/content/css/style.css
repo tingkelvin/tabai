@@ -1,1 +1,12 @@
-@import './terminal.css';
+@import './base.css';
+@import './minimized.css';
+@import './header.css';
+@import './content.css';
+@import './messages.css';
+@import './typing.css';
+@import './input.css';
+@import './buttons.css';
+@import './markdown.css';
+@import './resize.css';
+@import './notifications.css';
+@import './responsive.css';

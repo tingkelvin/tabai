@@ -1,4 +1,4 @@
-import { ChatHookReturn } from "../hooks/useChat";
+import { ChatHookReturn, ChatMessage } from '../types/chat';
 
 export interface ContentAppProps {
     customChatHook?: () => ChatHookReturn;
@@ -17,4 +17,30 @@ export interface TerminalHeaderProps {
     handleClose?: () => void
     title: string
     currentUrl?: string
+}
+
+export interface ActionButton {
+    id: string;
+    icon?: React.ReactNode;
+    label?: string;
+    onClick: () => void;
+    title?: string;
+    disabled?: boolean;
+    style?: React.CSSProperties;
+    className?: string;
+}
+
+export interface ChatInputProps {
+    fileActions?: ActionButton[];
+    buttons?: ActionButton[];
+    chatInputRef: React.RefObject<HTMLTextAreaElement | null>;
+    chatInput: string;
+    handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+    handleKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+}
+
+export interface ChatHistoryProps {
+    chatMessages: ChatMessage[];
+    isTyping: boolean;
+    chatMessagesRef: React.RefObject<HTMLDivElement | null>;
 }

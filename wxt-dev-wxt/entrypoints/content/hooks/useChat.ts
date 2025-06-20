@@ -1,24 +1,7 @@
 // hooks/useChat.ts
 import { useState, useCallback } from 'react';
 import { MESSAGE_TYPES } from '../utils/constant';
-import { ChatMessage } from '../types/chat';
-
-export interface ChatHookReturn {
-    chatInput: string;
-    chatMessages: ChatMessage[];
-    isTyping: boolean;
-    handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-    handleKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-    sendMessage: (messageOrInput?: string, addToChat?: boolean) => Promise<string>;
-    addMessage: (message: Partial<ChatMessage>) => void;
-    addMessages: (messages: Partial<ChatMessage>[]) => void;
-    clearMessages: () => void;
-    removeMessage: (messageId: string) => void;
-    updateMessage: (messageId: string, updates: Partial<ChatMessage>) => void;
-    setIsTyping: (typing: boolean) => void;
-    addUserMessage: (content: string) => void;
-    addAssistantMessage: (content: string) => void;
-}
+import { ChatMessage, ChatHookReturn } from '../types/chat';
 
 // Dummy function to replace file context
 const getAllContentAsString = async (): Promise<string> => {
