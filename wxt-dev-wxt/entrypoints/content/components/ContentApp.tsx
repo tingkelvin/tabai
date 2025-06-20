@@ -5,11 +5,11 @@ import TerminalIcon from './TerminalIcon'
 import TerminalHeader from './TerminalHeader'
 import ChatHistory from './ChatHistory'
 import ChatInput from './ChatInput'
-import ResizeHandle from './ResizeHandle' // You'll need to create this component
+import ResizeHandle from './ResizeHandle'
+import Notifications from './Notifications'
 
 // Types import
 import type { ContentAppProps } from '../types'
-import type { ChatMessage } from '../types/chat'
 import { WIDGET_CONFIG, RESIZE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
@@ -27,15 +27,14 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     handleInputChange,
     handleKeyPress,
   } = chatHook
-
-  const [widgetSize, setWidgetSize] = useState({
-    width: WIDGET_CONFIG.DEFAULT_WIDTH,
-    height: WIDGET_CONFIG.DEFAULT_HEIGHT,
-  })
   // Chat
 
   // Drag and resize
   const widgetRef = useRef<HTMLDivElement>(null)
+  const [widgetSize, setWidgetSize] = useState({
+    width: WIDGET_CONFIG.DEFAULT_WIDTH,
+    height: WIDGET_CONFIG.DEFAULT_HEIGHT,
+  })
 
   const {
     handleMouseDown,
@@ -45,6 +44,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     isDragging,
     isResizing,
     currentSize,
+    iconPosition
   } = useDragAndResize(widgetRef, {
     widgetSize,
     onSizeChange: setWidgetSize,
@@ -59,8 +59,16 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
           className='terminal-widget minimized'
           onMouseDown={handleMouseDown}
         >
+          <Notifications
+            iconPosition={iconPosition}
+            chatMessages={chatMessages}
+            isMinimized={isMinimized}
+            isTyping={isTyping}
+            onNotificationClick={handleToggle}
+          />
           <TerminalIcon isTyping={isTyping} onClick={handleToggle} />
         </div>
+
       ) : (
         <div
           ref={widgetRef}
