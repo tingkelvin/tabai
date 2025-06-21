@@ -7,4 +7,11 @@ export default defineConfig({
   vite: () => ({
     plugins: [tailwindcss()],
   }),
+  manifest: {
+    permissions: ['storage', 'identity', 'activeTab', 'scripting'],
+    oauth2: {
+      client_id: '234898757030-nrqj20cp1hv10tle91prieqsqocjjdqh.apps.googleusercontent.com',
+      scopes: ['openid', 'email', 'profile']
+    }
+  },
 });

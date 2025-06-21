@@ -1,65 +1,29 @@
 // AuthManager.ts - Authentication module for Chrome Extension
 
-import { STORAGE_KEYS } from "../constants";
 import { verifyGoogleAccessToken } from "../services/apiServices";
+import { GoogleVerifyTokenResponse } from '../types/ApiResponses';
+import { GoogleUserInfo, JWTPayload } from "../types/auth";
+import { CheckAuthResponse, AuthenticateResponse, GetAuthTokenResponse, BaseResponse } from "../types/responses";
 
-interface UserInfo {
-    id: string;
-    email: string;
-    name: string;
-    picture?: string | null;
-}
+// Define storage schema
+const authStorage = {
+    bearerToken: storage.defineItem<string>('local:bearerToken'),
+    userInfo: storage.defineItem<GoogleUserInfo>('local:userInfo'),
+    tokenExpiry: storage.defineItem<number>('local:tokenExpiry')
+};
 
-interface AuthStatus {
-    isAuthenticated: boolean;
-    user: UserInfo | null;
-}
-
-interface AuthResult {
-    success: boolean;
-    user: UserInfo | null;
-    error: string | null;
-}
-
-interface JWTPayload {
-    sub?: string;
-    email?: string;
-    name?: string;
-    picture?: string;
-    exp?: number;
-    [key: string]: any;
-}
-
-interface TokenData {
-    token: string;
-}
-
-interface StorageData {
-    [STORAGE_KEYS.BEARER_TOKEN]?: string;
-    [STORAGE_KEYS.USER_INFO]?: UserInfo;
-    [STORAGE_KEYS.TOKEN_EXPIRY]?: number;
-}
-
-// Simple JWT decoder function (replaces jwt-decode library)
+// Simple JWT decoder function
 const simpleJwtDecode = (token: string): JWTPayload | null => {
     try {
-        // JWT format: header.payload.signature
         const parts = token.split('.');
-        if (parts.length !== 3) {
-            throw new Error('Invalid JWT format');
-        }
+        if (parts.length !== 3) throw new Error('Invalid JWT format');
 
-        // Decode the payload (second part)
         const payload = parts[1];
-
-        // Add padding if needed for base64 decoding
         const paddedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
         const padding = paddedPayload.length % 4;
         const finalPayload = paddedPayload + '='.repeat(padding ? 4 - padding : 0);
 
-        // Decode base64 and parse JSON
-        const decoded = JSON.parse(atob(finalPayload));
-        return decoded;
+        return JSON.parse(atob(finalPayload));
     } catch (error) {
         console.error('Failed to decode JWT:', error);
         return null;
@@ -68,117 +32,127 @@ const simpleJwtDecode = (token: string): JWTPayload | null => {
 
 const AuthManager = (() => {
     /**
+     * Clear all authentication data from storage
+     */
+    const clearAuthData = async (): Promise<void> => {
+        try {
+            await Promise.all([
+                authStorage.bearerToken.removeValue(),
+                authStorage.userInfo.removeValue(),
+                authStorage.tokenExpiry.removeValue()
+            ]);
+            console.log('🧹 Auth data cleared');
+        } catch (error) {
+            console.error('Error clearing auth data:', error);
+        }
+    };
+
+    /**
      * Check if user is currently authenticated
      */
-    const checkAuthStatus = async (): Promise<AuthStatus> => {
+    const checkAuthStatus = async (): Promise<CheckAuthResponse> => {
         try {
-            const result = await chrome.storage.local.get([
-                STORAGE_KEYS.BEARER_TOKEN,
-                STORAGE_KEYS.USER_INFO,
-                STORAGE_KEYS.TOKEN_EXPIRY
-            ]) as StorageData;
-
-            const { bearerToken, userInfo, tokenExpiry } = result;
+            const [bearerToken, userInfo, tokenExpiry] = await Promise.all([
+                authStorage.bearerToken.getValue(),
+                authStorage.userInfo.getValue(),
+                authStorage.tokenExpiry.getValue()
+            ]);
 
             if (!bearerToken || !userInfo) {
-                return { isAuthenticated: false, user: null };
+                return {
+                    success: true,
+                    isAuthenticated: false,
+                    user: null,
+                };
             }
 
-            // Check if token is expired
             if (tokenExpiry && Date.now() > tokenExpiry) {
                 await clearAuthData();
-                return { isAuthenticated: false, user: null };
+                return {
+                    success: true,
+                    isAuthenticated: false,
+                    user: null,
+                    error: 'Session expired, please log in again'
+                };
             }
 
-            return { isAuthenticated: true, user: userInfo };
+            return {
+                success: true,
+                isAuthenticated: true,
+                user: userInfo
+            };
         } catch (error) {
-            console.error('Error checking auth status:', error);
-            return { isAuthenticated: false, user: null };
+            return {
+                success: false,
+                isAuthenticated: false,
+                user: null,
+                error: 'Unknown error'
+            };
         }
     };
 
     /**
      * Authenticate user with Google OAuth
      */
-    const authenticateWithGoogle = async (): Promise<AuthResult> => {
+    const authenticateWithGoogle = async (): Promise<AuthenticateResponse> => {
         try {
             console.log('🔐 Starting Google authentication...');
 
-            // Get Google OAuth token using Chrome Identity API
-            const tokenData = await chrome.identity.getAuthToken({
+            const { token } = await chrome.identity.getAuthToken({
                 interactive: true,
                 scopes: ['openid', 'email', 'profile']
-            }) as TokenData;
+            });
 
-            if (!tokenData.token) {
+            if (!token) {
                 throw new Error('Failed to get Google access token');
             }
 
-            console.log('✅ Got Google token');
+            const { appSessionToken } = await verifyGoogleAccessToken(token) as GoogleVerifyTokenResponse;
 
-            const data = await verifyGoogleAccessToken(tokenData.token);
-            const bearerToken = data.appSessionToken;
-            const user = data.user;
+            let userInfo: GoogleUserInfo;
+            const decoded = simpleJwtDecode(appSessionToken);
 
-            // For now, we'll skip the API verification and create a mock user
-            // TODO: Implement verifyGoogleAccessToken without external dependencies
-
-            // Try to extract user info from Google token if it's a JWT
-            let userInfo: UserInfo | null = null;
-            const decoded = simpleJwtDecode(bearerToken);
             if (decoded) {
                 userInfo = {
                     id: decoded.sub || 'unknown',
                     email: decoded.email || 'unknown@example.com',
                     name: decoded.name || 'Unknown User',
-                    picture: decoded.picture || null
+                    picture: decoded.picture || 'Unknow Picture'
                 };
             } else {
-                // Fallback mock user
                 userInfo = {
                     id: 'google_' + Date.now(),
                     email: 'user@gmail.com',
                     name: 'Google User',
-                    picture: null
+                    picture: 'Google User Picture'
                 };
             }
 
-            // Set token expiry
-            let tokenExpiry: number;
-            if (decoded && decoded.exp) {
-                // JWT exp is in seconds, convert to milliseconds
-                tokenExpiry = decoded.exp * 1000;
-                console.log('Token expires at:', new Date(tokenExpiry));
+            const tokenExpiry = decoded?.exp
+                ? decoded.exp * 1000
+                : Date.now() + (3600 * 1000);
 
-                // Check if token is already expired
-                if (Date.now() >= tokenExpiry) {
-                    console.warn('Token is already expired!');
-                }
-            } else {
-                // Default expiry: 1 hour from now
-                tokenExpiry = Date.now() + (3600 * 1000);
+            if (decoded?.exp && Date.now() >= tokenExpiry) {
+                console.warn('Token is already expired!');
             }
 
-            // Store authentication data securely
-            await chrome.storage.local.set({
-                [STORAGE_KEYS.BEARER_TOKEN]: bearerToken,
-                [STORAGE_KEYS.USER_INFO]: userInfo,
-                [STORAGE_KEYS.TOKEN_EXPIRY]: tokenExpiry
-            });
+            // Store authentication data
+            await Promise.all([
+                authStorage.bearerToken.setValue(appSessionToken),
+                authStorage.userInfo.setValue(userInfo),
+                authStorage.tokenExpiry.setValue(tokenExpiry)
+            ]);
 
             console.log('✅ Authentication successful:', userInfo);
-            return { success: true, user: userInfo, error: null };
+            return { success: true, user: userInfo };
 
         } catch (error) {
             console.error('❌ Authentication error:', error);
-
-            // Clear any partial auth data
             await clearAuthData();
-
             return {
                 success: false,
                 user: null,
-                error: error instanceof Error ? error.message : 'Authentication failed'
+                error: 'Authentication failed'
             };
         }
     };
@@ -186,60 +160,54 @@ const AuthManager = (() => {
     /**
      * Logout user and clear all auth data
      */
-    const logout = async (): Promise<boolean> => {
+    const logout = async (): Promise<BaseResponse> => {
         try {
             console.log('👋 Logging out...');
 
-            // Get current token for potential backend logout call
-            const result = await chrome.storage.local.get([STORAGE_KEYS.BEARER_TOKEN]) as Pick<StorageData, typeof STORAGE_KEYS.BEARER_TOKEN>;
-            const { bearerToken } = result;
+            const bearerToken = await authStorage.bearerToken.getValue();
 
-            // TODO: Add actual backend logout call here
+            // TODO: Add backend logout call
             if (bearerToken) {
                 console.log('🔄 Would call backend logout with token:', bearerToken.substring(0, 10) + '...');
             }
 
-            // Clear stored authentication data
-            await clearAuthData();
-
-            // Revoke Google tokens
-            await chrome.identity.clearAllCachedAuthTokens();
+            // Clear chat settings and auth data
+            const chatSettings = storage.defineItem<any>('sync:chatSettings');
+            await Promise.all([
+                chatSettings.setValue({ hasGreeting: false }),
+                clearAuthData(),
+                chrome.identity.clearAllCachedAuthTokens()
+            ]);
 
             console.log('✅ Logout successful');
-            return true;
-
+            return { success: true };
         } catch (error) {
             console.error('❌ Logout error:', error);
-            return false;
+            return { success: false, error: 'Logout failed' };
         }
     };
 
     /**
      * Get current bearer token
      */
-    const getBearerToken = async (): Promise<string | null> => {
+    const getAuthToken = async (): Promise<GetAuthTokenResponse> => {
         try {
-            const result = await chrome.storage.local.get([
-                STORAGE_KEYS.BEARER_TOKEN,
-                STORAGE_KEYS.TOKEN_EXPIRY
-            ]) as Pick<StorageData, typeof STORAGE_KEYS.BEARER_TOKEN | typeof STORAGE_KEYS.TOKEN_EXPIRY>;
+            const [bearerToken, tokenExpiry] = await Promise.all([
+                authStorage.bearerToken.getValue(),
+                authStorage.tokenExpiry.getValue()
+            ]);
 
-            const { bearerToken, tokenExpiry } = result;
+            if (!bearerToken) return { success: false, bearerToken: "" };
 
-            if (!bearerToken) {
-                return null;
-            }
-
-            // Check if token is expired
             if (tokenExpiry && Date.now() > tokenExpiry) {
                 await clearAuthData();
-                return null;
+                return { success: false, bearerToken: "" };
             }
 
-            return bearerToken;
+            return { success: true, bearerToken };
         } catch (error) {
             console.error('Error getting bearer token:', error);
-            return null;
+            return { success: false, bearerToken: "" };
         }
     };
 
@@ -247,11 +215,8 @@ const AuthManager = (() => {
      * Make authenticated API call
      */
     const authenticatedFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
-        const token = await getBearerToken();
-
-        if (!token) {
-            throw new Error('No authentication token available');
-        }
+        const token = await getAuthToken();
+        if (!token) throw new Error('No authentication token available');
 
         return fetch(url, {
             ...options,
@@ -264,64 +229,13 @@ const AuthManager = (() => {
     };
 
     /**
-     * Refresh authentication token
-     */
-    const refreshToken = async (): Promise<boolean> => {
-        try {
-            const token = await getBearerToken();
-
-            if (!token) {
-                return false;
-            }
-
-            // Mock refresh response for development
-            console.log('🔄 Refreshing token...');
-
-            const newBearerToken = 'refreshed_token_' + Date.now();
-            const tokenExpiry = Date.now() + (3600 * 1000); // 1 hour from now
-
-            await chrome.storage.local.set({
-                [STORAGE_KEYS.BEARER_TOKEN]: newBearerToken,
-                [STORAGE_KEYS.TOKEN_EXPIRY]: tokenExpiry
-            });
-
-            console.log('✅ Token refreshed');
-            return true;
-
-        } catch (error) {
-            console.error('❌ Token refresh error:', error);
-            return false;
-        }
-    };
-
-    /**
-     * Clear all authentication data from storage
-     */
-    const clearAuthData = async (): Promise<void> => {
-        try {
-            await chrome.storage.local.remove([
-                STORAGE_KEYS.BEARER_TOKEN,
-                STORAGE_KEYS.USER_INFO,
-                STORAGE_KEYS.TOKEN_EXPIRY
-            ]);
-            console.log('🧹 Auth data cleared');
-        } catch (error) {
-            console.error('Error clearing auth data:', error);
-        }
-    };
-
-    /**
      * Send authentication status to content scripts
      */
     const notifyContentScripts = async (type: string, data: Record<string, any> = {}): Promise<void> => {
         try {
             const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-
             if (tabs[0]?.id) {
-                await chrome.tabs.sendMessage(tabs[0].id, {
-                    type,
-                    ...data
-                });
+                await chrome.tabs.sendMessage(tabs[0].id, { type, ...data });
             }
         } catch (error) {
             console.log('Could not notify content scripts:', error);
@@ -330,14 +244,12 @@ const AuthManager = (() => {
 
     console.log('✅ AuthManager loaded successfully');
 
-    // Return public API
     return {
         checkAuthStatus,
         authenticateWithGoogle,
         logout,
-        getBearerToken,
+        getAuthToken,
         authenticatedFetch,
-        refreshToken,
         notifyContentScripts,
         clearAuthData
     };

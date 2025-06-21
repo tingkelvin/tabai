@@ -29,16 +29,6 @@ export const chatHandler = {
     try {
       console.log('💬 Processing chat message:', data.message);
 
-      if (!AuthManager) {
-        return sendResponse(createErrorResponse(new Error('AuthManager not available')));
-      }
-
-      const authStatus = await AuthManager.checkAuthStatus();
-      if (!authStatus.isAuthenticated) {
-        await AuthManager.logout();
-        return sendResponse(createErrorResponse(createAuthError('Authentication required')));
-      }
-
       const bearerToken = await AuthManager.getBearerToken();
       if (!bearerToken) {
         await AuthManager.logout();
