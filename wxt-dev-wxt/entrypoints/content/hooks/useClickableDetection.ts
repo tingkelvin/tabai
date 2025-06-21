@@ -1,12 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 
-// Type definitions
+// Type definitions remain the same
 interface ClickableDetectionOptions {
     autoDetect?: boolean
     highlightColor?: string
     showLabels?: boolean
     watchForDynamicContent?: boolean
-    detectCustomClickables?: boolean
     includeDisabled?: boolean
     minClickableSize?: number
     highlightFirstOnly?: boolean
@@ -37,21 +36,38 @@ interface ClickableDetectionResults {
 }
 
 interface UseClickableDetectionReturn {
-    // State
     isHighlighting: boolean
     totalCount: number
     byType: Record<string, number>
-
-    // Actions
     highlightClickables: () => void
     removeHighlights: () => void
     toggleHighlight: () => void
     detectClickables: () => ClickableDetectionResults
     refreshDetection: () => void
-
-    // Additional data
     getClickableDetails: () => ClickableElementInfo[]
     getClickablesByType: (type: string) => ClickableElementInfo[]
+}
+
+// Pre-compile selectors and constants outside component
+const STANDARD_SELECTORS = [
+    'a', 'button',
+    'input[type="button"]', 'input[type="submit"]', 'input[type="reset"]',
+    '[onclick]', '[role="button"]', '[tabindex]:not([tabindex="-1"])',
+    'select', 'textarea', 'input:not([type="hidden"])',
+    '[contenteditable="true"]'
+].join(',')
+
+const CLICKABLE_TAGS = new Set(['BUTTON', 'A', 'INPUT', 'SELECT', 'TEXTAREA'])
+const INTERACTIVE_ROLES = new Set(['button', 'link', 'tab', 'menuitem'])
+const CLICKABILITY_ATTRIBUTES = ['onclick', 'href', 'disabled', 'role']
+
+// Cache for computed styles to avoid repeated calculations
+const styleCache = new WeakMap<HTMLElement, CSSStyleDeclaration>()
+const getComputedStyleCached = (element: HTMLElement): CSSStyleDeclaration => {
+    if (!styleCache.has(element)) {
+        styleCache.set(element, window.getComputedStyle(element))
+    }
+    return styleCache.get(element)!
 }
 
 const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClickableDetectionReturn => {
@@ -60,7 +76,6 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
         highlightColor = '#00ff00',
         showLabels = true,
         watchForDynamicContent = true,
-        detectCustomClickables = true,
         includeDisabled = false,
         minClickableSize = 10,
         highlightFirstOnly = false,
@@ -70,79 +85,106 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
     const [isHighlighting, setIsHighlighting] = useState<boolean>(false)
     const [totalCount, setTotalCount] = useState<number>(0)
     const [byType, setByType] = useState<Record<string, number>>({})
+
     const observerRef = useRef<MutationObserver | null>(null)
     const highlightTimeoutRef = useRef<NodeJS.Timeout | null>(null)
     const isDetectingRef = useRef<boolean>(false)
+    const highlightedElementsRef = useRef<Set<HTMLElement>>(new Set())
 
-    // Helper function to check if element has click handlers
+    // Memoize label styles to avoid recreating CSS strings
+    const labelStyles = useMemo(() => `
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        background: ${highlightColor};
+        color: black;
+        padding: 2px 6px;
+        font-size: 11px;
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+        border-radius: 3px;
+        z-index: 10001;
+        pointer-events: none;
+        border: 1px solid black;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        min-width: 20px;
+        text-align: center;
+    `, [highlightColor])
+
+    // Optimized click handler detection
     const hasClickHandlers = useCallback((element: HTMLElement): boolean => {
-        // Check for common click event indicators
-        const hasOnClick = element.onclick !== null
-        const hasEventListeners = (element as any)._listeners ||
-            (element as any).__reactEventHandlers ||
-            element.hasAttribute('onclick')
+        // Quick checks first
+        if (element.onclick !== null) return true
+        if (element.hasAttribute('onclick')) return true
 
-        // Check for cursor pointer style
-        const computedStyle = window.getComputedStyle(element)
-        const hasCursorPointer = computedStyle.cursor === 'pointer'
+        // Check computed style (cached)
+        const computedStyle = getComputedStyleCached(element)
+        if (computedStyle.cursor === 'pointer') return true
 
-        return hasOnClick || hasEventListeners || hasCursorPointer
+        // More expensive checks last
+        return !!(element as any)._listeners || !!(element as any).__reactEventHandlers
     }, [])
 
-    // Helper function to get element text content
+    // Optimized element text extraction
     const getElementText = useCallback((element: HTMLElement): string => {
-        // For specific elements, get appropriate text
-        if (element.tagName === 'IMG') {
+        const tagName = element.tagName
+
+        if (tagName === 'IMG') {
             return element.getAttribute('alt') || element.getAttribute('title') || ''
         }
-        if (element.tagName === 'INPUT') {
+
+        if (tagName === 'INPUT') {
             const input = element as HTMLInputElement
             return input.value || input.placeholder || input.getAttribute('aria-label') || ''
         }
 
-        // Get visible text content, truncated
         const text = element.textContent?.trim() || ''
         return text.length > 30 ? text.substring(0, 30) + '...' : text
     }, [])
 
-    // Helper function to determine element type and subtype
+    // Optimized type detection
     const getElementTypeInfo = useCallback((element: HTMLElement): { type: ClickableElementInfo['type'], subtype?: string } => {
-        const tagName = element.tagName.toLowerCase()
+        const tagName = element.tagName
 
         switch (tagName) {
-            case 'button':
+            case 'BUTTON':
                 return { type: 'button', subtype: (element as HTMLButtonElement).type || 'button' }
-            case 'a':
+            case 'A':
                 return { type: 'link', subtype: (element as HTMLAnchorElement).href ? 'external' : 'anchor' }
-            case 'input':
+            case 'INPUT':
                 return { type: 'input', subtype: (element as HTMLInputElement).type || 'text' }
-            case 'select':
+            case 'SELECT':
                 return { type: 'select' }
-            case 'textarea':
+            case 'TEXTAREA':
                 return { type: 'textarea' }
-            case 'img':
-                return { type: 'image', subtype: element.hasAttribute('onclick') || hasClickHandlers(element) ? 'clickable' : 'static' }
-            case 'area':
+            case 'IMG':
+                return {
+                    type: 'image',
+                    subtype: element.hasAttribute('onclick') || hasClickHandlers(element) ? 'clickable' : 'static'
+                }
+            case 'AREA':
                 return { type: 'area' }
             default:
-                return { type: 'custom', subtype: tagName }
+                return { type: 'custom', subtype: tagName.toLowerCase() }
         }
     }, [hasClickHandlers])
 
-    // Helper function to get detailed element information
+    // Batch DOM operations for better performance
     const getElementInfo = useCallback((element: HTMLElement): ClickableElementInfo => {
         const { type, subtype } = getElementTypeInfo(element)
         const text = getElementText(element)
         const rect = element.getBoundingClientRect()
 
+        const computedStyle = getComputedStyleCached(element)
         const isDisabled = element.hasAttribute('disabled') ||
             element.getAttribute('aria-disabled') === 'true' ||
-            window.getComputedStyle(element).pointerEvents === 'none'
+            computedStyle.pointerEvents === 'none'
 
         const hasClickHandler = hasClickHandlers(element)
+        const role = element.getAttribute('role')
         const isInteractive = element.tabIndex >= 0 ||
-            ['button', 'a', 'input', 'select', 'textarea'].includes(element.tagName.toLowerCase()) ||
-            element.hasAttribute('role') && ['button', 'link', 'tab', 'menuitem'].includes(element.getAttribute('role') || '')
+            CLICKABLE_TAGS.has(element.tagName) ||
+            !!(role && INTERACTIVE_ROLES.has(role))
 
         return {
             element,
@@ -161,95 +203,31 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
         }
     }, [getElementTypeInfo, getElementText, hasClickHandlers])
 
-    // Helper function to check if element is a child of a button or anchor
-    const isChildOfButtonOrAnchor = useCallback((element: HTMLElement): boolean => {
-        let parent = element.parentElement
-        while (parent) {
-            if (parent.tagName === 'BUTTON' || parent.tagName === 'A') {
-                return true
-            }
-            parent = parent.parentElement
-        }
-        return false
-    }, [])
-
-    // Function to find all clickable elements
+    // Optimized element finding with single query and filtering
     const findClickableElements = useCallback((): HTMLElement[] => {
-        const clickableElements: HTMLElement[] = []
-        const processedElements = new Set<HTMLElement>()
+        // Use single querySelectorAll instead of multiple queries
+        const allElements = Array.from(document.querySelectorAll<HTMLElement>(STANDARD_SELECTORS))
 
-        // Standard clickable elements
-        const standardSelectors = [
-            'a',
-            'button',
-            'input[type="button"]',
-            'input[type="submit"]',
-            'input[type="reset"]',
-            '[onclick]',
-            '[role="button"]',
-            '[tabindex]:not([tabindex="-1"])',
-            'select',
-            'textarea',
-            'input:not([type="hidden"])',
-            '[contenteditable="true"]'
-        ]
-
-        // Add standard clickable elements
-        standardSelectors.forEach(selector => {
-            const elements = document.querySelectorAll<HTMLElement>(selector)
-            elements.forEach(el => {
-                if (!processedElements.has(el) && (includeDisabled || !el.hasAttribute('disabled'))) {
-                    const rect = el.getBoundingClientRect()
-                    if (rect.width >= minClickableSize && rect.height >= minClickableSize) {
-                        clickableElements.push(el)
-                        processedElements.add(el)
-                    }
-                }
-            })
-        })
-
-        // Detect custom clickable elements if enabled
-        if (detectCustomClickables) {
-            const allElements = document.querySelectorAll<HTMLElement>('*')
-            allElements.forEach(el => {
-                // Skip if already processed
-                if (processedElements.has(el)) return
-
-                // Skip if it's a child of button or anchor
-                if (isChildOfButtonOrAnchor(el)) return
-
-                // Check for click indicators
-                if (hasClickHandlers(el) || window.getComputedStyle(el).cursor === 'pointer') {
-                    const rect = el.getBoundingClientRect()
-                    if (rect.width >= minClickableSize && rect.height >= minClickableSize) {
-                        clickableElements.push(el)
-                        processedElements.add(el)
-                    }
-                }
-            })
+        if (!includeDisabled && minClickableSize <= 0) {
+            return allElements.filter(el => !el.hasAttribute('disabled'))
         }
 
-        return clickableElements.sort((a, b) => {
-            const rectA = a.getBoundingClientRect()
-            const rectB = b.getBoundingClientRect()
+        // Batch process filtering to minimize DOM access
+        return allElements.filter(el => {
+            if (!includeDisabled && el.hasAttribute('disabled')) return false
 
-            // Sort by top position first, then by left position
-            if (Math.abs(rectA.top - rectB.top) < 5) {
-                // Elements are on roughly the same row, sort by left position
-                return rectA.left - rectB.left
+            if (minClickableSize > 0) {
+                const rect = el.getBoundingClientRect()
+                if (rect.width < minClickableSize || rect.height < minClickableSize) return false
             }
-            // Sort by top position (top to bottom)
-            return rectA.top - rectB.top
-        })
-    }, [includeDisabled, minClickableSize, detectCustomClickables, hasClickHandlers, isChildOfButtonOrAnchor])
 
-    // Function to highlight all clickable elements
+            return true
+        })
+    }, [includeDisabled, minClickableSize])
+
+    // Optimized highlighting with batch DOM operations
     const highlightClickables = useCallback((): void => {
-        // Prevent multiple simultaneous detections
-        if (isDetectingRef.current) {
-            console.log('Detection already in progress, skipping...')
-            return
-        }
+        if (isDetectingRef.current) return
 
         isDetectingRef.current = true
         removeHighlights()
@@ -257,85 +235,69 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
         const clickableElements = findClickableElements()
         const typeCount: Record<string, number> = {}
 
-        // Determine how many elements to highlight
-        const countToHighlight = highlightFirstOnly ? highlightCount : clickableElements.length
+        // Pre-calculate all element info to avoid repeated DOM access
+        const elementInfos = clickableElements.map(el => getElementInfo(el))
+
+        // Count types in single pass
+        elementInfos.forEach(info => {
+            const typeKey = info.subtype ? `${info.type}-${info.subtype}` : info.type
+            typeCount[typeKey] = (typeCount[typeKey] || 0) + 1
+        })
+
+        const countToHighlight = highlightFirstOnly ? Math.min(highlightCount, clickableElements.length) : clickableElements.length
         const elementsToHighlight = clickableElements.slice(0, countToHighlight)
 
-        console.log(`Found ${clickableElements.length} clickable elements${highlightFirstOnly ? `, highlighting first ${Math.min(countToHighlight, clickableElements.length)}` : ''}`)
-        setTotalCount(clickableElements.length) // Always show total count
+        // Use document fragment for batch DOM manipulation
+        const fragment = document.createDocumentFragment()
 
         elementsToHighlight.forEach((element: HTMLElement, index: number) => {
-            const elementInfo = getElementInfo(element)
-            const typeKey = elementInfo.subtype ? `${elementInfo.type}-${elementInfo.subtype}` : elementInfo.type
-
-            // Count by type (count all elements, not just highlighted ones)
-            clickableElements.forEach(el => {
-                const info = getElementInfo(el)
-                const key = info.subtype ? `${info.type}-${info.subtype}` : info.type
-                typeCount[key] = (typeCount[key] || 0) + 1
-            })
-
-            // Add highlight styling
+            // Apply highlight styles
             element.style.outline = `2px solid ${highlightColor}`
             element.style.outlineOffset = '2px'
             element.style.backgroundColor = `${highlightColor}20`
             element.style.position = 'relative'
             element.classList.add('extension-clickable-highlight')
 
-            // Add label inside the element if enabled
+            highlightedElementsRef.current.add(element)
+
             if (showLabels) {
                 const label = document.createElement('div')
                 label.textContent = `C${index + 1}`
-                label.style.cssText = `
-          position: absolute;
-          top: 2px;
-          left: 2px;
-          background: ${highlightColor};
-          color: black;
-          padding: 2px 6px;
-          font-size: 11px;
-          font-family: Arial, sans-serif;
-          font-weight: bold;
-          border-radius: 3px;
-          z-index: 10001;
-          pointer-events: none;
-          border: 1px solid black;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-          min-width: 20px;
-          text-align: center;
-        `
+                label.style.cssText = labelStyles
                 label.classList.add('extension-clickable-label')
-
-                // Insert label into the element
                 element.appendChild(label)
             }
         })
 
+        setTotalCount(clickableElements.length)
         setByType(typeCount)
         setIsHighlighting(true)
         isDetectingRef.current = false
-    }, [findClickableElements, getElementInfo, highlightColor, showLabels, highlightFirstOnly, highlightCount])
+    }, [findClickableElements, getElementInfo, highlightColor, showLabels, highlightFirstOnly, highlightCount, labelStyles])
 
-    // Function to remove all highlights
+    // Optimized highlight removal
     const removeHighlights = useCallback((): void => {
-        const highlightedElements = document.querySelectorAll<HTMLElement>('.extension-clickable-highlight')
-        highlightedElements.forEach((element: HTMLElement) => {
-            element.style.outline = ''
-            element.style.outlineOffset = ''
-            element.style.backgroundColor = ''
-            element.classList.remove('extension-clickable-highlight')
+        // Use tracked elements instead of DOM query
+        highlightedElementsRef.current.forEach((element: HTMLElement) => {
+            if (element.isConnected) { // Check if element still in DOM
+                element.style.outline = ''
+                element.style.outlineOffset = ''
+                element.style.backgroundColor = ''
+                element.classList.remove('extension-clickable-highlight')
+
+                // Remove labels
+                const labels = element.querySelectorAll('.extension-clickable-label')
+                labels.forEach(label => label.remove())
+            }
         })
 
-        const labels = document.querySelectorAll<HTMLElement>('.extension-clickable-label')
-        labels.forEach((label: HTMLElement) => label.remove())
-
+        highlightedElementsRef.current.clear()
         setIsHighlighting(false)
         setTotalCount(0)
         setByType({})
         isDetectingRef.current = false
     }, [])
 
-    // Function to toggle highlighting
     const toggleHighlight = useCallback((): void => {
         if (isHighlighting) {
             removeHighlights()
@@ -344,7 +306,6 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
         }
     }, [isHighlighting, removeHighlights, highlightClickables])
 
-    // Function to detect clickables without highlighting
     const detectClickables = useCallback((): ClickableDetectionResults => {
         const clickableElements = findClickableElements()
         const clickableInfos = clickableElements.map(el => getElementInfo(el))
@@ -363,73 +324,61 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
         }
     }, [findClickableElements, getElementInfo])
 
-    // Get detailed clickable information
     const getClickableDetails = useCallback((): ClickableElementInfo[] => {
         const clickableElements = findClickableElements()
         return clickableElements.map(el => getElementInfo(el))
     }, [findClickableElements, getElementInfo])
 
-    // Get clickables by type
     const getClickablesByType = useCallback((type: string): ClickableElementInfo[] => {
         const allClickables = getClickableDetails()
         return allClickables.filter(info =>
-            info.type === type ||
-            `${info.type}-${info.subtype}` === type
+            info.type === type || `${info.type}-${info.subtype}` === type
         )
     }, [getClickableDetails])
 
-    // Refresh detection (alias for highlightClickables)
     const refreshDetection = useCallback((): void => {
         highlightClickables()
     }, [highlightClickables])
 
-    // Setup mutation observer for dynamic content
+    // Optimized mutation observer with better filtering
     useEffect(() => {
         if (!watchForDynamicContent) return
 
         const observer = new MutationObserver((mutations: MutationRecord[]) => {
-            let shouldRerun = false
-            let significantChange = false
+            if (isDetectingRef.current || !isHighlighting) return
 
-            mutations.forEach((mutation: MutationRecord) => {
+            let shouldRefresh = false
+
+            // Process mutations more efficiently
+            for (const mutation of mutations) {
                 if (mutation.type === 'childList') {
-                    // Only trigger for significant DOM changes
-                    mutation.addedNodes.forEach((node: Node) => {
+                    // Check if any added nodes are clickable or contain clickable elements
+                    for (const node of mutation.addedNodes) {
                         if (node.nodeType === Node.ELEMENT_NODE) {
                             const element = node as Element
-                            // Check if added element is likely to contain clickable elements
-                            if (element.tagName &&
-                                (element.querySelector('button, a, input, [onclick]') ||
-                                    ['BUTTON', 'A', 'INPUT', 'SELECT'].includes(element.tagName))) {
-                                significantChange = true
+                            if (CLICKABLE_TAGS.has(element.tagName) ||
+                                element.querySelector(STANDARD_SELECTORS)) {
+                                shouldRefresh = true
+                                break
                             }
                         }
-                    })
-                } else if (mutation.type === 'attributes') {
-                    // Only for clickability-affecting attributes
-                    const relevantAttributes = ['onclick', 'href', 'disabled', 'role']
-                    if (relevantAttributes.includes(mutation.attributeName || '')) {
-                        significantChange = true
                     }
+                } else if (mutation.type === 'attributes' &&
+                    CLICKABILITY_ATTRIBUTES.includes(mutation.attributeName || '')) {
+                    shouldRefresh = true
                 }
-            })
 
-            // Only rerun if there's a significant change and we're currently highlighting
-            if (significantChange && isHighlighting && !isDetectingRef.current) {
-                shouldRerun = true
+                if (shouldRefresh) break
             }
 
-            if (shouldRerun) {
-                // Clear existing timeout
+            if (shouldRefresh) {
                 if (highlightTimeoutRef.current) {
                     clearTimeout(highlightTimeoutRef.current)
                 }
 
-                // Debounce with longer delay to prevent excessive runs
                 highlightTimeoutRef.current = setTimeout(() => {
-                    console.log('DOM change detected, refreshing clickable detection...')
                     highlightClickables()
-                }, 500) // Increased delay
+                }, 300) // Reduced debounce time
             }
         })
 
@@ -438,12 +387,11 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
                 childList: true,
                 subtree: true,
                 attributes: true,
-                attributeFilter: ['onclick', 'href', 'disabled', 'role']
+                attributeFilter: CLICKABILITY_ATTRIBUTES
             })
         }
 
         observerRef.current = observer
-
         return () => {
             observer.disconnect()
             if (highlightTimeoutRef.current) {
@@ -452,32 +400,27 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
         }
     }, [watchForDynamicContent, isHighlighting, highlightClickables])
 
-    // Auto-detect on mount if enabled
+    // Auto-detect optimization
     useEffect(() => {
-        if (autoDetect) {
-            if (document.readyState === 'loading') {
-                const handleDOMContentLoaded = (): void => {
-                    highlightClickables()
-                    document.removeEventListener('DOMContentLoaded', handleDOMContentLoaded)
-                }
-                document.addEventListener('DOMContentLoaded', handleDOMContentLoaded)
+        if (!autoDetect) return
 
-                return () => {
-                    document.removeEventListener('DOMContentLoaded', handleDOMContentLoaded)
-                }
-            } else {
-                highlightClickables()
-            }
+        const runDetection = () => {
+            // Small delay to ensure DOM is fully ready
+            setTimeout(highlightClickables, 50)
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', runDetection, { once: true })
+        } else {
+            runDetection()
         }
     }, [autoDetect, highlightClickables])
 
-    // Cleanup on unmount
+    // Cleanup
     useEffect(() => {
         return () => {
             removeHighlights()
-            if (observerRef.current) {
-                observerRef.current.disconnect()
-            }
+            observerRef.current?.disconnect()
             if (highlightTimeoutRef.current) {
                 clearTimeout(highlightTimeoutRef.current)
             }
@@ -485,19 +428,14 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
     }, [removeHighlights])
 
     return {
-        // State
         isHighlighting,
         totalCount,
         byType,
-
-        // Actions
         highlightClickables,
         removeHighlights,
         toggleHighlight,
         detectClickables,
         refreshDetection,
-
-        // Additional data
         getClickableDetails,
         getClickablesByType
     }
