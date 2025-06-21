@@ -194,21 +194,6 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
             '[contenteditable="true"]'
         ]
 
-        // First, find all buttons, anchors, and forms to mark their children as processed
-        const interactiveContainers = document.querySelectorAll<HTMLElement>('button, a, form')
-        interactiveContainers.forEach(parentEl => {
-            // For forms, don't exclude the direct interactive children (input, select, etc.)
-            if (parentEl.tagName === 'FORM') {
-                // Only exclude non-interactive children of forms
-                const children = parentEl.querySelectorAll<HTMLElement>('*:not(input):not(select):not(textarea):not(button)')
-                children.forEach(child => processedElements.add(child))
-            } else if (parentEl.tagName === 'A' || parentEl.tagName === 'BUTTON') {
-                // For buttons and anchors, exclude all children including nested buttons
-                const children = parentEl.querySelectorAll<HTMLElement>('*')
-                children.forEach(child => processedElements.add(child))
-            }
-        })
-
         // Add standard clickable elements
         standardSelectors.forEach(selector => {
             const elements = document.querySelectorAll<HTMLElement>(selector)
