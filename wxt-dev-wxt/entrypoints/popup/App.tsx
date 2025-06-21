@@ -15,7 +15,6 @@ interface ChromeTab {
 }
 
 const App: React.FC = () => {
-  const [currentTab, setCurrentTab] = useState<ChromeTab | null>(null);
   const [isActive, setIsActive] = useState<boolean>(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
@@ -51,12 +50,6 @@ const App: React.FC = () => {
 
   const initializePopup = async () => {
     try {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs: ChromeTab[]) => {
-        if (tabs[0]) {
-          setCurrentTab(tabs[0]);
-        }
-      });
-
       const enabled = await extensionStorage.getValue();
       setIsActive(enabled === true);
     } catch (error) {
@@ -68,12 +61,7 @@ const App: React.FC = () => {
     try {
       const storedState = await extensionStorage.getValue();
       const shouldBeActive = storedState !== false;
-
-      setIsActive(shouldBeActive);
-
-      if (storedState === null) {
-        await extensionStorage.setValue(shouldBeActive);
-      }
+      sendMessage('toggleExtension', { enabled: shouldBeActive });
     } catch (error) {
       console.error('Error syncing extension state:', error);
     }
@@ -83,8 +71,7 @@ const App: React.FC = () => {
     const result = await login();
     if (result?.success) {
       setIsActive(true);
-      await extensionStorage.setValue(true);
-      await notifyContentScript(true);
+      sendMessage('toggleExtension', { enabled: true });
     }
   };
 
@@ -98,8 +85,7 @@ const App: React.FC = () => {
   const disableExtensionOnLogout = async () => {
     try {
       setIsActive(false);
-      await extensionStorage.setValue(false);
-      await notifyContentScript(false);
+      sendMessage('toggleExtension', { enabled: false });
     } catch (error) {
       console.error('Error disabling extension on logout:', error);
     }
@@ -118,24 +104,10 @@ const App: React.FC = () => {
       const newState = !isActive;
       setIsActive(newState);
 
-      await extensionStorage.setValue(newState);
-      await notifyContentScript(newState);
+      sendMessage('toggleExtension', { enabled: newState });
     } catch (error) {
       console.error('Error toggling extension:', error);
       setIsActive(!isActive);
-    }
-  };
-
-  const notifyContentScript = async (enabled: boolean) => {
-    const tabs = await chrome.tabs.query({});
-    for (const tab of tabs) {
-      if (currentTab?.id) {
-        try {
-          await sendMessage('toggleExtension', { enabled }, tab.id);
-        } catch (error) {
-          console.log('Could not send message to content script:', error);
-        }
-      }
     }
   };
 

@@ -31,7 +31,6 @@ export default defineContentScript({
         ui = null;
       }
 
-      return { success: true };
     });
 
     const mountUI = async () => {

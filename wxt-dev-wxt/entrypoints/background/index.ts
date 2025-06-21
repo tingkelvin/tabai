@@ -1,14 +1,28 @@
 import { onMessage, sendMessage } from './types/messages';
 import AuthManager from './managers/authManager';
+import { withAuth } from './middleware/authMiddleware';
+
+const extensionStorage = storage.defineItem<boolean>('sync:extensionEnabled');
+
+const notifyContentScripts = async (enabled: boolean) => {
+  const tabs = await chrome.tabs.query({});
+  for (const tab of tabs) {
+    try {
+      await sendMessage('toggleExtension', { enabled }, tab.id);
+    } catch (error) {
+      console.log('Could not send message to content script:', error);
+    }
+
+  }
+};
 
 export default defineBackground(() => {
   console.log('✅ Background script loaded successfully!');
   onMessage('checkAuth', async () => {
-    sendMessage('toggleExtension', { enabled: true });
     return await AuthManager.checkAuthStatus();
   });
 
-  onMessage('authenticate', async ({ data }) => {
+  onMessage('authenticate', async () => {
     return await AuthManager.authenticateWithGoogle();
   });
 
@@ -17,6 +31,12 @@ export default defineBackground(() => {
   });
 
   onMessage('getAuthToken', async () => {
-    return await AuthManager.getAuthToken();
+    return withAuth(() => AuthManager.getAuthToken());
+  });
+
+  onMessage('toggleExtension', async ({ data: { enabled } }) => {
+    await extensionStorage.setValue(enabled);
+    await notifyContentScripts(enabled);
+
   });
 })

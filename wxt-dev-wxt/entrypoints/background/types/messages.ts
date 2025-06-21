@@ -20,7 +20,7 @@ export interface ProtocolMap {
   // saveChatSettings: (settings: { [key: string]: any }) => { success: boolean; error?: string };
 
   // // Extension messages
-  toggleExtension: (data: { enabled: boolean }) => { success: boolean };
+  toggleExtension: (data: { enabled: boolean }) => void;
   // testConnection: () => { success: boolean; status?: string; error?: string };
 }
 
