@@ -24,38 +24,9 @@ const useAuth = (): UseAuthReturn => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [authError, setAuthError] = useState<string | null>(null);
 
-    const handleMessage = useCallback((message: any) => {
-        switch (message.type) {
-            case 'AUTH_STATE_CHANGED':
-                checkAuthStatus();
-                break;
-            case 'AUTH_SUCCESS':
-                setUser(message.user);
-                setIsAuthenticated(true);
-                setIsLoading(false);
-                setAuthError(null);
-                break;
-            case 'AUTH_LOGOUT':
-                setUser(null);
-                setIsAuthenticated(false);
-                setIsLoading(false);
-                setAuthError(null);
-                break;
-            case 'AUTH_ERROR':
-                setAuthError(message.error);
-                setIsLoading(false);
-                break;
-        }
-    }, []);
-
     useEffect(() => {
         checkAuthStatus();
-
-        if (chrome?.runtime?.onMessage) {
-            chrome.runtime.onMessage.addListener(handleMessage);
-            return () => chrome.runtime.onMessage.removeListener(handleMessage);
-        }
-    }, [handleMessage]);
+    }, []);
 
     const checkAuthStatus = async (): Promise<void> => {
         try {

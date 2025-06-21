@@ -2,7 +2,8 @@
 import { useState, useCallback } from 'react';
 import { MESSAGE_TYPES } from '../utils/constant';
 import { ChatMessage, ChatHookReturn } from '../types/chat';
-
+import { sendMessage as sendBackgroundMessage } from '@/entrypoints/background/types/messages';
+import { ApiResponse, ChatResponse } from '@/entrypoints/background/types/api';
 // Dummy function to replace file context
 const getAllContentAsString = async (): Promise<string> => {
     return '';
@@ -55,34 +56,16 @@ export const useChat = (): ChatHookReturn => {
 
         // Always show Thinking when sending a message
         setIsThinking(true);
+        console.log('🚀 Sending to backend:', message.substring(0, 100) + '...');
+        // Send directly to background script
+        const response: ApiResponse<ChatResponse> = await sendBackgroundMessage('askLlm', { content: message });
+        console.log('📡 Response from backend:', response);
+        let reply = response.data?.reply || 'I do not find any response, sorry.';
+        // Add the assistant response to chat messages
+        if (addToChat) addAssistantMessage(reply);
+        setIsThinking(false);
+        return reply;
 
-        try {
-            console.log('🚀 Sending to backend:', message.substring(0, 100) + '...');
-
-            // Send directly to background script
-            const reply = await chrome.runtime.sendMessage({
-                type: 'CHAT_MESSAGE',
-                data: { message: message }
-            });
-
-            const responseContent = reply.content || "I do not find any response, sorry.";
-
-            // Add the assistant response to chat messages
-            if (addToChat) addAssistantMessage(responseContent);
-
-            return responseContent;
-
-        } catch (error) {
-            console.error('❌ Error sending message:', error);
-            const errorContent = "Sorry, I'm experiencing technical difficulties. Please try again later.";
-
-            addAssistantMessage(errorContent);
-
-            return errorContent;
-
-        } finally {
-            setIsThinking(false);
-        }
     }, [chatInput, addAssistantMessage]);
 
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {

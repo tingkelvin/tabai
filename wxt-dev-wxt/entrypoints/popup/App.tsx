@@ -9,11 +9,6 @@ import QuickLinks from './components/QuickLinks';
 import Footer from './components/Footer';
 import Settings from './components/Settings';
 
-interface ChromeTab {
-  id?: number;
-  [key: string]: any;
-}
-
 const App: React.FC = () => {
   const [isActive, setIsActive] = useState<boolean>(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
@@ -34,19 +29,14 @@ const App: React.FC = () => {
 
   useEffect(() => {
     initializePopup();
-  }, []);
+    if (isAuthenticated) {
+      sendMessage('toggleExtension', { enabled: true });
+    }
+  }, [isActive]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.darkMode ? 'dark' : 'light');
   }, [settings.darkMode]);
-
-  useEffect(() => {
-    if (!isAuthenticated && !isAuthenticating) {
-      disableExtensionOnLogout();
-    } else if (isAuthenticated) {
-      syncExtensionState();
-    }
-  }, [isAuthenticated, isAuthenticating]);
 
   const initializePopup = async () => {
     try {
@@ -54,16 +44,6 @@ const App: React.FC = () => {
       setIsActive(enabled === true);
     } catch (error) {
       console.error('Error initializing popup:', error);
-    }
-  };
-
-  const syncExtensionState = async () => {
-    try {
-      const storedState = await extensionStorage.getValue();
-      const shouldBeActive = storedState !== false;
-      sendMessage('toggleExtension', { enabled: shouldBeActive });
-    } catch (error) {
-      console.error('Error syncing extension state:', error);
     }
   };
 
@@ -76,14 +56,17 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
+    console.log('Logging out user:', user?.email || 'Unknown User');
     const result = await logout();
     if (result && result.success) {
       console.log('Logout successful');
     }
+    sendMessage('toggleExtension', { enabled: false });
   };
 
   const disableExtensionOnLogout = async () => {
     try {
+      console.log('Disabling extension on logout');
       setIsActive(false);
       sendMessage('toggleExtension', { enabled: false });
     } catch (error) {

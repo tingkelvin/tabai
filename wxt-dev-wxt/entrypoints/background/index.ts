@@ -1,6 +1,7 @@
 import { onMessage, sendMessage } from './types/messages';
 import AuthManager from './managers/authManager';
 import { withAuth } from './middleware/authMiddleware';
+import { ChatManager } from './managers/chatManager';
 
 const extensionStorage = storage.defineItem<boolean>('sync:extensionEnabled');
 
@@ -12,7 +13,6 @@ const notifyContentScripts = async (enabled: boolean) => {
     } catch (error) {
       console.log('Could not send message to content script:', error);
     }
-
   }
 };
 
@@ -30,13 +30,15 @@ export default defineBackground(() => {
     return await AuthManager.logout();
   });
 
-  onMessage('getAuthToken', async () => {
-    return withAuth(() => AuthManager.getAuthToken());
-  });
-
   onMessage('toggleExtension', async ({ data: { enabled } }) => {
+
+    console.log("🔄 Toggling extension:", enabled);
     await extensionStorage.setValue(enabled);
     await notifyContentScripts(enabled);
+  });
 
+
+  onMessage('askLlm', async ({ data: { content } }) => {
+    return withAuth(async () => { return await ChatManager.sendMessage(content); });
   });
 })

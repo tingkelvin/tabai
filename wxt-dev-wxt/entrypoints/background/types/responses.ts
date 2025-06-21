@@ -20,6 +20,10 @@ export interface GetAuthTokenResponse extends BaseResponse {
     bearerToken?: string;
 }
 
+export interface askLlmResponse extends BaseResponse {
+    reply?: string;
+}
+
 // interface ApiResponse<T = any> extends BaseResponse {
 //     data?: T;
 //     statusCode?: number;

@@ -15,7 +15,6 @@ import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
-  console.log("hi2233333")
   // Chat
   const chatMessagesRef = useRef<HTMLDivElement>(null)
   const chatInputRef = useRef<HTMLTextAreaElement>(null)
