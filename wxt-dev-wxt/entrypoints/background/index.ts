@@ -1,9 +1,10 @@
-import { onMessage } from './types/messages';
+import { onMessage, sendMessage } from './types/messages';
 import AuthManager from './managers/authManager';
 
 export default defineBackground(() => {
   console.log('✅ Background script loaded successfully!');
   onMessage('checkAuth', async () => {
+    sendMessage('toggleExtension', { enabled: true });
     return await AuthManager.checkAuthStatus();
   });
 

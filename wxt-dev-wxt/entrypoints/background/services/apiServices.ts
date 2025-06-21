@@ -96,8 +96,8 @@ export const chatWithLlm = async (message: string, appToken: string): Promise<Ap
 // ===================================
 
 export const chatWithSearch = async (
-  message: string, 
-  appToken: string, 
+  message: string,
+  appToken: string,
   options: ChatOptions = {}
 ): Promise<ApiResponse> => {
   const payload = {
@@ -238,7 +238,7 @@ export const verifyGoogleAccessToken = async (token: string): Promise<AuthRespon
       hasToken: !!data.appSessionToken,
       responseData: data
     });
-    throw new Error(`Authentication failed: ${JSON.stringify(data)}`);
+    throw new Error(`Network error`);
   }
   return data;
 };

@@ -216,7 +216,7 @@ const AuthManager = (() => {
      */
     const authenticatedFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
         const token = await getAuthToken();
-        if (!token) throw new Error('No authentication token available');
+        if (!token) throw new Error('Authenication failed, please log in again');
 
         return fetch(url, {
             ...options,

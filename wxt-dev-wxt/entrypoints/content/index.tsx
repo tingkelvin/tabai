@@ -2,6 +2,9 @@
 import "./css/style.css";
 import ReactDOM from "react-dom/client";
 import ContentApp from "./components/ContentApp";
+import { onMessage, sendMessage } from '@/entrypoints/background/types/messages';
+import { CheckAuthResponse } from "@/entrypoints/background/types/responses";
+
 
 export default defineContentScript({
   matches: ["<all_urls>"],
@@ -9,29 +12,50 @@ export default defineContentScript({
   cssInjectionMode: "ui",
 
   async main(ctx) {
-    // 3. Define your UI
-    const ui = await createShadowRootUi(ctx, {
-      name: "example-ui",
-      position: "inline",
-      anchor: "body",
-      onMount: (container) => {
-        console.log("hi");
-        // Container is a body, and React warns when creating a root on the body, so create a wrapper div
-        const app = document.createElement("div");
-        container.append(app);
+    const response: CheckAuthResponse = await sendMessage('checkAuth');
+    const extensionStorage = storage.defineItem<boolean>('sync:extensionEnabled')
+    const isExtensionEnabled = await extensionStorage.getValue();
+    console.log("Content script loaded");
 
-        // Create a root on the UI container and render a component
-        const root = ReactDOM.createRoot(app);
-        root.render(<ContentApp />);
-        return root;
-      },
-      onRemove: (root) => {
-        // Unmount the root when the UI is removed
-        root?.unmount();
-      },
+    let ui: any = null;
+
+    onMessage('toggleExtension', ({ data }) => {
+      console.log("Extension toggled:", data.enabled);
+
+      if (data.enabled && !ui) {
+        // Mount UI when enabled
+        mountUI();
+      } else if (!data.enabled && ui) {
+        // Remove UI when disabled
+        ui.remove();
+        ui = null;
+      }
+
+      return { success: true };
     });
 
-    // 4. Mount the UI
-    ui.mount();
-  },
+    const mountUI = async () => {
+      ui = await createShadowRootUi(ctx, {
+        name: "example-ui",
+        position: "inline",
+        anchor: "body",
+        onMount: (container) => {
+          const app = document.createElement("div");
+          container.append(app);
+          const root = ReactDOM.createRoot(app);
+          root.render(<ContentApp />);
+          return root;
+        },
+        onRemove: (root) => {
+          root?.unmount();
+        },
+      });
+      ui.mount();
+    };
+
+    // Initial mount if authenticated and enabled
+    if (response.isAuthenticated && isExtensionEnabled) {
+      await mountUI();
+    }
+  }
 });

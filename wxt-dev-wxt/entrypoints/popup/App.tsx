@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { sendMessage } from '@/entrypoints/background/types/messages';
 import useAuth from './hooks/useAuth';
 import useSettings from './hooks/useSettings';
 import Header from './components/Header';
@@ -17,9 +18,8 @@ const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<ChromeTab | null>(null);
   const [isActive, setIsActive] = useState<boolean>(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  const { settings } = useSettings();
 
-  // Use the enhanced auth hook that coordinates with background script
+  const { settings } = useSettings();
   const {
     user,
     isAuthenticated,
@@ -30,42 +30,35 @@ const App: React.FC = () => {
     clearError
   } = useAuth();
 
+  // WXT Storage
+  const extensionStorage = storage.defineItem<boolean>('sync:extensionEnabled');
+
   useEffect(() => {
     initializePopup();
   }, []);
 
-  // Apply dark mode to popup
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.darkMode ? 'dark' : 'light');
   }, [settings.darkMode]);
 
-  // Sync extension state with authentication status
   useEffect(() => {
     if (!isAuthenticated && !isAuthenticating) {
-      // User has logged out or is not authenticated, disable the extension
       disableExtensionOnLogout();
     } else if (isAuthenticated) {
-      // User is authenticated, check if extension should be enabled
       syncExtensionState();
     }
   }, [isAuthenticated, isAuthenticating]);
 
   const initializePopup = async () => {
     try {
-      // Get current tab information
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs: ChromeTab[]) => {
         if (tabs[0]) {
           setCurrentTab(tabs[0]);
         }
       });
 
-      // Get extension state from storage - but only set it if user is authenticated
-      // The useAuth hook will determine authentication status
-      const result = await chrome.storage.sync.get(['extensionEnabled']);
-
-      // Only set as active if the stored value is explicitly true and user will be authenticated
-      setIsActive(result.extensionEnabled === true);
-
+      const enabled = await extensionStorage.getValue();
+      setIsActive(enabled === true);
     } catch (error) {
       console.error('Error initializing popup:', error);
     }
@@ -73,17 +66,13 @@ const App: React.FC = () => {
 
   const syncExtensionState = async () => {
     try {
-      // When user is authenticated, check the stored extension state
-      const result = await chrome.storage.sync.get(['extensionEnabled']);
-      const storedState = result.extensionEnabled;
-
-      // If no stored state, default to true for authenticated users
+      const storedState = await extensionStorage.getValue();
       const shouldBeActive = storedState !== false;
+
       setIsActive(shouldBeActive);
 
-      // Ensure storage reflects the current state
-      if (storedState === undefined) {
-        await chrome.storage.sync.set({ extensionEnabled: shouldBeActive });
+      if (storedState === null) {
+        await extensionStorage.setValue(shouldBeActive);
       }
     } catch (error) {
       console.error('Error syncing extension state:', error);
@@ -92,19 +81,15 @@ const App: React.FC = () => {
 
   const handleGoogleLogin = async () => {
     const result = await login();
-
-    // If login successful, optionally enable extension by default
-    if (result && result.success) {
+    if (result?.success) {
       setIsActive(true);
-      await chrome.storage.sync.set({ extensionEnabled: true });
-      await notifyContentScript('TOGGLE_EXTENSION', { enabled: true });
+      await extensionStorage.setValue(true);
+      await notifyContentScript(true);
     }
   };
 
   const handleLogout = async () => {
     const result = await logout();
-
-    // After successful logout, the useEffect will handle disabling the extension
     if (result && result.success) {
       console.log('Logout successful');
     }
@@ -113,23 +98,17 @@ const App: React.FC = () => {
   const disableExtensionOnLogout = async () => {
     try {
       setIsActive(false);
-      await chrome.storage.sync.set({ extensionEnabled: false });
-      await notifyContentScript('TOGGLE_EXTENSION', { enabled: false });
+      await extensionStorage.setValue(false);
+      await notifyContentScript(false);
     } catch (error) {
       console.error('Error disabling extension on logout:', error);
     }
   };
 
-  const openSettings = () => {
-    setIsSettingsOpen(true);
-  };
-
-  const closeSettings = () => {
-    setIsSettingsOpen(false);
-  };
+  const openSettings = () => setIsSettingsOpen(true);
+  const closeSettings = () => setIsSettingsOpen(false);
 
   const toggleExtension = async () => {
-    // Only allow toggling if user is authenticated
     if (!isAuthenticated) {
       console.warn('User must be authenticated to toggle extension');
       return;
@@ -139,44 +118,24 @@ const App: React.FC = () => {
       const newState = !isActive;
       setIsActive(newState);
 
-      await chrome.storage.sync.set({ extensionEnabled: newState });
-      await notifyContentScript('TOGGLE_EXTENSION', { enabled: newState });
-
-      // Also notify background script about the state change
-      await sendMessageToBackground('EXTENSION_TOGGLED', { enabled: newState });
-
+      await extensionStorage.setValue(newState);
+      await notifyContentScript(newState);
     } catch (error) {
       console.error('Error toggling extension:', error);
-      // Revert state on error
       setIsActive(!isActive);
     }
   };
 
-  // Helper function to send messages to content script
-  const notifyContentScript = async (type: string, data: Record<string, any> = {}) => {
-    if (currentTab && typeof currentTab.id === 'number') {
-      try {
-        await chrome.tabs.sendMessage(currentTab.id, { type, ...data });
-      } catch (error) {
-        console.log('Could not send message to content script:', error);
+  const notifyContentScript = async (enabled: boolean) => {
+    const tabs = await chrome.tabs.query({});
+    for (const tab of tabs) {
+      if (currentTab?.id) {
+        try {
+          await sendMessage('toggleExtension', { enabled }, tab.id);
+        } catch (error) {
+          console.log('Could not send message to content script:', error);
+        }
       }
-    }
-  };
-
-  // Helper function to send messages to background script
-  const sendMessageToBackground = async (type: string, data: Record<string, any> = {}) => {
-    try {
-      return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage({ type, data }, (response: any) => {
-          if (chrome.runtime.lastError) {
-            reject(new Error(chrome.runtime.lastError.message));
-          } else {
-            resolve(response);
-          }
-        });
-      });
-    } catch (error) {
-      console.error('Error sending message to background:', error);
     }
   };
 
@@ -204,4 +163,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App; 
+export default App;
