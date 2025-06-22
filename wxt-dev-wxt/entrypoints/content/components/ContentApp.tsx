@@ -11,8 +11,8 @@ import type { ContentAppProps } from '../types/components'
 import { WIDGET_CONFIG, RESIZE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
-import useClickableDetection from '../hooks/useClickableDetection'
-
+import { useDOMTreeWalker } from '../hooks/useDomTreewalker'
+import { HighlightOptions, useClickableHighlighter } from '../hooks/useClickableHighligter'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   // Chat
@@ -47,21 +47,34 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     onSizeChange: setWidgetSize,
   })
 
-  // BFS functionality
-  const {
-    isHighlighting,
-    totalCount,
-    byType,
-    highlightClickables,
-    removeHighlights,
-    toggleHighlight,
-    detectClickables,
-    refreshDetection,
-    getClickableDetails,
-    getClickablesByType
 
-  } = useClickableDetection();
+  // const {
+  //   isHighlighting,
+  //   totalCount,
+  //   byType,
+  //   highlightClickables,
+  //   removeHighlights,
+  //   toggleHighlight,
+  //   detectClickables,
+  //   refreshDetection,
+  //   getClickableDetails,
+  //   getClickablesByType
 
+  // } = useClickableDetection();
+
+  const { clickablePaths, isScanning, scanDOM } = useDOMTreeWalker()
+  const { highlightClickables, clearHighlights, highlightTemporarily } = useClickableHighlighter()
+
+  const scanAndHighlight = (options?: HighlightOptions) => {
+    const elements = scanDOM()
+    highlightClickables(elements, options)
+    return elements
+  }
+
+  useEffect(() => {
+    console.log("update")
+    scanAndHighlight()
+  }, [])
 
   return (
     <>
