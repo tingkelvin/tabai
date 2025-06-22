@@ -46,6 +46,7 @@ export const useDOMTreeWalker = (): UseDOMTreeWalkerReturn => {
     }
 
     const scanDOM = useCallback((): ElementData[] => {
+        console.log("scanning")
         setIsScanning(true)
         const allPaths: ElementData[] = []
         const elementMap = new Map<HTMLElement, ElementData>()
@@ -68,6 +69,7 @@ export const useDOMTreeWalker = (): UseDOMTreeWalkerReturn => {
                 }
             }
         )
+        let count = 0;
 
         let currentNode = walker.currentNode as HTMLElement
         while (currentNode) {
@@ -75,7 +77,10 @@ export const useDOMTreeWalker = (): UseDOMTreeWalkerReturn => {
                 clickableElements.push(currentNode)
             }
             currentNode = walker.nextNode() as HTMLElement
+            count++;
         }
+
+        console.log(count)
 
         // Build paths with parent/child relationships
         clickableElements.forEach(clickableElement => {

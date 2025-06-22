@@ -52,10 +52,11 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
   const scanAndHighlight = (options?: HighlightOptions) => {
     const elements = scanDOM()
-    highlightClickables(elements, options)
+    setTimeout(() => {
+      highlightClickables(elements, options)
+    }, 500)
     return elements
   }
-
   useEffect(() => {
     const timer = setTimeout(() => {
       console.log("update")
