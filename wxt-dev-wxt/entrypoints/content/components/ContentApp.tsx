@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react'
-
 // Components import
 import TerminalIcon from './TerminalIcon'
 import TerminalHeader from './TerminalHeader'
@@ -12,8 +11,8 @@ import type { ContentAppProps } from '../types/components'
 import { WIDGET_CONFIG, RESIZE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
-import useClickableDetection from '../hooks/useClickableDetection'
-import { useDOMNavigation } from '../hooks/useDOMNavigation'
+// BFS Hooks
+import { useBFSControls, useAutoClearBFS } from '../hooks/useBFSCollector'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   // Chat
@@ -27,7 +26,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     handleInputChange,
     handleKeyPress,
   } = chatHook
-  // Chat
 
   // Drag and resize
   const widgetRef = useRef<HTMLDivElement>(null)
@@ -35,7 +33,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     width: WIDGET_CONFIG.DEFAULT_WIDTH,
     height: WIDGET_CONFIG.DEFAULT_HEIGHT,
   })
-
   const {
     handleMouseDown,
     handleToggle,
@@ -49,66 +46,13 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     widgetSize,
     onSizeChange: setWidgetSize,
   })
-  // Drag and resize
 
-  // Clickable Detection Hook
-  const {
-    isHighlighting,
-    totalCount,
-    byType,
-    highlightClickables,
-    removeHighlights,
-    toggleHighlight,
-    detectClickables,
-    refreshDetection,
-    getClickableDetails,
-    getClickablesByType
-  } = useClickableDetection({
-    autoDetect: true,              // Auto-start detection
-    highlightColor: '#00ff00',     // Green highlights
-    showLabels: true,              // Show numbered labels
-    watchForDynamicContent: true,  // Monitor for new elements
-    includeDisabled: false,        // Include disabled elements
-    minClickableSize: 10,          // Minimum size in pixels
-    highlightFirstOnly: true,      // Only highlight first N elements
-    highlightCount: 1000             // Highlight first 50 clickable elements
-  })
+  // BFS functionality
+  const { collectedData, isCollecting, buttons, clearBorders } = useBFSControls(widgetRef);
 
+  // Auto-clear borders when minimized
+  useAutoClearBFS(isMinimized, clearBorders);
 
-  // const visitedContainers = new Set();
-
-  // const containerNavigation = useDOMNavigation({
-  //   filter: (element) => {
-  //     const containerTags = ['DIV', 'SECTION', 'ARTICLE', 'ASIDE', 'NAV', 'HEADER', 'FOOTER', 'MAIN'];
-
-  //     if (!containerTags.includes(element.tagName)) return false;
-  //     if (visitedContainers.has(element)) return false;
-
-  //     const clickableSelectors = 'button, a, input, select, textarea, [role="button"], [tabindex]:not([tabindex="-1"]), [onclick]';
-  //     return element.querySelector(clickableSelectors) !== null;
-  //   }
-  // });
-
-  // const { navigate } = containerNavigation;
-
-  // const getRandomColor = () => {
-  //   return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-  // };
-
-  // useEffect(() => {
-  //   navigate((container, index) => {
-  //     visitedContainers.add(container);
-
-  //     const randomColor = getRandomColor();
-  //     container.style.border = `2px solid ${randomColor}`;
-  //     container.style.position = 'relative';
-
-  //     const label = document.createElement('div');
-  //     label.textContent = `Container ${index}`;
-  //     label.style.cssText = `position: absolute; top: -20px; left: 0; background: ${randomColor}; color: white; padding: 2px 6px; font-size: 12px; z-index: 1000;`;
-  //     container.appendChild(label);
-  //   });
-  // }, []);
   return (
     <>
       <Notifications
@@ -126,7 +70,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         >
           <TerminalIcon isThinking={isThinking} onClick={handleToggle} />
         </div>
-
       ) : (
         <div
           ref={widgetRef}
@@ -149,9 +92,27 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                 chatMessages={chatMessages}
                 isThinking={isThinking}
               />
+
+              {/* BFS Status Display */}
+              {collectedData && (
+                <div style={{
+                  padding: '8px',
+                  margin: '4px 0',
+                  background: 'rgba(0, 255, 0, 0.1)',
+                  border: '1px solid rgba(0, 255, 0, 0.3)',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontFamily: 'monospace'
+                }}>
+                  <div>🎯 Found: {collectedData.targetElements?.length || 0} elements</div>
+                  <div>📊 Total nodes: {collectedData.stats?.totalNodes || 0}</div>
+                  <div>📏 Max depth: {collectedData.stats?.maxDepth || 0}</div>
+                </div>
+              )}
+
               <ChatInput
                 fileActions={[]}
-                buttons={[]}
+                buttons={buttons}
                 chatInputRef={chatInputRef}
                 chatInput={chatInput}
                 handleInputChange={handleInputChange}
@@ -159,7 +120,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
               />
             </div>
           </div>
-
           {/* Resize handles */}
           <ResizeHandle
             type={RESIZE_TYPES.SOUTHEAST}
