@@ -11,8 +11,8 @@ import type { ContentAppProps } from '../types/components'
 import { WIDGET_CONFIG, RESIZE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
-// BFS Hooks
-import { useBFSControls, useAutoClearBFS } from '../hooks/useBFSCollector'
+import useClickableDetection from '../hooks/useClickableDetection'
+
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   // Chat
@@ -48,10 +48,20 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   })
 
   // BFS functionality
-  const { collectedData, isCollecting, buttons, clearBorders } = useBFSControls(widgetRef);
+  const {
+    isHighlighting,
+    totalCount,
+    byType,
+    highlightClickables,
+    removeHighlights,
+    toggleHighlight,
+    detectClickables,
+    refreshDetection,
+    getClickableDetails,
+    getClickablesByType
 
-  // Auto-clear borders when minimized
-  useAutoClearBFS(isMinimized, clearBorders);
+  } = useClickableDetection();
+
 
   return (
     <>
@@ -93,26 +103,9 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                 isThinking={isThinking}
               />
 
-              {/* BFS Status Display */}
-              {collectedData && (
-                <div style={{
-                  padding: '8px',
-                  margin: '4px 0',
-                  background: 'rgba(0, 255, 0, 0.1)',
-                  border: '1px solid rgba(0, 255, 0, 0.3)',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  fontFamily: 'monospace'
-                }}>
-                  <div>🎯 Found: {collectedData.targetElements?.length || 0} elements</div>
-                  <div>📊 Total nodes: {collectedData.stats?.totalNodes || 0}</div>
-                  <div>📏 Max depth: {collectedData.stats?.maxDepth || 0}</div>
-                </div>
-              )}
-
               <ChatInput
                 fileActions={[]}
-                buttons={buttons}
+                buttons={[]}
                 chatInputRef={chatInputRef}
                 chatInput={chatInput}
                 handleInputChange={handleInputChange}

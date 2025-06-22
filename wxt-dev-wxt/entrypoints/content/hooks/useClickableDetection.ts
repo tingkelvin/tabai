@@ -4,17 +4,19 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 interface ClickableDetectionOptions {
     autoDetect?: boolean
     highlightColor?: string
+    spanHighlightColor?: string // Purple color for spans
     showLabels?: boolean
     watchForDynamicContent?: boolean
     includeDisabled?: boolean
     minClickableSize?: number
     highlightFirstOnly?: boolean
     highlightCount?: number
+    includeSpansWithText?: boolean // Detect all spans with text content
 }
 
 interface ClickableElementInfo {
     element: HTMLElement
-    type: 'button' | 'link' | 'input' | 'select' | 'textarea' | 'custom' | 'image' | 'area'
+    type: 'button' | 'link' | 'input' | 'select' | 'textarea' | 'custom' | 'image' | 'area' | 'span'
     subtype?: string
     text?: string
     href?: string
@@ -74,12 +76,14 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
     const {
         autoDetect = true,
         highlightColor = '#00ff00',
+        spanHighlightColor = '#800080', // Purple for spans
         showLabels = true,
         watchForDynamicContent = true,
         includeDisabled = false,
         minClickableSize = 10,
         highlightFirstOnly = false,
-        highlightCount = 1
+        highlightCount = 1,
+        includeSpansWithText = true // Detect all spans with text content
     } = options
 
     const [isHighlighting, setIsHighlighting] = useState<boolean>(false)
@@ -91,7 +95,7 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
     const isDetectingRef = useRef<boolean>(false)
     const highlightedElementsRef = useRef<Set<HTMLElement>>(new Set())
 
-    // Memoize label styles to avoid recreating CSS strings
+    // Memoize label styles for both regular and span elements
     const labelStyles = useMemo(() => `
         position: absolute;
         top: 2px;
@@ -111,7 +115,26 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
         text-align: center;
     `, [highlightColor])
 
-    // Optimized click handler detection
+    const spanLabelStyles = useMemo(() => `
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        background: ${spanHighlightColor};
+        color: white;
+        padding: 2px 6px;
+        font-size: 11px;
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+        border-radius: 3px;
+        z-index: 10001;
+        pointer-events: none;
+        border: 1px solid black;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        min-width: 20px;
+        text-align: center;
+    `, [spanHighlightColor])
+
+    // Enhanced click handler detection
     const hasClickHandlers = useCallback((element: HTMLElement): boolean => {
         // Quick checks first
         if (element.onclick !== null) return true
@@ -123,6 +146,12 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
 
         // More expensive checks last
         return !!(element as any)._listeners || !!(element as any).__reactEventHandlers
+    }, [])
+
+    // Check if span has text content
+    const hasTextContent = useCallback((element: HTMLElement): boolean => {
+        if (element.tagName !== 'SPAN') return false
+        return element.textContent && element.textContent.trim().length > 0
     }, [])
 
     // Optimized element text extraction
@@ -142,7 +171,7 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
         return text.length > 30 ? text.substring(0, 30) + '...' : text
     }, [])
 
-    // Optimized type detection
+    // Enhanced type detection with span support
     const getElementTypeInfo = useCallback((element: HTMLElement): { type: ClickableElementInfo['type'], subtype?: string } => {
         const tagName = element.tagName
 
@@ -164,6 +193,11 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
                 }
             case 'AREA':
                 return { type: 'area' }
+            case 'SPAN':
+                return {
+                    type: 'span',
+                    subtype: element.getAttribute('role') || 'clickable-text'
+                }
             default:
                 return { type: 'custom', subtype: tagName.toLowerCase() }
         }
@@ -184,7 +218,8 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
         const role = element.getAttribute('role')
         const isInteractive = element.tabIndex >= 0 ||
             CLICKABLE_TAGS.has(element.tagName) ||
-            !!(role && INTERACTIVE_ROLES.has(role))
+            !!(role && INTERACTIVE_ROLES.has(role)) ||
+            (element.tagName === 'SPAN' && hasTextContent(element))
 
         return {
             element,
@@ -201,12 +236,19 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
             isInteractive,
             boundingRect: rect
         }
-    }, [getElementTypeInfo, getElementText, hasClickHandlers])
+    }, [getElementTypeInfo, getElementText, hasClickHandlers, hasTextContent])
 
-    // Optimized element finding with single query and filtering
+    // Enhanced element finding with span support
     const findClickableElements = useCallback((): HTMLElement[] => {
-        // Use single querySelectorAll instead of multiple queries
-        const allElements = Array.from(document.querySelectorAll<HTMLElement>(STANDARD_SELECTORS))
+        // Use single querySelectorAll for standard elements
+        let allElements = Array.from(document.querySelectorAll<HTMLElement>(STANDARD_SELECTORS))
+
+        // Add spans with text if option is enabled
+        if (includeSpansWithText) {
+            const spans = Array.from(document.querySelectorAll<HTMLElement>('span'))
+            const spansWithText = spans.filter(span => hasTextContent(span))
+            allElements = [...allElements, ...spansWithText]
+        }
 
         if (!includeDisabled && minClickableSize <= 0) {
             return allElements.filter(el => !el.hasAttribute('disabled'))
@@ -223,7 +265,7 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
 
             return true
         })
-    }, [includeDisabled, minClickableSize])
+    }, [includeDisabled, minClickableSize, includeSpansWithText, hasTextContent])
 
     // Optimized highlighting with batch DOM operations
     const highlightClickables = useCallback((): void => {
@@ -251,10 +293,13 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
         const fragment = document.createDocumentFragment()
 
         elementsToHighlight.forEach((element: HTMLElement, index: number) => {
-            // Apply highlight styles
-            element.style.outline = `2px solid ${highlightColor}`
+            const isSpan = element.tagName === 'SPAN'
+            const currentHighlightColor = isSpan ? spanHighlightColor : highlightColor
+
+            // Apply highlight styles with different colors for spans
+            element.style.outline = `2px solid ${currentHighlightColor}`
             element.style.outlineOffset = '2px'
-            element.style.backgroundColor = `${highlightColor}20`
+            element.style.backgroundColor = `${currentHighlightColor}20`
             element.style.position = 'relative'
             element.classList.add('extension-clickable-highlight')
 
@@ -262,8 +307,8 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
 
             if (showLabels) {
                 const label = document.createElement('div')
-                label.textContent = `C${index + 1}`
-                label.style.cssText = labelStyles
+                label.textContent = isSpan ? `S${index + 1}` : `C${index + 1}`
+                label.style.cssText = isSpan ? spanLabelStyles : labelStyles
                 label.classList.add('extension-clickable-label')
                 element.appendChild(label)
             }
@@ -273,7 +318,7 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
         setByType(typeCount)
         setIsHighlighting(true)
         isDetectingRef.current = false
-    }, [findClickableElements, getElementInfo, highlightColor, showLabels, highlightFirstOnly, highlightCount, labelStyles])
+    }, [findClickableElements, getElementInfo, highlightColor, spanHighlightColor, showLabels, highlightFirstOnly, highlightCount, labelStyles, spanLabelStyles])
 
     // Optimized highlight removal
     const removeHighlights = useCallback((): void => {
@@ -340,7 +385,7 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
         highlightClickables()
     }, [highlightClickables])
 
-    // Optimized mutation observer with better filtering
+    // Enhanced mutation observer with span support
     useEffect(() => {
         if (!watchForDynamicContent) return
 
@@ -357,7 +402,8 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
                         if (node.nodeType === Node.ELEMENT_NODE) {
                             const element = node as Element
                             if (CLICKABLE_TAGS.has(element.tagName) ||
-                                element.querySelector(STANDARD_SELECTORS)) {
+                                element.querySelector(STANDARD_SELECTORS) ||
+                                (includeSpansWithText && (element.tagName === 'SPAN' || element.querySelector('span')))) {
                                 shouldRefresh = true
                                 break
                             }
@@ -398,7 +444,7 @@ const useClickableDetection = (options: ClickableDetectionOptions = {}): UseClic
                 clearTimeout(highlightTimeoutRef.current)
             }
         }
-    }, [watchForDynamicContent, isHighlighting, highlightClickables])
+    }, [watchForDynamicContent, isHighlighting, highlightClickables, includeSpansWithText])
 
     // Auto-detect optimization
     useEffect(() => {
