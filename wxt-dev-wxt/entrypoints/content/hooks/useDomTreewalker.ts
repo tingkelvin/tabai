@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { getXPath } from '../utils/domUtils'
+import { getXPath, isVisible } from '../utils/domUtils'
 
 export interface ElementData {
     tagName: string
@@ -60,7 +60,7 @@ export const useDOMTreeWalker = (): UseDOMTreeWalkerReturn => {
                     const element = node as HTMLElement
 
                     // Skip structural elements
-                    if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'META', 'LINK', 'TITLE'].includes(element.tagName)) {
+                    if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'META', 'LINK', 'TITLE'].includes(element.tagName) || !isVisible(element)) {
                         return NodeFilter.FILTER_SKIP
                     }
 

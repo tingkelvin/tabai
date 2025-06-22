@@ -7,7 +7,7 @@ import ChatInput from './ChatInput'
 import ResizeHandle from './ResizeHandle'
 import Notifications from './Notifications'
 // Types import
-import type { ContentAppProps } from '../types/components'
+import type { ActionButton, ContentAppProps } from '../types/components'
 import { WIDGET_CONFIG, RESIZE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
@@ -47,21 +47,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     onSizeChange: setWidgetSize,
   })
 
-
-  // const {
-  //   isHighlighting,
-  //   totalCount,
-  //   byType,
-  //   highlightClickables,
-  //   removeHighlights,
-  //   toggleHighlight,
-  //   detectClickables,
-  //   refreshDetection,
-  //   getClickableDetails,
-  //   getClickablesByType
-
-  // } = useClickableDetection();
-
   const { clickablePaths, isScanning, scanDOM } = useDOMTreeWalker()
   const { highlightClickables, clearHighlights, highlightTemporarily } = useClickableHighlighter()
 
@@ -72,9 +57,41 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   }
 
   useEffect(() => {
-    console.log("update")
-    scanAndHighlight()
+    const timer = setTimeout(() => {
+      console.log("update")
+      scanAndHighlight()
+    }, 500) // 1 second delay
+
+    return () => clearTimeout(timer)
   }, [])
+
+  const [isHighlighting, setIsHighlighting] = useState(false)
+
+  const toggleHighlight = () => {
+    if (isHighlighting) {
+      clearHighlights()
+      setIsHighlighting(false)
+    } else {
+      scanAndHighlight()
+      setIsHighlighting(true)
+    }
+  }
+
+  const highlightToggleButton: ActionButton = {
+    id: 'toggle-highlight',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="m9 11-6 6v3h3l6-6" />
+        <path d="m22 12-4.5 4.5L15 14l4.5-4.5L22 12z" />
+        <path d="M15 5l4 4" />
+      </svg>
+    ),
+    label: isHighlighting ? 'Clear' : 'Highlight',
+    onClick: toggleHighlight,
+    title: isHighlighting ? 'Clear highlights' : 'Scan and highlight clickable elements',
+    disabled: isScanning,
+    className: isHighlighting ? 'active' : '',
+  }
 
   return (
     <>
@@ -118,7 +135,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
               <ChatInput
                 fileActions={[]}
-                buttons={[]}
+                buttons={[highlightToggleButton]}
                 chatInputRef={chatInputRef}
                 chatInput={chatInput}
                 handleInputChange={handleInputChange}

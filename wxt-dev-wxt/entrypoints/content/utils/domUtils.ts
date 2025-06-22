@@ -35,3 +35,14 @@ export const getXPath = (element: Element): string => {
 
     return parts.length ? '/' + parts.reverse().join('/') : ''
 }
+
+export const isVisible = (element: HTMLElement): boolean => {
+    const style = getComputedStyle(element)
+    const rect = element.getBoundingClientRect()
+
+    return style.display !== 'none' &&
+        style.visibility !== 'hidden' &&
+        style.opacity !== '0' &&
+        rect.width > 0 &&
+        rect.height > 0
+}
