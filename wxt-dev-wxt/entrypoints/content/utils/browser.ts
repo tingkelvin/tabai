@@ -1,136 +1,151 @@
 // types/automation.ts - Type definitions
-import { buildDomTree } from "./buildDomTree";
-import { BuildDomTreeResult, DOMElementNode, DOMState } from "./DomElement";
-import { constructDomTree, convertKey, getKeyCode } from "./domUtils";
+import { buildDomTree } from './buildDomTree'
+import {
+    BuildDomTreeResult,
+    DOMElementNode,
+    DOMState,
+} from '../page/DomElement'
+import {
+    constructDomTree,
+    convertKey,
+    getKeyCode,
+    isTypableKey,
+    locateElement,
+} from './domUtils'
 
 export interface ClickableElement {
-    element: HTMLElement;
-    tagName: string;
-    text: string;
-    selector: string;
-    rect: DOMRect;
-    click: () => Promise<void>;
+    element: HTMLElement
+    tagName: string
+    text: string
+    selector: string
+    rect: DOMRect
+    click: () => Promise<void>
 }
 
 export interface ActionButton {
-    id: string;
-    label: string;
-    onClick: () => Promise<void> | void;
-    title: string;
+    id: string
+    label: string
+    onClick: () => Promise<void> | void
+    title: string
 }
 
 export interface AutomationResult {
-    success: boolean;
-    message?: string;
-    data?: any;
-    error?: string;
+    success: boolean
+    message?: string
+    data?: any
+    error?: string
 }
 
 export interface AutomationCommand {
-    action: 'click' | 'type' | 'navigate' | 'scroll' | 'getClickableElements';
+    action: 'click' | 'type' | 'navigate' | 'scroll' | 'getClickableElements'
     params: {
-        selector?: string;
-        text?: string;
-        url?: string;
-        direction?: 'up' | 'down';
-        amount?: number;
-    };
+        selector?: string
+        text?: string
+        url?: string
+        direction?: 'up' | 'down'
+        amount?: number
+    }
 }
 
 // utils/automation.ts - Functional Implementation
 // ✅ Simple utility functions
-export const getCurrentUrl = (): string => window.location.href;
-export const getTitle = (): string => document.title;
+export const getCurrentUrl = (): string => window.location.href
+export const getTitle = (): string => document.title
 
 // ✅ Navigation functions
 export const navigateTo = async (url: string): Promise<void> => {
-    window.location.href = url;
-    return waitForPageLoad();
-};
+    window.location.href = url
+    return waitForPageLoad()
+}
 
 export const goBack = async (): Promise<void> => {
-    window.history.back();
-    return waitForPageLoad();
-};
+    window.history.back()
+    return waitForPageLoad()
+}
 
 export const goForward = async (): Promise<void> => {
-    window.history.forward();
-    return waitForPageLoad();
-};
+    window.history.forward()
+    return waitForPageLoad()
+}
 
 export const reload = async (): Promise<void> => {
-    window.location.reload();
-    return waitForPageLoad();
-};
+    window.location.reload()
+    return waitForPageLoad()
+}
 
 export const waitForPageLoad = (timeout: number = 5000): Promise<void> => {
     return new Promise<void>((resolve) => {
         if (document.readyState === 'complete') {
-            resolve();
-            return;
+            resolve()
+            return
         }
 
         const timer = setTimeout(() => {
-            document.removeEventListener('DOMContentLoaded', onLoad);
-            window.removeEventListener('load', onLoad);
-            resolve();
-        }, timeout);
+            document.removeEventListener('DOMContentLoaded', onLoad)
+            window.removeEventListener('load', onLoad)
+            resolve()
+        }, timeout)
 
         const onLoad = (): void => {
-            clearTimeout(timer);
-            document.removeEventListener('DOMContentLoaded', onLoad);
-            window.removeEventListener('load', onLoad);
-            resolve();
-        };
+            clearTimeout(timer)
+            document.removeEventListener('DOMContentLoaded', onLoad)
+            window.removeEventListener('load', onLoad)
+            resolve()
+        }
 
-        document.addEventListener('DOMContentLoaded', onLoad);
-        window.addEventListener('load', onLoad);
-    });
-};
+        document.addEventListener('DOMContentLoaded', onLoad)
+        window.addEventListener('load', onLoad)
+    })
+}
 
-export const scrollIntoView = async (element: HTMLElement, timeout: number = 1000): Promise<void> => {
-    const startTime = Date.now();
+export const scrollIntoView = async (
+    element: HTMLElement,
+    timeout: number = 1000
+): Promise<void> => {
+    const startTime = Date.now()
 
     while (Date.now() - startTime < timeout) {
-        const rect = element.getBoundingClientRect();
-        const isVisible = (
+        const rect = element.getBoundingClientRect()
+        const isVisible =
             rect.top >= 0 &&
             rect.left >= 0 &&
             rect.bottom <= window.innerHeight &&
             rect.right <= window.innerWidth
-        );
 
-        if (isVisible) break;
+        if (isVisible) break
 
         element.scrollIntoView({
             behavior: 'auto',
             block: 'center',
-            inline: 'center'
-        });
+            inline: 'center',
+        })
 
-        await new Promise<void>((resolve) => setTimeout(resolve, 100));
+        await new Promise<void>((resolve) => setTimeout(resolve, 100))
     }
-};
-
-export function getScrollInfo(): [number, number] {
-    const scroll_y = window.scrollY;
-    const viewport_height = window.innerHeight;
-    const total_height = document.documentElement.scrollHeight;
-
-    const pixels_above = scroll_y;
-    const pixels_below = total_height - (scroll_y + viewport_height);
-
-    return [pixels_above, pixels_below];
 }
 
-export const waitForElementStability = async (element: HTMLElement, timeout: number = 1000): Promise<void> => {
-    const startTime = Date.now();
-    let lastRect = element.getBoundingClientRect();
+export function getScrollInfo(): [number, number] {
+    const scroll_y = window.scrollY
+    const viewport_height = window.innerHeight
+    const total_height = document.documentElement.scrollHeight
+
+    const pixels_above = scroll_y
+    const pixels_below = total_height - (scroll_y + viewport_height)
+
+    return [pixels_above, pixels_below]
+}
+
+export const waitForElementStability = async (
+    element: HTMLElement,
+    timeout: number = 1000
+): Promise<void> => {
+    const startTime = Date.now()
+    let lastRect = element.getBoundingClientRect()
 
     while (Date.now() - startTime < timeout) {
-        await new Promise<void>((resolve) => setTimeout(resolve, 50));
+        await new Promise<void>((resolve) => setTimeout(resolve, 50))
 
-        const currentRect = element.getBoundingClientRect();
+        const currentRect = element.getBoundingClientRect()
 
         if (
             Math.abs(lastRect.x - currentRect.x) < 2 &&
@@ -138,113 +153,129 @@ export const waitForElementStability = async (element: HTMLElement, timeout: num
             Math.abs(lastRect.width - currentRect.width) < 2 &&
             Math.abs(lastRect.height - currentRect.height) < 2
         ) {
-            await new Promise<void>((resolve) => setTimeout(resolve, 50));
-            return;
+            await new Promise<void>((resolve) => setTimeout(resolve, 50))
+            return
         }
 
-        lastRect = currentRect;
+        lastRect = currentRect
     }
-};
+}
 
 // ✅ Main interaction functions
 export const clickElement = async (selector: string): Promise<void> => {
-    const element = await locateElement(selector);
+    const element = await locateElement(selector)
     if (!element) {
-        throw new Error(`Element not found: ${selector}`);
+        throw new Error(`Element not found: ${selector}`)
     }
 
-    await scrollIntoView(element);
-    await waitForElementStability(element);
+    await scrollIntoView(element)
+    await waitForElementStability(element)
 
     try {
-        element.click();
+        element.click()
     } catch (error) {
         try {
             const clickEvent = new MouseEvent('click', {
                 bubbles: true,
                 cancelable: true,
-                view: window
-            });
-            element.dispatchEvent(clickEvent);
+                view: window,
+            })
+            element.dispatchEvent(clickEvent)
         } catch (error2) {
-            element.focus();
-            element.click();
+            element.focus()
+            element.click()
         }
     }
 
-    await waitForPageLoad(1000);
-};
+    await waitForPageLoad(1000)
+}
 
-export const inputText = async (selector: string, text: string): Promise<void> => {
-    const element = await locateElement(selector);
+export const inputText = async (
+    selector: string,
+    text: string
+): Promise<void> => {
+    const element = await locateElement(selector)
     if (!element) {
-        throw new Error(`Element not found: ${selector}`);
+        throw new Error(`Element not found: ${selector}`)
     }
 
-    await scrollIntoView(element);
-    element.focus();
+    await scrollIntoView(element)
+    element.focus()
 
-    const inputElement = element as HTMLInputElement | HTMLTextAreaElement;
-    const editableElement = element as HTMLElement;
+    const inputElement = element as HTMLInputElement | HTMLTextAreaElement
+    const editableElement = element as HTMLElement
 
     if (inputElement.value !== undefined) {
-        inputElement.value = '';
+        inputElement.value = ''
     } else if (editableElement.textContent !== undefined) {
-        editableElement.textContent = '';
+        editableElement.textContent = ''
     }
 
     if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
-        inputElement.value = text;
-        element.dispatchEvent(new Event('input', { bubbles: true }));
-        element.dispatchEvent(new Event('change', { bubbles: true }));
+        inputElement.value = text
+        element.dispatchEvent(new Event('input', { bubbles: true }))
+        element.dispatchEvent(new Event('change', { bubbles: true }))
     } else if (editableElement.isContentEditable) {
-        editableElement.textContent = text;
-        element.dispatchEvent(new Event('input', { bubbles: true }));
+        editableElement.textContent = text
+        element.dispatchEvent(new Event('input', { bubbles: true }))
     }
-};
+}
 
 // ✅ Scrolling functions
-export const scrollDown = (amount: number = window.innerHeight): Promise<void> => {
-    window.scrollBy(0, amount);
-    return new Promise<void>((resolve) => setTimeout(resolve, 100));
-};
+export const scrollDown = (
+    amount: number = window.innerHeight
+): Promise<void> => {
+    window.scrollBy(0, amount)
+    return new Promise<void>((resolve) => setTimeout(resolve, 100))
+}
 
-export const scrollUp = (amount: number = window.innerHeight): Promise<void> => {
-    window.scrollBy(0, -amount);
-    return new Promise<void>((resolve) => setTimeout(resolve, 100));
-};
+export const scrollUp = (
+    amount: number = window.innerHeight
+): Promise<void> => {
+    window.scrollBy(0, -amount)
+    return new Promise<void>((resolve) => setTimeout(resolve, 100))
+}
 
 // ✅ Helper functions
-export const createActionButton = (text: string, action: () => Promise<void> | void): ActionButton => ({
+export const createActionButton = (
+    text: string,
+    action: () => Promise<void> | void
+): ActionButton => ({
     id: `auto-${text.toLowerCase().replace(' ', '-')}`,
     label: text,
     onClick: action,
-    title: `Automatically ${text.toLowerCase()}`
-});
+    title: `Automatically ${text.toLowerCase()}`,
+})
 
 export const handleElementClick = (element: ClickableElement) => {
     return async (): Promise<void> => {
         try {
-            await clickElement(element.selector);
-            console.log(`Clicked: ${element.text}`);
+            await clickElement(element.selector)
+            console.log(`Clicked: ${element.text}`)
         } catch (error) {
-            console.error(`Failed to click ${element.text}:`, error);
+            console.error(`Failed to click ${element.text}:`, error)
         }
-    };
-};
-
-export const createEventListener = (eventType: string, handler: (event: Event) => void) => {
-    return (event: Event): void => {
-        console.log(`${eventType} event triggered`);
-        handler(event);
-    };
-};
-
-export const removeHighlights = async (): Promise<void> {
-    document.getElementById('playwright-highlight-container')?.remove();
+    }
 }
 
-export const getClickableElements = async (showHighlightElements: boolean, focusElement: number): Promise<DOMState | null> => {
+export const createEventListener = (
+    eventType: string,
+    handler: (event: Event) => void
+) => {
+    return (event: Event): void => {
+        console.log(`${eventType} event triggered`)
+        handler(event)
+    }
+}
+
+export const removeHighlights = async (): Promise<void> => {
+    document.getElementById('playwright-highlight-container')?.remove()
+}
+
+export const getClickableElements = async (
+    showHighlightElements: boolean,
+    focusElement: number
+): Promise<DOMState | null> => {
     if (getCurrentUrl() === 'about:blank') {
         const elementTree = new DOMElementNode({
             tagName: 'body',
@@ -256,27 +287,29 @@ export const getClickableElements = async (showHighlightElements: boolean, focus
             isTopElement: false,
             isInViewport: false,
             parent: null,
-        });
+        })
 
         // Fixed: Return DOMState object instead of array
         return {
             elementTree,
-            selectorMap: new Map<number, DOMElementNode>()
-        };
+            selectorMap: new Map<number, DOMElementNode>(),
+        }
     }
 
     const result = buildDomTree({
         showHighlightElements,
         focusHighlightIndex: focusElement,
-    });
+    })
 
     // Fixed: 'results' should be 'result' (typo fix)
-    const evalPage = result as BuildDomTreeResult;
+    const evalPage = result as BuildDomTreeResult
     if (!evalPage || !evalPage.map || !evalPage.rootId) {
-        throw new Error('Failed to build DOM tree: No result returned or invalid structure');
+        throw new Error(
+            'Failed to build DOM tree: No result returned or invalid structure'
+        )
     }
 
-    return constructDomTree(evalPage);
+    return constructDomTree(evalPage)
 }
 
 /**
@@ -286,21 +319,22 @@ export const getClickableElements = async (showHighlightElements: boolean, focus
  */
 async function sendKeys(keys: string, target?: HTMLElement): Promise<void> {
     // Split combination keys (e.g., "Control+A" or "Shift+ArrowLeft")
-    const keyParts = keys.split('+');
-    const modifiers = keyParts.slice(0, -1);
-    const mainKey = keyParts[keyParts.length - 1];
+    const keyParts = keys.split('+')
+    const modifiers = keyParts.slice(0, -1)
+    const mainKey = keyParts[keyParts.length - 1]
 
     // Get target element
-    const targetElement = target || (document.activeElement as HTMLElement) || document.body;
+    const targetElement =
+        target || (document.activeElement as HTMLElement) || document.body
 
     // Track which modifiers are pressed
-    const pressedModifiers = new Set<string>();
+    const pressedModifiers = new Set<string>()
 
     try {
         // Press all modifier keys (e.g., Control, Shift, etc.)
         for (const modifier of modifiers) {
-            const convertedKey = convertKey(modifier);
-            pressedModifiers.add(convertedKey);
+            const convertedKey = convertKey(modifier)
+            pressedModifiers.add(convertedKey)
 
             // Dispatch keydown event for modifier
             const keydownEvent = new KeyboardEvent('keydown', {
@@ -311,14 +345,14 @@ async function sendKeys(keys: string, target?: HTMLElement): Promise<void> {
                 altKey: pressedModifiers.has('Alt'),
                 metaKey: pressedModifiers.has('Meta'),
                 bubbles: true,
-                cancelable: true
-            });
+                cancelable: true,
+            })
 
-            targetElement.dispatchEvent(keydownEvent);
+            targetElement.dispatchEvent(keydownEvent)
         }
 
         // Press the main key
-        const convertedMainKey = convertKey(mainKey);
+        const convertedMainKey = convertKey(mainKey)
 
         // Dispatch complete key sequence (keydown, keypress, keyup)
         const keydownEvent = new KeyboardEvent('keydown', {
@@ -329,8 +363,8 @@ async function sendKeys(keys: string, target?: HTMLElement): Promise<void> {
             altKey: pressedModifiers.has('Alt'),
             metaKey: pressedModifiers.has('Meta'),
             bubbles: true,
-            cancelable: true
-        });
+            cancelable: true,
+        })
 
         const keypressEvent = new KeyboardEvent('keypress', {
             key: convertedMainKey,
@@ -340,8 +374,8 @@ async function sendKeys(keys: string, target?: HTMLElement): Promise<void> {
             altKey: pressedModifiers.has('Alt'),
             metaKey: pressedModifiers.has('Meta'),
             bubbles: true,
-            cancelable: true
-        });
+            cancelable: true,
+        })
 
         const keyupEvent = new KeyboardEvent('keyup', {
             key: convertedMainKey,
@@ -351,44 +385,167 @@ async function sendKeys(keys: string, target?: HTMLElement): Promise<void> {
             altKey: pressedModifiers.has('Alt'),
             metaKey: pressedModifiers.has('Meta'),
             bubbles: true,
-            cancelable: true
-        });
+            cancelable: true,
+        })
 
         // Dispatch events in sequence
-        targetElement.dispatchEvent(keydownEvent);
+        targetElement.dispatchEvent(keydownEvent)
         if (isTypableKey(convertedMainKey)) {
-            targetElement.dispatchEvent(keypressEvent);
+            targetElement.dispatchEvent(keypressEvent)
         }
-        targetElement.dispatchEvent(keyupEvent);
+        targetElement.dispatchEvent(keyupEvent)
 
         // Wait for page stability if needed
-        await waitForPageAndFramesLoad(0.5);
+        await waitForPageAndFramesLoad(0.5)
 
-        console.info('sendKeys complete', keys);
+        console.info('sendKeys complete', keys)
     } catch (error) {
-        console.error('Failed to send keys:', error);
-        throw new Error(`Failed to send keys: ${error instanceof Error ? error.message : String(error)}`);
+        console.error('Failed to send keys:', error)
+        throw new Error(
+            `Failed to send keys: ${
+                error instanceof Error ? error.message : String(error)
+            }`
+        )
     } finally {
         // Release all modifier keys in reverse order
         for (const modifier of [...modifiers].reverse()) {
             try {
-                const convertedKey = convertKey(modifier);
+                const convertedKey = convertKey(modifier)
                 const keyupEvent = new KeyboardEvent('keyup', {
                     key: convertedKey,
                     code: getKeyCode(convertedKey),
                     bubbles: true,
-                    cancelable: true
-                });
-                targetElement.dispatchEvent(keyupEvent);
-                pressedModifiers.delete(convertedKey);
+                    cancelable: true,
+                })
+                targetElement.dispatchEvent(keyupEvent)
+                pressedModifiers.delete(convertedKey)
             } catch (releaseError) {
-                console.error('Failed to release modifier:', modifier, releaseError);
+                console.error(
+                    'Failed to release modifier:',
+                    modifier,
+                    releaseError
+                )
             }
         }
     }
 }
 
+// Scroll to text function
+const scrollToText = async (text: string) => {
+    try {
+        // Create XPath to find text
+        const xpath = `//text()[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '${text.toLowerCase()}')]/parent::*`
+        const result = document.evaluate(
+            xpath,
+            document,
+            null,
+            XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+            null
+        )
 
+        for (let i = 0; i < result.snapshotLength; i++) {
+            const element = result.snapshotItem(i)
+            if (element) {
+                // Check if element is visible
+                const style = window.getComputedStyle(element)
+                const isVisible =
+                    style.display !== 'none' &&
+                    style.visibility !== 'hidden' &&
+                    style.opacity !== '0'
+
+                if (isVisible) {
+                    element.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    })
+                    await new Promise((resolve) => setTimeout(resolve, 500))
+                    return true
+                }
+            }
+        }
+        return false
+    } catch (error) {
+        throw new Error(error instanceof Error ? error.message : String(error))
+    }
+}
+
+// Get dropdown options function
+const getDropdownOptions = async (selector) => {
+    try {
+        const element = document.querySelector(selector)
+
+        if (!element) {
+            throw new Error('Element not found')
+        }
+
+        if (!(element instanceof HTMLSelectElement)) {
+            throw new Error('Element is not a select element')
+        }
+
+        const options = Array.from(element.options).map((option) => ({
+            index: option.index,
+            text: option.text,
+            value: option.value,
+        }))
+
+        if (!options.length) {
+            throw new Error('No options found in dropdown')
+        }
+
+        return options
+    } catch (error) {
+        throw new Error(
+            `Failed to get dropdown options: ${
+                error instanceof Error ? error.message : String(error)
+            }`
+        )
+    }
+}
+
+// Select dropdown option function
+const selectDropdownOption = async (selector, text) => {
+    try {
+        const element = document.querySelector(selector)
+
+        if (!element) {
+            throw new Error('Dropdown element not found')
+        }
+
+        if (!(element instanceof HTMLSelectElement)) {
+            throw new Error(`Element is not a SELECT`)
+        }
+
+        const options = Array.from(element.options)
+        const option = options.find((opt) => opt.text.trim() === text)
+
+        if (!option) {
+            const availableOptions = options
+                .map((o) => o.text.trim())
+                .join('", "')
+            throw new Error(
+                `Option "${text}" not found. Available options: "${availableOptions}"`
+            )
+        }
+
+        // Set the value and dispatch events
+        const previousValue = element.value
+        element.value = option.value
+
+        // Only dispatch events if the value actually changed
+        if (previousValue !== option.value) {
+            element.dispatchEvent(new Event('change', { bubbles: true }))
+            element.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+
+        return `Selected option "${text}" with value "${option.value}"`
+    } catch (error) {
+        const errorMessage = `${
+            error instanceof Error ? error.message : String(error)
+        }`
+        console.error(errorMessage)
+        throw new Error(errorMessage)
+    }
+}
 
 // ✅ Main automation object (optional - if you want to group functions)
 export const browser = {
@@ -416,5 +573,5 @@ export const browser = {
     handleElementClick,
     waitForPageLoad,
     scrollIntoView,
-    waitForElementStability
-};
+    waitForElementStability,
+}
