@@ -1,5 +1,8 @@
-import { buildDomTree } from "./buildDomTree";
 // types/automation.ts - Type definitions
+import { buildDomTree } from "./buildDomTree";
+import { BuildDomTreeResult, DOMElementNode, DOMState } from "./DomElement";
+import { constructDomTree, convertKey, getKeyCode } from "./domUtils";
+
 export interface ClickableElement {
     element: HTMLElement;
     tagName: string;
@@ -60,96 +63,6 @@ export const reload = async (): Promise<void> => {
     return waitForPageLoad();
 };
 
-// ✅ Element location function
-export const locateElement = async (selector: string): Promise<HTMLElement | null> => {
-    // Try CSS selector first
-    let element = document.querySelector(selector) as HTMLElement | null;
-
-    if (!element && selector.startsWith('//')) {
-        // Try XPath if it starts with //
-        const result = document.evaluate(
-            selector,
-            document,
-            null,
-            XPathResult.FIRST_ORDERED_NODE_TYPE,
-            null
-        );
-        element = result.singleNodeValue as HTMLElement | null;
-    }
-
-    if (!element) {
-        // Try text content search
-        const walker = document.createTreeWalker(
-            document.body,
-            NodeFilter.SHOW_TEXT,
-            null
-        );
-
-        let node: Node | null;
-        while (node = walker.nextNode()) {
-            if (node.textContent?.includes(selector)) {
-                element = node.parentElement;
-                break;
-            }
-        }
-    }
-
-    return element;
-};
-
-// ✅ Utility functions
-export const isElementVisible = (element: HTMLElement): boolean => {
-    const rect = element.getBoundingClientRect();
-    const style = window.getComputedStyle(element);
-
-    return (
-        rect.width > 0 &&
-        rect.height > 0 &&
-        style.visibility !== 'hidden' &&
-        style.display !== 'none' &&
-        style.opacity !== '0'
-    );
-};
-
-export const generateSelector = (element: HTMLElement): string => {
-    if (element.id) {
-        return `#${element.id}`;
-    }
-
-    if (element.className) {
-        const classes = element.className.split(' ').filter((c: string) => c.trim());
-        if (classes.length > 0) {
-            return `.${classes.join('.')}`;
-        }
-    }
-
-    const path: string[] = [];
-    let current: HTMLElement | null = element;
-
-    while (current && current !== document.body) {
-        let selector = current.tagName.toLowerCase();
-
-        if (current.id) {
-            selector += `#${current.id}`;
-            path.unshift(selector);
-            break;
-        }
-
-        const siblings = Array.from(current.parentNode?.children || []);
-        const sameTagSiblings = siblings.filter((s: Element) => s.tagName === current!.tagName);
-
-        if (sameTagSiblings.length > 1) {
-            const index = sameTagSiblings.indexOf(current) + 1;
-            selector += `:nth-of-type(${index})`;
-        }
-
-        path.unshift(selector);
-        current = current.parentElement;
-    }
-
-    return path.join(' > ');
-};
-
 export const waitForPageLoad = (timeout: number = 5000): Promise<void> => {
     return new Promise<void>((resolve) => {
         if (document.readyState === 'complete') {
@@ -198,6 +111,17 @@ export const scrollIntoView = async (element: HTMLElement, timeout: number = 100
         await new Promise<void>((resolve) => setTimeout(resolve, 100));
     }
 };
+
+export function getScrollInfo(): [number, number] {
+    const scroll_y = window.scrollY;
+    const viewport_height = window.innerHeight;
+    const total_height = document.documentElement.scrollHeight;
+
+    const pixels_above = scroll_y;
+    const pixels_below = total_height - (scroll_y + viewport_height);
+
+    return [pixels_above, pixels_below];
+}
 
 export const waitForElementStability = async (element: HTMLElement, timeout: number = 1000): Promise<void> => {
     const startTime = Date.now();
@@ -279,43 +203,6 @@ export const inputText = async (selector: string, text: string): Promise<void> =
     }
 };
 
-export const getClickableElements = (): ClickableElement[] => {
-    const clickableSelectors: string[] = [
-        'a[href]',
-        'button',
-        'input[type="button"]',
-        'input[type="submit"]',
-        'input[type="reset"]',
-        '[onclick]',
-        '[role="button"]',
-        'select',
-        'input[type="checkbox"]',
-        'input[type="radio"]',
-        '[tabindex]:not([tabindex="-1"])'
-    ];
-
-    const elements: ClickableElement[] = [];
-    clickableSelectors.forEach((selector: string) => {
-        const found = document.querySelectorAll(selector);
-        found.forEach((el: Element) => {
-            const htmlElement = el as HTMLElement;
-            if (isElementVisible(htmlElement)) {
-                const generatedSelector = generateSelector(htmlElement);
-                elements.push({
-                    element: htmlElement,
-                    tagName: htmlElement.tagName.toLowerCase(),
-                    text: htmlElement.textContent?.trim() || '',
-                    selector: generatedSelector,
-                    rect: htmlElement.getBoundingClientRect(),
-                    click: () => clickElement(generatedSelector)
-                });
-            }
-        });
-    });
-
-    return elements.filter((el: ClickableElement) => el.rect.width > 0 && el.rect.height > 0);
-};
-
 // ✅ Scrolling functions
 export const scrollDown = (amount: number = window.innerHeight): Promise<void> => {
     window.scrollBy(0, amount);
@@ -353,8 +240,158 @@ export const createEventListener = (eventType: string, handler: (event: Event) =
     };
 };
 
+export const removeHighlights = async (): Promise<void> {
+    document.getElementById('playwright-highlight-container')?.remove();
+}
+
+export const getClickableElements = async (showHighlightElements: boolean, focusElement: number): Promise<DOMState | null> => {
+    if (getCurrentUrl() === 'about:blank') {
+        const elementTree = new DOMElementNode({
+            tagName: 'body',
+            xpath: '',
+            attributes: {},
+            children: [],
+            isVisible: false,
+            isInteractive: false,
+            isTopElement: false,
+            isInViewport: false,
+            parent: null,
+        });
+
+        // Fixed: Return DOMState object instead of array
+        return {
+            elementTree,
+            selectorMap: new Map<number, DOMElementNode>()
+        };
+    }
+
+    const result = buildDomTree({
+        showHighlightElements,
+        focusHighlightIndex: focusElement,
+    });
+
+    // Fixed: 'results' should be 'result' (typo fix)
+    const evalPage = result as BuildDomTreeResult;
+    if (!evalPage || !evalPage.map || !evalPage.rootId) {
+        throw new Error('Failed to build DOM tree: No result returned or invalid structure');
+    }
+
+    return constructDomTree(evalPage);
+}
+
+/**
+ * Send keyboard keys to the active element or document
+ * @param keys - Key combination string (e.g., "Control+A", "Shift+ArrowLeft", "Enter")
+ * @param target - Target element (defaults to active element or document.body)
+ */
+async function sendKeys(keys: string, target?: HTMLElement): Promise<void> {
+    // Split combination keys (e.g., "Control+A" or "Shift+ArrowLeft")
+    const keyParts = keys.split('+');
+    const modifiers = keyParts.slice(0, -1);
+    const mainKey = keyParts[keyParts.length - 1];
+
+    // Get target element
+    const targetElement = target || (document.activeElement as HTMLElement) || document.body;
+
+    // Track which modifiers are pressed
+    const pressedModifiers = new Set<string>();
+
+    try {
+        // Press all modifier keys (e.g., Control, Shift, etc.)
+        for (const modifier of modifiers) {
+            const convertedKey = convertKey(modifier);
+            pressedModifiers.add(convertedKey);
+
+            // Dispatch keydown event for modifier
+            const keydownEvent = new KeyboardEvent('keydown', {
+                key: convertedKey,
+                code: getKeyCode(convertedKey),
+                ctrlKey: pressedModifiers.has('Control'),
+                shiftKey: pressedModifiers.has('Shift'),
+                altKey: pressedModifiers.has('Alt'),
+                metaKey: pressedModifiers.has('Meta'),
+                bubbles: true,
+                cancelable: true
+            });
+
+            targetElement.dispatchEvent(keydownEvent);
+        }
+
+        // Press the main key
+        const convertedMainKey = convertKey(mainKey);
+
+        // Dispatch complete key sequence (keydown, keypress, keyup)
+        const keydownEvent = new KeyboardEvent('keydown', {
+            key: convertedMainKey,
+            code: getKeyCode(convertedMainKey),
+            ctrlKey: pressedModifiers.has('Control'),
+            shiftKey: pressedModifiers.has('Shift'),
+            altKey: pressedModifiers.has('Alt'),
+            metaKey: pressedModifiers.has('Meta'),
+            bubbles: true,
+            cancelable: true
+        });
+
+        const keypressEvent = new KeyboardEvent('keypress', {
+            key: convertedMainKey,
+            code: getKeyCode(convertedMainKey),
+            ctrlKey: pressedModifiers.has('Control'),
+            shiftKey: pressedModifiers.has('Shift'),
+            altKey: pressedModifiers.has('Alt'),
+            metaKey: pressedModifiers.has('Meta'),
+            bubbles: true,
+            cancelable: true
+        });
+
+        const keyupEvent = new KeyboardEvent('keyup', {
+            key: convertedMainKey,
+            code: getKeyCode(convertedMainKey),
+            ctrlKey: pressedModifiers.has('Control'),
+            shiftKey: pressedModifiers.has('Shift'),
+            altKey: pressedModifiers.has('Alt'),
+            metaKey: pressedModifiers.has('Meta'),
+            bubbles: true,
+            cancelable: true
+        });
+
+        // Dispatch events in sequence
+        targetElement.dispatchEvent(keydownEvent);
+        if (isTypableKey(convertedMainKey)) {
+            targetElement.dispatchEvent(keypressEvent);
+        }
+        targetElement.dispatchEvent(keyupEvent);
+
+        // Wait for page stability if needed
+        await waitForPageAndFramesLoad(0.5);
+
+        console.info('sendKeys complete', keys);
+    } catch (error) {
+        console.error('Failed to send keys:', error);
+        throw new Error(`Failed to send keys: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+        // Release all modifier keys in reverse order
+        for (const modifier of [...modifiers].reverse()) {
+            try {
+                const convertedKey = convertKey(modifier);
+                const keyupEvent = new KeyboardEvent('keyup', {
+                    key: convertedKey,
+                    code: getKeyCode(convertedKey),
+                    bubbles: true,
+                    cancelable: true
+                });
+                targetElement.dispatchEvent(keyupEvent);
+                pressedModifiers.delete(convertedKey);
+            } catch (releaseError) {
+                console.error('Failed to release modifier:', modifier, releaseError);
+            }
+        }
+    }
+}
+
+
+
 // ✅ Main automation object (optional - if you want to group functions)
-export const automation = {
+export const browser = {
     // Navigation
     navigateTo,
     goBack,
@@ -365,10 +402,6 @@ export const automation = {
     clickElement,
     inputText,
 
-    // Analysis
-    getClickableElements,
-    locateElement,
-
     // Scrolling
     scrollDown,
     scrollUp,
@@ -376,8 +409,7 @@ export const automation = {
     // Utilities
     getCurrentUrl,
     getTitle,
-    isElementVisible,
-    generateSelector,
+    sendKeys,
 
     // Helpers
     createActionButton,

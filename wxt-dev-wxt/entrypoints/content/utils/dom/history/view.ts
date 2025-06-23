@@ -7,7 +7,7 @@ export class HashedDomElement {
     public attributesHash: string,
     public xpathHash: string,
     // textHash: string
-  ) { }
+  ) {}
 }
 
 export interface Coordinates {
@@ -44,7 +44,7 @@ export class DOMHistoryElement {
     public pageCoordinates: CoordinateSet | null = null,
     public viewportCoordinates: CoordinateSet | null = null,
     public viewportInfo: ViewportInfo | null = null,
-  ) { }
+  ) {}
 
   toDict(): Record<string, any> {
     return {

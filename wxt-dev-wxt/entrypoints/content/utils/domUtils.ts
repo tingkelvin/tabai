@@ -1,205 +1,18 @@
-import type { BuildDomTreeArgs, RawDomTreeNode, BuildDomTreeResult } from './raw_types';
-import { type DOMState, type DOMBaseNode, DOMElementNode, DOMTextNode } from './views';
-import type { ViewportInfo } from './dom/history/view';
-
-
-export interface ReadabilityResult {
-    title: string;
-    content: string;
-    textContent: string;
-    length: number;
-    excerpt: string;
-    byline: string;
-    dir: string;
-    siteName: string;
-    lang: string;
-    publishedTime: string;
-}
-
-declare global {
-    interface Window {
-        buildDomTree: (args: BuildDomTreeArgs) => RawDomTreeNode | null;
-        turn2Markdown: (selector?: string) => string;
-        parserReadability: () => ReadabilityResult | null;
-    }
-}
+import { BuildDomTreeResult, DOMBaseNode, DOMElementNode, DOMState, DOMTextNode, RawDomTreeNode, ViewportInfo } from "./DomElement";
 
 /**
- * Get the markdown content for the current page.
- * @param tabId - The ID of the tab to get the markdown content for.
- * @param selector - The selector to get the markdown content for. If not provided, the body of the entire page will be converted to markdown.
- * @returns The markdown content for the selected element on the current page.
+ * Get the scroll information for the current page.
+ * @returns A tuple containing the number of pixels above and below the current scroll position.
  */
-export async function getMarkdownContent(tabId: number, selector?: string): Promise<string> {
-    const results = await chrome.scripting.executeScript({
-        target: { tabId: tabId },
-        func: sel => {
-            return window.turn2Markdown(sel);
-        },
-        args: [selector || ''], // Pass the selector as an argument
-    });
+export function getScrollInfo(): [number, number] {
+    const scroll_y = window.scrollY;
+    const viewport_height = window.innerHeight;
+    const total_height = document.documentElement.scrollHeight;
 
-    const result = results[0]?.result;
-    if (!result) {
-        throw new Error('Failed to get markdown content');
-    }
-    return result as string;
-}
+    const pixels_above = scroll_y;
+    const pixels_below = total_height - (scroll_y + viewport_height);
 
-/**
- * Get the readability content for the current page.
- * @param tabId - The ID of the tab to get the readability content for.
- * @returns The readability content for the current page.
- */
-export async function getReadabilityContent(tabId: number): Promise<ReadabilityResult> {
-    const results = await chrome.scripting.executeScript({
-        target: { tabId },
-        func: () => {
-            return window.parserReadability();
-        },
-    });
-    const result = results[0]?.result;
-    if (!result) {
-        throw new Error('Failed to get readability content');
-    }
-    return result as ReadabilityResult;
-}
-
-/**
- * Get the clickable elements for the current page.
- * @param tabId - The ID of the tab to get the clickable elements for.
- * @param url - The URL of the page.
- * @param showHighlightElements - Whether to show the highlight elements.
- * @param focusElement - The element to focus on.
- * @param viewportExpansion - The viewport expansion to use.
- * @returns A DOMState object containing the clickable elements for the current page.
- */
-export async function getClickableElements(
-    tabId: number,
-    url: string,
-    showHighlightElements = true,
-    focusElement = -1,
-    viewportExpansion = 0,
-    debugMode = false,
-): Promise<DOMState> {
-    const [elementTree, selectorMap] = await _buildDomTree(
-        tabId,
-        url,
-        showHighlightElements,
-        focusElement,
-        viewportExpansion,
-        debugMode,
-    );
-    return { elementTree, selectorMap };
-}
-
-async function _buildDomTree(
-    tabId: number,
-    url: string,
-    showHighlightElements = true,
-    focusElement = -1,
-    viewportExpansion = 0,
-    debugMode = false,
-): Promise<[DOMElementNode, Map<number, DOMElementNode>]> {
-    // If URL is provided and it's about:blank, return a minimal DOM tree
-    if (url === 'about:blank') {
-        const elementTree = new DOMElementNode({
-            tagName: 'body',
-            xpath: '',
-            attributes: {},
-            children: [],
-            isVisible: false,
-            isInteractive: false,
-            isTopElement: false,
-            isInViewport: false,
-            parent: null,
-        });
-        return [elementTree, new Map<number, DOMElementNode>()];
-    }
-
-    const results = await chrome.scripting.executeScript({
-        target: { tabId },
-        func: args => {
-            // Access buildDomTree from the window context of the target page
-            return window.buildDomTree(args);
-        },
-        args: [
-            {
-                showHighlightElements,
-                focusHighlightIndex: focusElement,
-                viewportExpansion,
-                debugMode,
-            },
-        ],
-    });
-
-    // First cast to unknown, then to BuildDomTreeResult
-    const evalPage = results[0]?.result as unknown as BuildDomTreeResult;
-    if (!evalPage || !evalPage.map || !evalPage.rootId) {
-        throw new Error('Failed to build DOM tree: No result returned or invalid structure');
-    }
-
-    // Log performance metrics in debug mode
-    if (debugMode && evalPage.perfMetrics) {
-        logger.debug('DOM Tree Building Performance Metrics:', evalPage.perfMetrics);
-    }
-
-    return _constructDomTree(evalPage);
-}
-
-/**
- * Constructs a DOM tree from the evaluated page data.
- * @param evalPage - The result of building the DOM tree.
- * @returns A tuple containing the DOM element tree and selector map.
- */
-function _constructDomTree(evalPage: BuildDomTreeResult): [DOMElementNode, Map<number, DOMElementNode>] {
-    const jsNodeMap = evalPage.map;
-    const jsRootId = evalPage.rootId;
-
-    const selectorMap = new Map<number, DOMElementNode>();
-    const nodeMap: Record<string, DOMBaseNode> = {};
-
-    // First pass: create all nodes
-    for (const [id, nodeData] of Object.entries(jsNodeMap)) {
-        const [node] = _parse_node(nodeData);
-        if (node === null) {
-            continue;
-        }
-
-        nodeMap[id] = node;
-
-        // Add to selector map if it has a highlight index
-        if (node instanceof DOMElementNode && node.highlightIndex !== undefined && node.highlightIndex !== null) {
-            selectorMap.set(node.highlightIndex, node);
-        }
-    }
-
-    // Second pass: build the tree structure
-    for (const [id, node] of Object.entries(nodeMap)) {
-        if (node instanceof DOMElementNode) {
-            const nodeData = jsNodeMap[id];
-            const childrenIds = 'children' in nodeData ? nodeData.children : [];
-
-            for (const childId of childrenIds) {
-                if (!(childId in nodeMap)) {
-                    continue;
-                }
-
-                const childNode = nodeMap[childId];
-
-                childNode.parent = node;
-                node.children.push(childNode);
-            }
-        }
-    }
-
-    const htmlToDict = nodeMap[jsRootId];
-
-    if (htmlToDict === undefined || !(htmlToDict instanceof DOMElementNode)) {
-        throw new Error('Failed to parse HTML to dictionary');
-    }
-
-    return [htmlToDict, selectorMap];
+    return [pixels_above, pixels_below];
 }
 
 /**
@@ -254,51 +67,249 @@ export function _parse_node(nodeData: RawDomTreeNode): [DOMBaseNode | null, stri
     return [elementNode, childrenIds];
 }
 
-export async function removeHighlights(tabId: number): Promise<void> {
-    try {
-        await chrome.scripting.executeScript({
-            target: { tabId },
-            func: () => {
-                // Remove the highlight container and all its contents
-                const container = document.getElementById('playwright-highlight-container');
-                if (container) {
-                    container.remove();
+/**
+ * Constructs a DOM tree from the evaluated page data.
+ * @param evalPage - The result of building the DOM tree.
+ * @returns A tuple containing the DOM element tree and selector map.
+ */
+/**
+ * Constructs a DOM tree from the evaluated page data.
+ * @param evalPage - The result of building the DOM tree.
+ * @returns A DOMState object containing the DOM element tree and selector map.
+ */
+export function constructDomTree(evalPage: BuildDomTreeResult): DOMState {
+    const jsNodeMap = evalPage.map;
+    const jsRootId = evalPage.rootId;
+
+    const selectorMap = new Map<number, DOMElementNode>();
+    const nodeMap: Record<string, DOMBaseNode> = {};
+
+    // First pass: create all nodes
+    for (const [id, nodeData] of Object.entries(jsNodeMap)) {
+        const [node] = _parse_node(nodeData);
+        if (node === null) {
+            continue;
+        }
+
+        nodeMap[id] = node;
+
+        // Add to selector map if it has a highlight index
+        if (node instanceof DOMElementNode && node.highlightIndex !== undefined && node.highlightIndex !== null) {
+            selectorMap.set(node.highlightIndex, node);
+        }
+    }
+
+    // Second pass: build the tree structure
+    for (const [id, node] of Object.entries(nodeMap)) {
+        if (node instanceof DOMElementNode) {
+            const nodeData = jsNodeMap[id];
+            const childrenIds = 'children' in nodeData ? nodeData.children : [];
+
+            for (const childId of childrenIds) {
+                if (!(childId in nodeMap)) {
+                    continue;
                 }
 
-                // Remove highlight attributes from elements
-                const highlightedElements = document.querySelectorAll('[browser-user-highlight-id^="playwright-highlight-"]');
-                for (const el of Array.from(highlightedElements)) {
-                    el.removeAttribute('browser-user-highlight-id');
-                }
-            },
-        });
-    } catch (error) {
-        logger.error('Failed to remove highlights:', error);
+                const childNode = nodeMap[childId];
+
+                childNode.parent = node;
+                node.children.push(childNode);
+            }
+        }
     }
+
+    const elementTree = nodeMap[jsRootId];
+
+    if (elementTree === undefined || !(elementTree instanceof DOMElementNode)) {
+        throw new Error('Failed to parse HTML to dictionary');
+    }
+
+    return { elementTree, selectorMap };
 }
+
+// ✅ Element location function
+export const locateElement = async (selector: string): Promise<HTMLElement | null> => {
+    // Try CSS selector first
+    let element = document.querySelector(selector) as HTMLElement | null;
+
+    if (!element && selector.startsWith('//')) {
+        // Try XPath if it starts with //
+        const result = document.evaluate(
+            selector,
+            document,
+            null,
+            XPathResult.FIRST_ORDERED_NODE_TYPE,
+            null
+        );
+        element = result.singleNodeValue as HTMLElement | null;
+    }
+
+    if (!element) {
+        // Try text content search
+        const walker = document.createTreeWalker(
+            document.body,
+            NodeFilter.SHOW_TEXT,
+            null
+        );
+
+        let node: Node | null;
+        while (node = walker.nextNode()) {
+            if (node.textContent?.includes(selector)) {
+                element = node.parentElement;
+                break;
+            }
+        }
+    }
+
+    return element;
+};
+
+// ✅ Utility functions
+export const isElementVisible = (element: HTMLElement): boolean => {
+    const rect = element.getBoundingClientRect();
+    const style = window.getComputedStyle(element);
+
+    return (
+        rect.width > 0 &&
+        rect.height > 0 &&
+        style.visibility !== 'hidden' &&
+        style.display !== 'none' &&
+        style.opacity !== '0'
+    );
+};
+
+export const generateSelector = (element: HTMLElement): string => {
+    if (element.id) {
+        return `#${element.id}`;
+    }
+
+    if (element.className) {
+        const classes = element.className.split(' ').filter((c: string) => c.trim());
+        if (classes.length > 0) {
+            return `.${classes.join('.')}`;
+        }
+    }
+
+    const path: string[] = [];
+    let current: HTMLElement | null = element;
+
+    while (current && current !== document.body) {
+        let selector = current.tagName.toLowerCase();
+
+        if (current.id) {
+            selector += `#${current.id}`;
+            path.unshift(selector);
+            break;
+        }
+
+        const siblings = Array.from(current.parentNode?.children || []);
+        const sameTagSiblings = siblings.filter((s: Element) => s.tagName === current!.tagName);
+
+        if (sameTagSiblings.length > 1) {
+            const index = sameTagSiblings.indexOf(current) + 1;
+            selector += `:nth-of-type(${index})`;
+        }
+
+        path.unshift(selector);
+        current = current.parentElement;
+    }
+
+    return path.join(' > ');
+};
+
 
 /**
- * Get the scroll information for the current page.
- * @param tabId - The ID of the tab to get the scroll information for.
- * @returns A tuple containing the number of pixels above and below the current scroll position.
+ * Convert key string to browser-compatible key name
  */
-export async function getScrollInfo(tabId: number): Promise<[number, number]> {
-    const results = await chrome.scripting.executeScript({
-        target: { tabId: tabId },
-        func: () => {
-            const scroll_y = window.scrollY;
-            const viewport_height = window.innerHeight;
-            const total_height = document.documentElement.scrollHeight;
-            return {
-                pixels_above: scroll_y,
-                pixels_below: total_height - (scroll_y + viewport_height),
-            };
-        },
-    });
+export function convertKey(key: string): string {
+    const lowerKey = key.trim().toLowerCase();
+    const isMac = navigator.userAgent.toLowerCase().includes('mac os x');
 
-    const result = results[0]?.result;
-    if (!result) {
-        throw new Error('Failed to get scroll information');
+    if (isMac) {
+        if (lowerKey === 'control' || lowerKey === 'ctrl') {
+            return 'Meta'; // Use Command key on Mac
+        }
+        if (lowerKey === 'command' || lowerKey === 'cmd') {
+            return 'Meta'; // Map Command/Cmd to Meta on Mac
+        }
+        if (lowerKey === 'option' || lowerKey === 'opt') {
+            return 'Alt'; // Map Option/Opt to Alt on Mac
+        }
     }
-    return [result.pixels_above, result.pixels_below];
+
+    const keyMap: { [key: string]: string } = {
+        // Letters (keep as-is for KeyboardEvent)
+        a: 'a', b: 'b', c: 'c', d: 'd', e: 'e', f: 'f', g: 'g', h: 'h',
+        i: 'i', j: 'j', k: 'k', l: 'l', m: 'm', n: 'n', o: 'o', p: 'p',
+        q: 'q', r: 'r', s: 's', t: 't', u: 'u', v: 'v', w: 'w', x: 'x',
+        y: 'y', z: 'z',
+
+        // Numbers
+        '0': '0', '1': '1', '2': '2', '3': '3', '4': '4',
+        '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
+
+        // Special keys
+        control: 'Control',
+        ctrl: 'Control',
+        shift: 'Shift',
+        alt: 'Alt',
+        meta: 'Meta',
+        enter: 'Enter',
+        backspace: 'Backspace',
+        delete: 'Delete',
+        arrowleft: 'ArrowLeft',
+        arrowright: 'ArrowRight',
+        arrowup: 'ArrowUp',
+        arrowdown: 'ArrowDown',
+        escape: 'Escape',
+        tab: 'Tab',
+        space: ' ',
+    };
+
+    const convertedKey = keyMap[lowerKey] || key;
+    console.info('convertedKey', convertedKey);
+    return convertedKey;
 }
+
+export function getKeyCode(key: string): string {
+    const codeMap: { [key: string]: string } = {
+        // Letters
+        a: 'KeyA', b: 'KeyB', c: 'KeyC', d: 'KeyD', e: 'KeyE', f: 'KeyF',
+        g: 'KeyG', h: 'KeyH', i: 'KeyI', j: 'KeyJ', k: 'KeyK', l: 'KeyL',
+        m: 'KeyM', n: 'KeyN', o: 'KeyO', p: 'KeyP', q: 'KeyQ', r: 'KeyR',
+        s: 'KeyS', t: 'KeyT', u: 'KeyU', v: 'KeyV', w: 'KeyW', x: 'KeyX',
+        y: 'KeyY', z: 'KeyZ',
+
+        // Numbers
+        '0': 'Digit0', '1': 'Digit1', '2': 'Digit2', '3': 'Digit3', '4': 'Digit4',
+        '5': 'Digit5', '6': 'Digit6', '7': 'Digit7', '8': 'Digit8', '9': 'Digit9',
+
+        // Special keys
+        Control: 'ControlLeft',
+        Shift: 'ShiftLeft',
+        Alt: 'AltLeft',
+        Meta: 'MetaLeft',
+        Enter: 'Enter',
+        Backspace: 'Backspace',
+        Delete: 'Delete',
+        ArrowLeft: 'ArrowLeft',
+        ArrowRight: 'ArrowRight',
+        ArrowUp: 'ArrowUp',
+        ArrowDown: 'ArrowDown',
+        Escape: 'Escape',
+        Tab: 'Tab',
+        ' ': 'Space',
+    };
+
+    return codeMap[key] || key;
+}
+
+/*
+ * Check if a key should trigger keypress event
+ */
+export function isTypableKey(key: string): boolean {
+    const nonTypable = ['Control', 'Shift', 'Alt', 'Meta', 'ArrowLeft', 'ArrowRight',
+        'ArrowUp', 'ArrowDown', 'Escape', 'Tab', 'Backspace', 'Delete'];
+    return !nonTypable.includes(key);
+}
+
