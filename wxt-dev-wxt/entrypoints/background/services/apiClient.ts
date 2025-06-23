@@ -2,7 +2,7 @@ import { ApiResponse, ChatOptions, ChatRequest, ChatResponse, ChatWithSearchRequ
 import { ErrorHandler } from "../utils/errorUtils";
 
 // services/apiClient.ts
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = "https://tubetor-backend-234898757030.us-central1.run.app";
 
 const createHeaders = (appToken: string, includeContentType: boolean = true): Record<string, string> => {
   const headers: Record<string, string> = {

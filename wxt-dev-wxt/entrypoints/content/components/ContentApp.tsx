@@ -11,8 +11,8 @@ import type { ActionButton, ContentAppProps } from '../types/components'
 import { WIDGET_CONFIG, RESIZE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
-import { useDOMTreeWalker } from '../hooks/useDomTreewalker'
-import { HighlightOptions, useClickableHighlighter } from '../hooks/useClickableHighligter'
+import { buildDomTree } from '../utils/buildDomTree'
+
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   // Chat
@@ -47,30 +47,26 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     onSizeChange: setWidgetSize,
   })
 
-  const { clickablePaths, isScanning, scanDOM } = useDOMTreeWalker()
-  const { highlightClickables, clearHighlights, highlightTemporarily } = useClickableHighlighter()
 
-  const scanAndHighlight = (options?: HighlightOptions) => {
-    const elements = scanDOM()
-    setTimeout(() => {
-      highlightClickables(elements, options)
-    }, 500)
-    return elements
+  const scanAndHighlight = () => {
+    const result = buildDomTree({
+      showHighlightElements: true,
+      debugMode: true
+    })
   }
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      console.log("update")
-      scanAndHighlight()
-    }, 500) // 1 second delay
 
-    return () => clearTimeout(timer)
-  }, [])
+
+  const handleClearHighlights = () => {
+    // Remove highlight container
+    const container = document.getElementById('playwright-highlight-container')
+    if (container) container.remove()
+  }
 
   const [isHighlighting, setIsHighlighting] = useState(false)
 
   const toggleHighlight = () => {
     if (isHighlighting) {
-      clearHighlights()
+      handleClearHighlights()
       setIsHighlighting(false)
     } else {
       scanAndHighlight()
@@ -90,7 +86,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     label: isHighlighting ? 'Clear' : 'Highlight',
     onClick: toggleHighlight,
     title: isHighlighting ? 'Clear highlights' : 'Scan and highlight clickable elements',
-    disabled: isScanning,
     className: isHighlighting ? 'active' : '',
   }
 
