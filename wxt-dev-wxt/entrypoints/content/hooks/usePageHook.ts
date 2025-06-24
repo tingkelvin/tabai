@@ -23,15 +23,7 @@ interface UsePageHookReturn {
 }
 
 export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
-    const [pageState, setPageState] = useState<PageState | null>({
-        url: '',
-        title: '',
-        screenshot: null,
-        pixelsAbove: 0,
-        pixelsBelow: 0,
-        elementTree: null as any, // Will be set by scanAndHighlight
-        selectorMap: new Map()
-    });
+    const [pageState, setPageState] = useState<PageState | null>(null);
     const [isHighlighting, setIsHighlighting] = useState(false);
     const [isScanning, setIsScanning] = useState(false);
 
@@ -58,6 +50,7 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
     const scanAndHighlight = useCallback(() => {
         setIsScanning(true);
         updatePageState()
+
     }, []);
 
     const toggleHighlight = useCallback(() => {
@@ -82,6 +75,7 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
 
             // Update page state with the scan results
             if (result && result.rootId) {
+                console.log("update")
                 setPageState({
                     url: getCurrentUrl(),
                     title: getCurrentTitle(),
@@ -92,6 +86,8 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
                     selectorMap: selectorMap     // Map of highlight indices to elements
                 });
             }
+
+
             // Track the highlight container
             const container = document.getElementById('playwright-highlight-container');
             if (container) {
@@ -104,6 +100,12 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
             setIsScanning(false);
         }
     }, []);
+
+    // Cleanup on unmount
+    useEffect(() => {
+
+        console.log(pageState)
+    }, [pageState]);
 
     // Cleanup on unmount
     useEffect(() => {

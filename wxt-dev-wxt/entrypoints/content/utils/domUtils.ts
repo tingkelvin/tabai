@@ -2,6 +2,7 @@ import { DOMBaseNode, DOMElementNode, DOMTextNode } from "../types/dom";
 import { BuildDomTreeResult, RawDomTreeNode, ViewportInfo } from "../types/dom";
 
 export function constructDomTree(evalPage: BuildDomTreeResult): [DOMElementNode, Map<number, DOMElementNode>] {
+
     const jsNodeMap = evalPage.map;
     const jsRootId = evalPage.rootId;
 
@@ -23,6 +24,8 @@ export function constructDomTree(evalPage: BuildDomTreeResult): [DOMElementNode,
         }
     }
 
+
+
     // Second pass: build the tree structure
     for (const [id, node] of Object.entries(nodeMap)) {
         if (node instanceof DOMElementNode) {
@@ -42,9 +45,13 @@ export function constructDomTree(evalPage: BuildDomTreeResult): [DOMElementNode,
         }
     }
 
+
+
     if (!jsRootId) throw new Error('Failed to parse HTML to dictionary');
 
     const htmlToDict = nodeMap[jsRootId];
+
+    console.log(selectorMap)
 
     if (htmlToDict === undefined || !(htmlToDict instanceof DOMElementNode)) {
         throw new Error('Failed to parse HTML to dictionary');

@@ -12,7 +12,7 @@ import { WIDGET_CONFIG, RESIZE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
 import { usePageHook } from '../hooks/usePageHook'
-
+import { useUrlTracker } from '../hooks/useUrlTracker'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   // Chat
@@ -49,14 +49,21 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
   // Page
   const {
+    clearHighlights,
     scanAndHighlight,
   } = usePageHook()
+
+  useEffect(() => {
+    scanAndHighlight()
+  }, [])
+
   // Page
 
   const [isHighlighting, setIsHighlighting] = useState(false)
 
   const toggleHighlight = () => {
     if (isHighlighting) {
+      clearHighlights()
       scanAndHighlight()
       setIsHighlighting(false)
     } else {
