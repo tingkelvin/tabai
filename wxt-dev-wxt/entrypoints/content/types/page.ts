@@ -48,4 +48,6 @@ export interface PageConfig {
      * @default true
      */
     displayHighlights: boolean
+
+    timeout: number
 }

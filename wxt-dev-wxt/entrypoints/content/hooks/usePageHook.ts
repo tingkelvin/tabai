@@ -3,7 +3,7 @@ import { buildDomTree } from '../utils/buildDomTree';
 import { PageState, PageConfig } from '../types/page';
 import { BuildDomTreeResult, DOMElementNode } from '../types/dom';
 import { constructDomTree } from '../utils/domUtils';
-
+import { clickElementNode, getDropdownOptions, getScrollInfo, navigateTo, scrollDown, scrollToText } from '../utils/pageUtil';
 
 interface UsePageHookReturn {
     // State
@@ -76,12 +76,13 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
             // Update page state with the scan results
             if (result && result.rootId) {
                 console.log("update")
+                const [pixelsAbove, pixelsBelow] = getScrollInfo();
                 setPageState({
                     url: getCurrentUrl(),
                     title: getCurrentTitle(),
                     screenshot: null,
-                    pixelsAbove: 0,
-                    pixelsBelow: 0,
+                    pixelsAbove: pixelsAbove,
+                    pixelsBelow: pixelsBelow,
                     elementTree: elementTree,    // Root DOM element tree
                     selectorMap: selectorMap     // Map of highlight indices to elements
                 });
@@ -102,9 +103,15 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
     }, []);
 
     // Cleanup on unmount
-    useEffect(() => {
+    const hasClicked = useRef(false);
 
-        console.log(pageState)
+    useEffect(() => {
+        if (pageState?.selectorMap?.has(0) && !hasClicked.current) {
+            console.log("clicked")
+            hasClicked.current = true;
+            const element = pageState.selectorMap.get(0)!;
+            clickElementNode(element);
+        }
     }, [pageState]);
 
     // Cleanup on unmount
