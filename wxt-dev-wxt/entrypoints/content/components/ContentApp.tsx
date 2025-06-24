@@ -11,7 +11,7 @@ import type { ActionButton, ContentAppProps } from '../types/components'
 import { WIDGET_CONFIG, RESIZE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
-import { buildDomTree } from '../utils/buildDomTree'
+import { usePageHook } from '../hooks/usePageHook'
 
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
@@ -47,26 +47,17 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     onSizeChange: setWidgetSize,
   })
 
-
-  const scanAndHighlight = () => {
-    const result = buildDomTree({
-      showHighlightElements: true,
-      debugMode: true
-    })
-  }
-
-
-  const handleClearHighlights = () => {
-    // Remove highlight container
-    const container = document.getElementById('playwright-highlight-container')
-    if (container) container.remove()
-  }
+  // Page
+  const {
+    scanAndHighlight,
+  } = usePageHook()
+  // Page
 
   const [isHighlighting, setIsHighlighting] = useState(false)
 
   const toggleHighlight = () => {
     if (isHighlighting) {
-      handleClearHighlights()
+      scanAndHighlight()
       setIsHighlighting(false)
     } else {
       scanAndHighlight()
