@@ -12,7 +12,6 @@ import { WIDGET_CONFIG, RESIZE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
 import { usePageHook } from '../hooks/usePageHook'
-import { useUrlTracker } from '../hooks/useUrlTracker'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   // Chat

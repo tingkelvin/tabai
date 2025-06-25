@@ -447,3 +447,34 @@ export async function clickElementNode(elementNode: DOMElementNode): Promise<voi
     }
 }
 
+export function isFileUploader(elementNode: DOMElementNode, maxDepth = 3, currentDepth = 0): boolean {
+    if (currentDepth > maxDepth) {
+        return false;
+    }
+
+    // Check current element
+    if (elementNode.tagName === 'input') {
+        // Check for file input attributes
+        const attributes = elementNode.attributes;
+        // biome-ignore lint/complexity/useLiteralKeys: <explanation>
+        if (attributes['type']?.toLowerCase() === 'file' || !!attributes['accept']) {
+            return true;
+        }
+    }
+
+    // Recursively check children
+    if (elementNode.children && currentDepth < maxDepth) {
+        for (const child of elementNode.children) {
+            if ('tagName' in child) {
+                // DOMElementNode type guard
+                if (isFileUploader(child as DOMElementNode, maxDepth, currentDepth + 1)) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+

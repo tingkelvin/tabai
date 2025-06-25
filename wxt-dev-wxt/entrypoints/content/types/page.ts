@@ -1,6 +1,6 @@
-import { DOMState } from "./dom"
+import { DomState } from "./dom/DomNode"
 
-export interface PageState extends DOMState {
+export interface PageState extends DomState {
     url: string
     title: string
     screenshot: string | null

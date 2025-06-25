@@ -1,13 +1,15 @@
-import { DOMBaseNode, DOMElementNode, DOMTextNode } from "../types/dom";
-import { BuildDomTreeResult, RawDomTreeNode, ViewportInfo } from "../types/dom";
+import { ViewportInfo } from "../types/dom/views";
 
-export function constructDomTree(evalPage: BuildDomTreeResult): [DOMElementNode, Map<number, DOMElementNode>] {
+import { RawDomNode, DomTreeResult, isTextNode } from '../types/dom/DomTree';
+import { TextDomNode, ElementDomNode, BaseDomNode } from "../types/dom/DomNode";
+
+export function constructDomTree(evalPage: DomTreeResult): [ElementDomNode, Map<number, ElementDomNode>] {
 
     const jsNodeMap = evalPage.map;
     const jsRootId = evalPage.rootId;
 
-    const selectorMap = new Map<number, DOMElementNode>();
-    const nodeMap: Record<string, DOMBaseNode> = {};
+    const selectorMap = new Map<number, ElementDomNode>();
+    const nodeMap: Record<string, BaseDomNode> = {};
 
     // First pass: create all nodes
     for (const [id, nodeData] of Object.entries(jsNodeMap)) {
@@ -19,16 +21,14 @@ export function constructDomTree(evalPage: BuildDomTreeResult): [DOMElementNode,
         nodeMap[id] = node;
 
         // Add to selector map if it has a highlight index
-        if (node instanceof DOMElementNode && node.highlightIndex !== undefined && node.highlightIndex !== null) {
+        if (node instanceof ElementDomNode && node.highlightIndex !== undefined && node.highlightIndex !== null) {
             selectorMap.set(node.highlightIndex, node);
         }
     }
 
-
-
     // Second pass: build the tree structure
     for (const [id, node] of Object.entries(nodeMap)) {
-        if (node instanceof DOMElementNode) {
+        if (node instanceof ElementDomNode) {
             const nodeData = jsNodeMap[id];
             const childrenIds = 'children' in nodeData ? nodeData.children : [];
 
@@ -53,27 +53,27 @@ export function constructDomTree(evalPage: BuildDomTreeResult): [DOMElementNode,
 
     console.log(selectorMap)
 
-    if (htmlToDict === undefined || !(htmlToDict instanceof DOMElementNode)) {
+    if (htmlToDict === undefined || !(htmlToDict instanceof ElementDomNode)) {
         throw new Error('Failed to parse HTML to dictionary');
     }
 
     return [htmlToDict, selectorMap];
 }
 
-export function parse_node(nodeData: RawDomTreeNode): [DOMBaseNode | null, string[]] {
+export function parse_node(nodeData: RawDomNode): [BaseDomNode | null, string[]] {
     if (!nodeData) {
         return [null, []];
     }
 
     // Process text nodes immediately
-    if ('type' in nodeData && nodeData.type === 'TEXT_NODE' && nodeData.text && nodeData.isVisible) {
-        const textNode = new DOMTextNode(nodeData.text, nodeData.isVisible, null);
+    if (isTextNode(nodeData)) {
+        const textNode = new TextDomNode(nodeData.text, nodeData.isVisible, null);
         return [textNode, []];
     }
 
     // At this point, nodeData is RawDomElementNode (not a text node)
     // TypeScript needs help to narrow the type
-    const elementData = nodeData as Exclude<RawDomTreeNode, { type: string }>;
+    const elementData = nodeData as Exclude<RawDomNode, { type: string }>;
 
     // Process viewport info if it exists
     let viewportInfo: ViewportInfo | undefined = undefined;
@@ -87,7 +87,7 @@ export function parse_node(nodeData: RawDomTreeNode): [DOMBaseNode | null, strin
         };
     }
 
-    const elementNode = new DOMElementNode({
+    const elementNode = new ElementDomNode({
         tagName: elementData.tagName,
         xpath: elementData.xpath,
         attributes: elementData.attributes ?? {},

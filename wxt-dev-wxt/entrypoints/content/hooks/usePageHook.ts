@@ -1,9 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { buildDomTree } from '../utils/buildDomTree';
 import { PageState, PageConfig } from '../types/page';
-import { BuildDomTreeResult, DOMElementNode } from '../types/dom';
 import { constructDomTree } from '../utils/domUtils';
 import { clickElementNode, getDropdownOptions, getScrollInfo, navigateTo, scrollDown, scrollToText } from '../utils/pageUtil';
+import { buildDomTree } from '../scripts/buildDomTree';
+
+import { DomTreeResult } from '../types/dom/DomTree';
+import { ElementDomNode } from '../types/dom/DomNode';
 
 interface UsePageHookReturn {
     // State
@@ -67,11 +69,12 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
         // Update page state without highlighting
         setIsScanning(true);
         try {
-            const result: BuildDomTreeResult = buildDomTree({
-                showHighlightElements: true,
-                debugMode: true
-            });
-            const [elementTree, selectorMap]: [DOMElementNode, Map<number, DOMElementNode>] = constructDomTree(result);
+            console.log(buildDomTree())
+            const result: DomTreeResult = buildDomTree();
+
+            if (!result.rootId) throw new Error('Failed to build DOM tree');
+
+            const [elementTree, selectorMap]: [ElementDomNode, Map<number, ElementDomNode>] = constructDomTree(result);
 
             // Update page state with the scan results
             if (result && result.rootId) {
@@ -102,16 +105,8 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
         }
     }, []);
 
-    // Cleanup on unmount
-    const hasClicked = useRef(false);
-
     useEffect(() => {
-        if (pageState?.selectorMap?.has(0) && !hasClicked.current) {
-            console.log("clicked")
-            hasClicked.current = true;
-            const element = pageState.selectorMap.get(0)!;
-            clickElementNode(element);
-        }
+        console.log(pageState)
     }, [pageState]);
 
     // Cleanup on unmount

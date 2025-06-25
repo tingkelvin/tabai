@@ -10,6 +10,7 @@ export default defineContentScript({
   // 2. Set cssInjectionMode
   cssInjectionMode: 'ui',
 
+
   async main(ctx) {
     const response: CheckAuthResponse = await sendMessage('checkAuth')
     const extensionStorage = storage.defineItem<boolean>(
@@ -17,7 +18,6 @@ export default defineContentScript({
     )
     const isExtensionEnabled = await extensionStorage.getValue()
     console.log('Content script loaded')
-
     let ui: any = null
 
     onMessage('toggleExtension', ({ data }) => {
