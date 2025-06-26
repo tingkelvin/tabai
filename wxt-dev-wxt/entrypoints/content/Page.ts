@@ -1,3 +1,5 @@
+//content/Page.ts
+
 import { removeHighlights, getClickableElementsFromDomTree } from './services/DomTreeService';
 
 import { ClickableElementProcessor } from './services/DomService';
@@ -82,6 +84,7 @@ export default class Page {
         }
 
         try {
+            await this._waitForPageStability();
             console.log('captureState: Starting page state capture');
 
             // Wait for page stability
@@ -386,6 +389,5 @@ export default class Page {
 
     async navigateTo(url: string): Promise<void> {
         if (url !== window.location.href) window.location.href = url;
-        await this._waitForPageStability();
     }
 }
