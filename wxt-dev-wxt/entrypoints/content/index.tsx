@@ -25,8 +25,6 @@ export default defineContentScript({
     let page: Page = new Page();
     let ui: any = null
 
-    page.captureState()
-
     onMessage('toggleExtension', ({ data }) => {
       console.log('Extension toggled:', data.enabled)
 

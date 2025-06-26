@@ -7,7 +7,7 @@ import { PageConfig, PageState, DEFAULT_PAGE_CONFIG, ViewportInfo } from './type
 /**
  * Cached clickable elements hashes for the last state
  */
-export class CachedStateClickableElementsHashes {
+export class CachedClickableElementsHashes {
     url: string;
     hashes: Set<string>;
 
@@ -25,7 +25,7 @@ export default class Page {
     private _cachedState: PageState | null = null;
     private _mutationObserver: MutationObserver | null = null;
     private _isPageStable: boolean = true;
-    private _cachedStateClickableElementsHashes: CachedStateClickableElementsHashes | null = null;
+    private _cachedClickableElementsHashes: CachedClickableElementsHashes | null = null;
 
     constructor(config: Partial<PageConfig> = {}) {
         console.log('Page constructor started with config:', config);
@@ -71,9 +71,11 @@ export default class Page {
         includeScreenshot?: boolean;
         showHighlights?: boolean;
         focusElement?: number;
+        cacheClickable?: boolean;
     } = {}): Promise<PageState> {
         console.log('captureState called with options:', options);
 
+        // To-do: should not return current state
         if (!this._isValidWebPage) {
             console.log('captureState: Invalid webpage, returning current state');
             return this._currentState;
@@ -89,7 +91,7 @@ export default class Page {
 
             // Extract DOM structure
             console.log('captureState: Extracting DOM snapshot');
-            const domSnapshot = await this._extractDOMSnapshot(
+            const domSnapshot: DomSnapshot = await this._extractDOMSnapshot(
                 options.showHighlights ?? this._config.displayHighlights,
                 options.focusElement ?? -1,
             );
@@ -106,6 +108,7 @@ export default class Page {
             const viewport = this._getViewportInfo();
             console.log('captureState: Viewport info:', viewport);
 
+
             // Update current state
             this._currentState = {
                 url: window.location.href,
@@ -117,6 +120,23 @@ export default class Page {
                 isValid: this._isValidWebPage,
             };
             console.log('captureState: Current state updated:', this._currentState);
+
+            if (options.cacheClickable) {
+                if (this._cachedClickableElementsHashes &&
+                    this._cachedClickableElementsHashes.url === this._currentState.url) {
+
+                    const newClickableElements = ClickableElementProcessor.getClickableElements(domSnapshot.root);
+
+                    for (const domElement of newClickableElements) {
+                        const hash = await ClickableElementProcessor.hashDomElement(domElement);
+                        domElement.isNew = !this._cachedClickableElementsHashes.hashes.has(hash);
+                    }
+                }
+
+                // In any case, we need to cache the new hashes
+                const newHashes = await ClickableElementProcessor.getClickableElementsHashes(domSnapshot.root);
+                this._cachedClickableElementsHashes = new CachedClickableElementsHashes(this._currentState.url, newHashes);
+            }
 
             // Cache the state
             this._cachedState = { ...this._currentState };
@@ -136,14 +156,8 @@ export default class Page {
         console.log('removeHighlight completed');
     }
 
-    async _extractDOMSnapshot(showHighlights: boolean, focusElement: number): Promise<DomSnapshot | null> {
+    async _extractDOMSnapshot(showHighlights: boolean, focusElement: number): Promise<DomSnapshot> {
         console.log('_extractDOMSnapshot called:', { showHighlights, focusElement, isValidWebPage: this._isValidWebPage });
-
-        if (!this._isValidWebPage) {
-            console.log('_extractDOMSnapshot: Invalid webpage, returning null');
-            return null;
-        }
-
         console.log('_extractDOMSnapshot: Getting clickable elements from DOM tree');
         const result = getClickableElementsFromDomTree(
             this.state.url,

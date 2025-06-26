@@ -33,7 +33,7 @@ export async function getClickableElementsFromDomTree(
 ): Promise<DomSnapshot> {
     // If URL is provided and it's about:blank, return a minimal DOM tree
     if (url === 'about:blank') {
-        const elementTree = new ElementDomNode({
+        const root = new ElementDomNode({
             tagName: 'body',
             xpath: '',
             attributes: {},
@@ -44,14 +44,14 @@ export async function getClickableElementsFromDomTree(
             isInViewport: false,
             parent: null,
         });
-        return { elementTree, selectorMap: new Map<number, ElementDomNode>() };
+        return { root, selectorMap: new Map<number, ElementDomNode>() };
     }
 
     const result: DomTreeResult = buildDomTree();
     if (!result.rootId) throw new Error('Failed to build DOM tree');
 
-    const [elementTree, selectorMap]: [ElementDomNode, Map<number, ElementDomNode>] = constructDomTree(result);
-    return { elementTree, selectorMap };
+    const [root, selectorMap]: [ElementDomNode, Map<number, ElementDomNode>] = constructDomTree(result);
+    return { root, selectorMap };
 }
 
 export async function removeHighlights(): Promise<void> {
