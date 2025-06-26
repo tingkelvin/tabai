@@ -65,9 +65,11 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
         }
     }, [isHighlighting, clearHighlights, scanAndHighlight]);
 
-    const updatePageState = useCallback(() => {
+    const getPageState = useCallback((compareCache = false) => {
         // Update page state without highlighting
         setIsScanning(true);
+
+        let currnetPageState: PageState = null;
         try {
             console.log(buildDomTree())
             const result: DomTreeResult = buildDomTree();
@@ -80,7 +82,7 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
             if (result && result.rootId) {
                 console.log("update")
                 const [pixelsAbove, pixelsBelow] = getScrollInfo();
-                setPageState({
+                currnetPageState = {
                     url: getCurrentUrl(),
                     title: getCurrentTitle(),
                     screenshot: null,
@@ -89,47 +91,69 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
                     elementTree: elementTree,    // Root DOM element tree
                     selectorMap: selectorMap     // Map of highlight indices to elements
                 });
-            }
+}
+
+if (!currnetPageState) throw Error("fail to get current page state")
+
+if (compareCache) {
+    if (
+        this._cachedStateClickableElementsHashes &&
+        this._cachedStateClickableElementsHashes.url === updatedState.url
+    ) {
+        // Get clickable elements from the updated state
+        const updatedStateClickableElements = ClickableElementProcessor.getClickableElements(updatedState.elementTree);
+
+        // Mark elements as new if they weren't in the previous state
+        for (const domElement of updatedStateClickableElements) {
+            const hash = await ClickableElementProcessor.hashDomElement(domElement);
+            domElement.isNew = !this._cachedStateClickableElementsHashes.hashes.has(hash);
+        }
+    }
+
+    // In any case, we need to cache the new hashes
+    const newHashes = await ClickableElementProcessor.getClickableElementsHashes(updatedState.elementTree);
+    this._cachedStateClickableElementsHashes = new CachedStateClickableElementsHashes(updatedState.url, newHashes);
+}
 
 
             // Track the highlight container
-            const container = document.getElementById('playwright-highlight-container');
-            if (container) {
-                highlightContainerRef.current = container;
-            }
+            // const container = document.getElementById('playwright-highlight-container');
+            // if (container) {
+            //     highlightContainerRef.current = container;
+            // }
 
         } catch (error) {
-            console.error('Error scanning DOM:', error);
-        } finally {
-            setIsScanning(false);
-        }
+    console.error('Error scanning DOM:', error);
+} finally {
+    setIsScanning(false);
+}
     }, []);
 
-    useEffect(() => {
-        console.log(pageState)
-    }, [pageState]);
+useEffect(() => {
+    console.log(pageState)
+}, [pageState]);
 
-    // Cleanup on unmount
-    useEffect(() => {
-        return () => {
-            clearHighlights();
-        };
-    }, [clearHighlights]);
-
-    return {
-        // State
-        pageState,
-        isHighlighting,
-        isScanning,
-
-        // Actions
-        scanAndHighlight,
-        clearHighlights,
-        toggleHighlight,
-        updatePageState,
-
-        // Getters
-        getCurrentUrl,
-        getCurrentTitle,
+// Cleanup on unmount
+useEffect(() => {
+    return () => {
+        clearHighlights();
     };
+}, [clearHighlights]);
+
+return {
+    // State
+    pageState,
+    isHighlighting,
+    isScanning,
+
+    // Actions
+    scanAndHighlight,
+    clearHighlights,
+    toggleHighlight,
+    updatePageState,
+
+    // Getters
+    getCurrentUrl,
+    getCurrentTitle,
+};
 };

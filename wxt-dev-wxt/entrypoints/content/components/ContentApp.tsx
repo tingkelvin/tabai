@@ -11,7 +11,7 @@ import type { ActionButton, ContentAppProps } from '../types/components'
 import { WIDGET_CONFIG, RESIZE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
-import { usePageHook } from '../hooks/usePageHook'
+// import { usePageHook } from '../hooks/usePageHook'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   // Chat
@@ -47,44 +47,44 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   })
 
   // Page
-  const {
-    clearHighlights,
-    scanAndHighlight,
-  } = usePageHook()
+  // const {
+  //   clearHighlights,
+  //   scanAndHighlight,
+  // } = usePageHook()
 
-  useEffect(() => {
-    scanAndHighlight()
-  }, [])
+  // useEffect(() => {
+  //   scanAndHighlight()
+  // }, [])
 
   // Page
 
   const [isHighlighting, setIsHighlighting] = useState(false)
 
-  const toggleHighlight = () => {
-    if (isHighlighting) {
-      clearHighlights()
-      scanAndHighlight()
-      setIsHighlighting(false)
-    } else {
-      scanAndHighlight()
-      setIsHighlighting(true)
-    }
-  }
+  // const toggleHighlight = () => {
+  //   if (isHighlighting) {
+  //     clearHighlights()
+  //     scanAndHighlight()
+  //     setIsHighlighting(false)
+  //   } else {
+  //     scanAndHighlight()
+  //     setIsHighlighting(true)
+  //   }
+  // }
 
-  const highlightToggleButton: ActionButton = {
-    id: 'toggle-highlight',
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="m9 11-6 6v3h3l6-6" />
-        <path d="m22 12-4.5 4.5L15 14l4.5-4.5L22 12z" />
-        <path d="M15 5l4 4" />
-      </svg>
-    ),
-    label: isHighlighting ? 'Clear' : 'Highlight',
-    onClick: toggleHighlight,
-    title: isHighlighting ? 'Clear highlights' : 'Scan and highlight clickable elements',
-    className: isHighlighting ? 'active' : '',
-  }
+  // const highlightToggleButton: ActionButton = {
+  //   id: 'toggle-highlight',
+  //   icon: (
+  //     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  //       <path d="m9 11-6 6v3h3l6-6" />
+  //       <path d="m22 12-4.5 4.5L15 14l4.5-4.5L22 12z" />
+  //       <path d="M15 5l4 4" />
+  //     </svg>
+  //   ),
+  //   label: isHighlighting ? 'Clear' : 'Highlight',
+  //   onClick: toggleHighlight,
+  //   title: isHighlighting ? 'Clear highlights' : 'Scan and highlight clickable elements',
+  //   className: isHighlighting ? 'active' : '',
+  // }
 
   return (
     <>
@@ -128,7 +128,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
               <ChatInput
                 fileActions={[]}
-                buttons={[highlightToggleButton]}
+                buttons={[]}
                 chatInputRef={chatInputRef}
                 chatInput={chatInput}
                 handleInputChange={handleInputChange}

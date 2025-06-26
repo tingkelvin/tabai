@@ -66,10 +66,10 @@ export class DOMElementNode extends DOMBaseNode {
   viewportInfo?: ViewportInfo;
 
   /*
-	### State injected by the browser context.
+  ### State injected by the browser context.
 
-	The idea is that the clickable elements are sometimes persistent from the previous page -> tells the model which objects are new/_how_ the state has changed
-	*/
+  The idea is that the clickable elements are sometimes persistent from the previous page -> tells the model which objects are new/_how_ the state has changed
+  */
   isNew: boolean | null;
 
   constructor(params: {
@@ -497,7 +497,7 @@ export class DOMElementNode extends DOMBaseNode {
   }
 }
 
-export interface DOMState {
+export interface DomSnapshot {
   elementTree: DOMElementNode;
   selectorMap: Map<number, DOMElementNode>;
 }
@@ -526,7 +526,7 @@ export function domElementNodeToDict(elementTree: DOMBaseNode): unknown {
   return nodeToDict(elementTree);
 }
 
-export async function calcBranchPathHashSet(state: DOMState): Promise<Set<string>> {
+export async function calcBranchPathHashSet(state: DomSnapshot): Promise<Set<string>> {
   const pathHashes = new Set(
     await Promise.all(Array.from(state.selectorMap.values()).map(async value => (await value.hash()).branchPathHash)),
   );

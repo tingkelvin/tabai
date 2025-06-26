@@ -496,7 +496,7 @@ export class ElementDomNode extends BaseDomNode {
     }
 }
 
-export interface DomState {
+export interface DomSnapshot {
     elementTree: ElementDomNode
     selectorMap: Map<number, ElementDomNode>
 }

@@ -4,6 +4,9 @@ import ReactDOM from 'react-dom/client'
 import ContentApp from './components/ContentApp'
 import { onMessage, sendMessage } from '@/entrypoints/background/types/messages'
 import { CheckAuthResponse } from '@/entrypoints/background/types/responses'
+import Page from './Page'
+
+
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -18,7 +21,11 @@ export default defineContentScript({
     )
     const isExtensionEnabled = await extensionStorage.getValue()
     console.log('Content script loaded')
+
+    let page: Page = new Page();
     let ui: any = null
+
+    page.captureState()
 
     onMessage('toggleExtension', ({ data }) => {
       console.log('Extension toggled:', data.enabled)

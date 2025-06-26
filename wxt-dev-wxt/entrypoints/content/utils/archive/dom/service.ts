@@ -1,6 +1,6 @@
 import { createLogger } from '@src/background/log';
 import type { BuildDomTreeArgs, RawDomTreeNode, BuildDomTreeResult } from './raw_types';
-import { type DOMState, type DOMBaseNode, DOMElementNode, DOMTextNode } from './views';
+import { type DomSnapshot, type DOMBaseNode, DOMElementNode, DOMTextNode } from './views';
 import type { ViewportInfo } from './history/view';
 
 const logger = createLogger('DOMService');
@@ -74,7 +74,7 @@ export async function getReadabilityContent(tabId: number): Promise<ReadabilityR
  * @param showHighlightElements - Whether to show the highlight elements.
  * @param focusElement - The element to focus on.
  * @param viewportExpansion - The viewport expansion to use.
- * @returns A DOMState object containing the clickable elements for the current page.
+ * @returns A DomSnapshot object containing the clickable elements for the current page.
  */
 export async function getClickableElements(
   tabId: number,
@@ -83,7 +83,7 @@ export async function getClickableElements(
   focusElement = -1,
   viewportExpansion = 0,
   debugMode = false,
-): Promise<DOMState> {
+): Promise<DomSnapshot> {
   const [elementTree, selectorMap] = await _buildDomTree(
     tabId,
     url,
