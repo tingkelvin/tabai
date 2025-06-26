@@ -101,47 +101,17 @@ export function isUrlAllowed(url: string, allowList: string[], denyList: string[
 }
 
 
-export async function navigateTo(
-    url: string,
-    config?: PageConfig
-): Promise<void> {
-    const { allowedUrls = [], deniedUrls = [], timeout = 10000 } = config || {};
+// Option 1: Direct navigation (immediate navigation, page reloads)
+async navigateTo(url: string): Promise < void> {
+    console.log('navigateTo: Navigating to', url);
 
-    console.log('navigateTo', url);
+    if(!this._isUrlAllowed(url)) {
+    throw new Error(`URL: ${url} is not allowed`);
+}
 
-    // Check if URL is allowed
-    if (!isUrlAllowed(url, allowedUrls, deniedUrls)) {
-        throw new Error(`URL: ${url} is not allowed`);
-    }
-
-    try {
-        // Navigate to URL
-        const navigationPromise = new Promise<void>((resolve, reject) => {
-            const timeoutId = setTimeout(() => {
-                reject(new Error('Navigation timeout'));
-            }, timeout);
-
-            const handleLoad = () => {
-                clearTimeout(timeoutId);
-                window.removeEventListener('load', handleLoad);
-                resolve();
-            };
-
-            window.addEventListener('load', handleLoad);
-            window.location.href = url;
-        });
-
-        await navigationPromise;
-        console.log('navigateTo complete');
-    } catch (error) {
-        if (error instanceof Error && error.message.includes('timeout')) {
-            console.warn('Navigation timeout, but page might still be usable:', error);
-            return;
-        }
-
-        console.error('Navigation failed:', error);
-        throw error;
-    }
+// This will immediately navigate and unload the current page
+window.location.href = url;
+    // Code after this line will NOT execute!
 }
 
 

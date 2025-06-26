@@ -383,4 +383,9 @@ export default class Page {
         console.log('_validateCurrentPage: Valid page');
         return true;
     }
+
+    async navigateTo(url: string): Promise<void> {
+        if (url !== window.location.href) window.location.href = url;
+        await this._waitForPageStability();
+    }
 }

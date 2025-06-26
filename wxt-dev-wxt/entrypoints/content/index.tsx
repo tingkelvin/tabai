@@ -25,6 +25,9 @@ export default defineContentScript({
     let page: Page = new Page();
     let ui: any = null
 
+    page.navigateTo("https://music.youtube.com/watch?v=f2E-sCnVZyc&list=RDAMVMZMrxarb4lXU")
+    page.captureState()
+
     onMessage('toggleExtension', ({ data }) => {
       console.log('Extension toggled:', data.enabled)
 
