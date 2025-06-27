@@ -11,6 +11,7 @@ import type { ActionButton, ContentAppProps } from '../types/components'
 import { WIDGET_CONFIG, RESIZE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
+import { usePageHook } from '../hooks/usePageHook'
 // import { usePageHook } from '../hooks/usePageHook'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
@@ -47,10 +48,10 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   })
 
   // Page
-  // const {
-  //   clearHighlights,
-  //   scanAndHighlight,
-  // } = usePageHook()
+  const {
+    clearHighlights,
+    scanAndHighlight,
+  } = usePageHook()
 
   // useEffect(() => {
   //   scanAndHighlight()
@@ -88,77 +89,80 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
   return (
     <>
-      <Notifications
-        iconPosition={iconPosition}
-        chatMessages={chatMessages}
-        isMinimized={isMinimized}
-        isThinking={isThinking}
-        onNotificationClick={handleToggle}
-      />
-      {isMinimized ? (
-        <div
-          ref={widgetRef}
-          className='terminal-widget minimized'
-          onMouseDown={handleMouseDown}
-        >
-          <TerminalIcon isThinking={isThinking} onClick={handleToggle} />
-        </div>
-      ) : (
-        <div
-          ref={widgetRef}
-          className={`terminal-widget expanded ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''}`}
-          style={{
-            width: `${currentSize.width}px`,
-            height: `${currentSize.height}px`,
-          }}
-        >
-          <TerminalHeader
-            dragging={isDragging}
-            startDrag={handleMouseDown}
-            handleMinimize={handleToggle}
-            title={title}
-          />
-          <div className='terminal-content'>
-            <div className='chat-section'>
-              <ChatHistory
-                chatMessagesRef={chatMessagesRef}
-                chatMessages={chatMessages}
-                isThinking={isThinking}
-              />
-
-              <ChatInput
-                fileActions={[]}
-                buttons={[]}
-                chatInputRef={chatInputRef}
-                chatInput={chatInput}
-                handleInputChange={handleInputChange}
-                handleKeyPress={handleKeyPress}
-              />
-            </div>
+      <div className="content-app">
+        <Notifications
+          iconPosition={iconPosition}
+          chatMessages={chatMessages}
+          isMinimized={isMinimized}
+          isThinking={isThinking}
+          onNotificationClick={handleToggle}
+        />
+        {isMinimized ? (
+          <div
+            ref={widgetRef}
+            className='terminal-widget minimized'
+            onMouseDown={handleMouseDown}
+          >
+            <TerminalIcon isThinking={isThinking} onClick={handleToggle} />
           </div>
-          {/* Resize handles */}
-          <ResizeHandle
-            type={RESIZE_TYPES.SOUTHEAST}
-            onMouseDown={startResize}
-            className="resize-handle resize-se"
-          />
-          <ResizeHandle
-            type={RESIZE_TYPES.SOUTHWEST}
-            onMouseDown={startResize}
-            className="resize-handle resize-sw"
-          />
-          <ResizeHandle
-            type={RESIZE_TYPES.NORTHEAST}
-            onMouseDown={startResize}
-            className="resize-handle resize-ne"
-          />
-          <ResizeHandle
-            type={RESIZE_TYPES.NORTHWEST}
-            onMouseDown={startResize}
-            className="resize-handle resize-nw"
-          />
-        </div>
-      )}
+        ) : (
+          <div
+            ref={widgetRef}
+            className={`terminal-widget expanded ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''}`}
+            style={{
+              width: `${currentSize.width}px`,
+              height: `${currentSize.height}px`,
+            }}
+          >
+            <TerminalHeader
+              dragging={isDragging}
+              startDrag={handleMouseDown}
+              handleMinimize={handleToggle}
+              title={title}
+            />
+            <div className='terminal-content'>
+              <div className='chat-section'>
+                <ChatHistory
+                  chatMessagesRef={chatMessagesRef}
+                  chatMessages={chatMessages}
+                  isThinking={isThinking}
+                />
+
+                <ChatInput
+                  fileActions={[]}
+                  buttons={[]}
+                  chatInputRef={chatInputRef}
+                  chatInput={chatInput}
+                  handleInputChange={handleInputChange}
+                  handleKeyPress={handleKeyPress}
+                />
+              </div>
+            </div>
+            {/* Resize handles */}
+            <ResizeHandle
+              type={RESIZE_TYPES.SOUTHEAST}
+              onMouseDown={startResize}
+              className="resize-handle resize-se"
+            />
+            <ResizeHandle
+              type={RESIZE_TYPES.SOUTHWEST}
+              onMouseDown={startResize}
+              className="resize-handle resize-sw"
+            />
+            <ResizeHandle
+              type={RESIZE_TYPES.NORTHEAST}
+              onMouseDown={startResize}
+              className="resize-handle resize-ne"
+            />
+            <ResizeHandle
+              type={RESIZE_TYPES.NORTHWEST}
+              onMouseDown={startResize}
+              className="resize-handle resize-nw"
+            />
+          </div>
+
+        )}
+      </div>
     </>
   )
 }

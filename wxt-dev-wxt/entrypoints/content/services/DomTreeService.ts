@@ -25,28 +25,12 @@ export interface ReadabilityResult {
  * @returns A DomSnapshot object containing the clickable elements for the current page.
  */
 export async function getClickableElementsFromDomTree(
-    url: string,
     showHighlightElements = true,
     focusElement = -1,
     viewportExpansion = 0,
     debugMode = false,
 ): Promise<DomSnapshot> {
     // If URL is provided and it's about:blank, return a minimal DOM tree
-    if (url === 'about:blank') {
-        const root = new ElementDomNode({
-            tagName: 'body',
-            xpath: '',
-            attributes: {},
-            children: [],
-            isVisible: false,
-            isInteractive: false,
-            isTopElement: false,
-            isInViewport: false,
-            parent: null,
-        });
-        return { root, selectorMap: new Map<number, ElementDomNode>() };
-    }
-
     const result: DomTreeResult = buildDomTree();
     if (!result.rootId) throw new Error('Failed to build DOM tree');
 

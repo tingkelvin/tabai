@@ -27,41 +27,7 @@ export default defineContentScript({
     const isExtensionEnabled = await extensionStorage.getValue();
     console.log("Content script loaded");
 
-    let page: Page = new Page();
     let ui: any = null;
-
-    onMessage(
-      "navigateTo",
-      ({ data: { url } }: { data: navigateToRequest }) => {
-        page.navigateTo(url);
-      }
-    );
-
-    onMessage(
-      "captureState",
-      async () => {
-        console.log("Capturing state...");
-        const state = await page.captureState();
-        console.log("Captured state:", state);
-      }
-    )
-
-    onMessage("waitForPageLoad", async () => {
-      if (document.readyState === 'complete') return;
-
-      return new Promise(resolve => {
-        const handler = () => {
-          if (document.readyState === 'complete') {
-            resolve();
-          }
-        };
-        document.addEventListener('readystatechange', handler);
-        window.addEventListener('load', () => {
-          document.removeEventListener('readystatechange', handler);
-          resolve();
-        }, { once: true });
-      });
-    });
 
     onMessage(
       "toggleExtension",

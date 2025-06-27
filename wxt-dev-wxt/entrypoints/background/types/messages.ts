@@ -2,7 +2,10 @@
 import { defineExtensionMessaging } from '@webext-core/messaging';
 
 import { CheckAuthResponse, AuthenticateResponse, BaseResponse, GetAuthTokenResponse, askLlmResponse } from './responses'; // Adjust the import path as necessary
+
+
 import { ApiResponse, ChatResponse } from './api';
+import { ToggleExtensionRequest, navigateToRequest } from './requests';
 // Define your protocol map with all message types and their data/return types
 export interface ProtocolMap {
   // Auth messages
@@ -22,8 +25,14 @@ export interface ProtocolMap {
   // saveChatSettings: (settings: { [key: string]: any }) => { success: boolean; error?: string };
 
   // // Extension messages
-  toggleExtension: (data: { enabled: boolean }) => void;
+  toggleExtension: (data: ToggleExtensionRequest) => void;
   // testConnection: () => { success: boolean; status?: string; error?: string };
+
+  // automation
+  navigateTo: (data: navigateToRequest) => void;
+  captureState: () => void;
+  waitForPageLoad: () => Promise<void>;
+
 }
 
 // Create the messaging functions
