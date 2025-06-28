@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { PageState, PageConfig } from '../types/page';
-import { removeHighlights, getClickableElementsFromDomTree } from '../services/DomTreeService';
+import { removeHighlights, getClickableElementsFromDomTree, locateElement } from '../services/DomTreeService';
 
 import { DomTreeResult } from '../types/dom/DomTree';
-import { ElementDomNode } from '../types/dom/DomNode';
+import { DomSnapshot, ElementDomNode } from '../types/dom/DomNode';
+import { highlightElement } from '../utils/domUtils';
 
 interface UsePageHookReturn {
     // State
@@ -184,7 +185,13 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
             console.log('Page is stable, performing initial scan');
 
             // Get clickable elements from DOM tree
-            const clickableElements = getClickableElementsFromDomTree();
+            const { root, selectorMap } = await getClickableElementsFromDomTree();
+
+            for (const [highlightIndex, node] of selectorMap.entries()) {
+                const ele: Element | null = await locateElement(node)
+                if (ele)
+                    highlightElement(ele, highlightIndex);
+            }
 
             // Update page state
             const newPageState: PageState = {
@@ -214,7 +221,13 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
             console.log('Scanning and highlighting page elements');
 
             // Get clickable elements and highlight them
-            const clickableElements = getClickableElementsFromDomTree();
+            const { root, selectorMap } = await getClickableElementsFromDomTree();
+
+            for (const [highlightIndex, node] of selectorMap.entries()) {
+                const ele: Element | null = await locateElement(node)
+                if (ele)
+                    highlightElement(ele, highlightIndex);
+            }
 
             setIsHighlighting(true);
         } catch (error) {

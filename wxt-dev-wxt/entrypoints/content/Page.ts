@@ -5,7 +5,7 @@ import { removeHighlights, getClickableElementsFromDomTree } from './services/Do
 import { ClickableElementProcessor } from './services/DomService';
 import { DomSnapshot, ElementDomNode } from './types/dom/DomNode';
 import { PageConfig, PageState, DEFAULT_PAGE_CONFIG, ViewportInfo } from './types/page';
-
+import { highlightElement } from './utils/domUtils';
 /**
  * Cached clickable elements hashes for the last state
  */
@@ -99,6 +99,19 @@ export default class Page {
                 options.focusElement ?? -1,
             );
             console.log('captureState: DOM snapshot extracted:', domSnapshot ? 'success' : 'null');
+            for (const [highlightIndex, node] of selectorMap.entries()) {
+                // Check if this node should be included
+                const shouldInclude = !node.parent || // Include if no parent
+                    !(node.parent instanceof ElementDomNode) || // Include if parent is not ElementDomNode
+                    !node.parent.highlightIndex || // Include if parent has no highlightIndex
+                    node.parent.highlightIndex === null || // Include if parent highlightIndex is null
+                    node.parent.highlightIndex === undefined; // Include if parent highlightIndex is undefined
+
+                if (shouldInclude) {
+                    parentSelectorMap.set(highlightIndex, node);
+                }
+
+            }
 
             // Capture screenshot if requested
             console.log('captureState: Capturing screenshot, includeScreenshot:', options.includeScreenshot);
@@ -163,7 +176,6 @@ export default class Page {
         console.log('_extractDOMSnapshot called:', { showHighlights, focusElement, isValidWebPage: this._isValidWebPage });
         console.log('_extractDOMSnapshot: Getting clickable elements from DOM tree');
         const result = getClickableElementsFromDomTree(
-            this.state.url,
             showHighlights,
             focusElement,
             this._config.viewportExpansion,

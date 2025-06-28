@@ -59,3 +59,109 @@ export async function removeHighlights(): Promise<void> {
     }
 }
 
+export async function locateElement(element: ElementDomNode): Promise<Element | null> {
+    // Start with the target element and collect all parents
+    const parents: ElementDomNode[] = [];
+    let current = element;
+    while (current.parent) {
+        parents.push(current.parent);
+        current = current.parent;
+    }
+
+    // Find current frame/window context
+    let currentDocument: Document = document;
+    let currentWindow: Window = window;
+
+    // Process all iframe parents in sequence (in reverse order - top to bottom)
+    const iframes = parents.reverse().filter(item => item.tagName === 'iframe');
+    for (const parent of iframes) {
+        const cssSelector = parent.enhancedCssSelectorForElement();
+        const frameElement = currentDocument.querySelector(cssSelector) as HTMLIFrameElement;
+
+        if (!frameElement) {
+            console.log(`Could not find iframe with selector: ${cssSelector}`);
+            return null;
+        }
+
+        try {
+            const frameDocument = frameElement.contentDocument;
+            const frameWindow = frameElement.contentWindow;
+
+            if (!frameDocument || !frameWindow) {
+                console.log(`Could not access frame content for selector: ${cssSelector}`);
+                return null;
+            }
+
+            currentDocument = frameDocument;
+            currentWindow = frameWindow;
+            console.log('currentFrame changed', frameElement);
+        } catch (error) {
+            console.log(`Could not access iframe content: ${error}`);
+            return null;
+        }
+    }
+
+    const cssSelector = element.enhancedCssSelectorForElement();
+
+    try {
+        // Try CSS selector first
+        let targetElement: Element | null = currentDocument.querySelector(cssSelector);
+
+        // If CSS selector failed, try XPath
+        if (!targetElement) {
+            const xpath = element.xpath;
+            if (xpath) {
+                try {
+                    console.log('Trying XPath selector:', xpath);
+                    const fullXpath = xpath.startsWith('/') ? xpath : `/${xpath}`;
+                    const xpathResult = currentDocument.evaluate(
+                        fullXpath,
+                        currentDocument,
+                        null,
+                        XPathResult.FIRST_ORDERED_NODE_TYPE,
+                        null
+                    );
+                    targetElement = xpathResult.singleNodeValue as Element;
+                } catch (xpathError) {
+                    console.log('Failed to locate element using XPath:', xpathError);
+                }
+            }
+        }
+
+        // If element found, check visibility and scroll into view
+        if (targetElement) {
+            const style = currentWindow.getComputedStyle(targetElement);
+            const isHidden = style.display === 'none' ||
+                style.visibility === 'hidden' ||
+                style.opacity === '0';
+
+            if (!isHidden) {
+                scrollIntoViewIfNeeded(targetElement);
+            }
+            return targetElement;
+        }
+
+        console.log('Element not located');
+    } catch (error) {
+        console.log('Failed to locate element:', error);
+    }
+
+    return null;
+}
+
+function scrollIntoViewIfNeeded(element: Element): void {
+    const rect = element.getBoundingClientRect();
+    const isInViewport = rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= window.innerHeight &&
+        rect.right <= window.innerWidth;
+
+    if (!isInViewport) {
+        element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'center'
+        });
+    }
+}
+
