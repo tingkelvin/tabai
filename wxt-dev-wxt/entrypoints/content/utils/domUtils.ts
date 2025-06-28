@@ -9,6 +9,7 @@ export function constructDomTree(evalPage: DomTreeResult): [ElementDomNode, Map<
     const jsRootId = evalPage.rootId;
 
     const selectorMap = new Map<number, ElementDomNode>();
+    const parentSelectorMap = new Map<number, ElementDomNode>();
     const nodeMap: Record<string, BaseDomNode> = {};
 
     // First pass: create all nodes
@@ -21,7 +22,7 @@ export function constructDomTree(evalPage: DomTreeResult): [ElementDomNode, Map<
         nodeMap[id] = node;
 
         // Add to selector map if it has a highlight index
-        if (node instanceof ElementDomNode && node.highlightIndex !== undefined && node.highlightIndex !== null) {
+        if (node instanceof ElementDomNode && node.isInteractive && node.highlightIndex !== undefined && node.highlightIndex !== null) {
             selectorMap.set(node.highlightIndex, node);
         }
     }
@@ -44,6 +45,31 @@ export function constructDomTree(evalPage: DomTreeResult): [ElementDomNode, Map<
             }
         }
     }
+
+    // Third pass: filter children node - exclude nodes whose parents are highlighted
+    for (const [highlightIndex, node] of selectorMap.entries()) {
+
+
+        if (highlightIndex == 23) console.log(node, node.parent);
+
+        // Check if this node should be included
+        const shouldInclude = !node.parent || // Include if no parent
+            !(node.parent instanceof ElementDomNode) || // Include if parent is not ElementDomNode
+            !node.parent.highlightIndex || // Include if parent has no highlightIndex
+            node.parent.highlightIndex === null || // Include if parent highlightIndex is null
+            node.parent.highlightIndex === undefined; // Include if parent highlightIndex is undefined
+
+        if (shouldInclude) {
+            parentSelectorMap.set(highlightIndex, node);
+        } else {
+            // Debug: log excluded nodes
+            console.log(`Excluding node ${node.highlightIndex} because parent ${node.parent.highlightIndex} is highlighted`);
+        }
+
+    }
+
+    console.log("parent", parentSelectorMap)
+
 
 
 

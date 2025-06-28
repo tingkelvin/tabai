@@ -31,6 +31,7 @@ export async function getClickableElementsFromDomTree(
     debugMode = false,
 ): Promise<DomSnapshot> {
     // If URL is provided and it's about:blank, return a minimal DOM tree
+
     const result: DomTreeResult = buildDomTree();
     if (!result.rootId) throw new Error('Failed to build DOM tree');
 

@@ -32,30 +32,18 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
     const hasInitialScanRef = useRef<boolean>(false);
 
     // Helper function to check if an element should be ignored
-    const isIgnoredElement = useCallback((element: Element | Node): boolean => {
+    const isIgnoredElement = useCallback((element: Element): boolean => {
         if (!element) return false;
 
-        // Handle text nodes and other non-element nodes
-        if (element.nodeType !== Node.ELEMENT_NODE) {
-            // For text nodes, check their parent element
-            return element.parentElement ? isIgnoredElement(element.parentElement) : false;
-        }
-
-        const el = element as Element;
-
         // Check if the element itself is an ignored container
-        if (el.id === 'playwright-highlight-container') {
-            return true;
-        }
-
-        // Check for content-app class (including partial matches)
-        if (el.className && typeof el.className === 'string' && el.className.includes('content-app')) {
+        if (element.id === 'playwright-highlight-container' ||
+            element.className?.includes('content-app')) {
             return true;
         }
 
         // Check if the element is inside an ignored container
-        const playwrightContainer = el.closest('#playwright-highlight-container');
-        const contentAppContainer = el.closest('.content-app');
+        const playwrightContainer = element.closest('#playwright-highlight-container');
+        const contentAppContainer = element.closest('.content-app');
 
         return !!(playwrightContainer || contentAppContainer);
     }, []);
@@ -65,15 +53,14 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
         console.log('initializePageTracking started');
 
         mutationObserverRef.current = new MutationObserver((mutations) => {
-            console.log('MutationObserver triggered with mutations:', mutations.length);
+            // console.log('MutationObserver triggered with mutations:', mutations.length);
 
             // Filter significant mutations
-            const significantMutations = mutations.filter(mutation => {
-                const target = mutation.target;
+            const significentMutations = mutations.filter(mutation => {
+                const target = mutation.target as Element;
 
                 // Ignore mutations in specific containers
                 if (isIgnoredElement(target)) {
-                    console.log('Ignoring mutation on ignored element:', target);
                     return false;
                 }
 
@@ -81,17 +68,16 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
                 if (mutation.type === 'childList') {
                     // Check if any added nodes should be ignored
                     const hasIgnoredAddedNodes = Array.from(mutation.addedNodes).some(node => {
-                        return isIgnoredElement(node);
+                        return node.nodeType === Node.ELEMENT_NODE && isIgnoredElement(node as Element);
                     });
 
                     // Check if any removed nodes should be ignored
                     const hasIgnoredRemovedNodes = Array.from(mutation.removedNodes).some(node => {
-                        return isIgnoredElement(node);
+                        return node.nodeType === Node.ELEMENT_NODE && isIgnoredElement(node as Element);
                     });
 
                     // Skip if all changes are in ignored elements
                     if (hasIgnoredAddedNodes || hasIgnoredRemovedNodes) {
-                        console.log('Ignoring childList mutation with ignored nodes');
                         return false;
                     }
 
@@ -100,25 +86,16 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
 
                 if (mutation.type === 'attributes') {
                     const attr = mutation.attributeName;
-                    // Skip style/class changes that are likely animations or drag operations
-                    if (attr === 'style' || attr === 'class') {
-                        console.log('Ignoring style/class change on:', target);
-                        return false;
-                    }
-                    return true;
-                }
-
-                // For characterData changes, check if the parent is ignored
-                if (mutation.type === 'characterData') {
-                    return !isIgnoredElement(target);
+                    // Skip style/class changes that are likely animations
+                    return attr !== 'style' && attr !== 'class';
                 }
 
                 return true;
             });
 
-            console.log('MutationObserver significant mutations:', significantMutations.length);
+            // console.log('MutationObserver significant mutations:', significentMutations.length);
 
-            if (significantMutations.length > 0) {
+            if (significentMutations.length > 0) {
                 console.log('MutationObserver: Page marked as unstable');
                 isPageStableRef.current = false;
                 // Debounce stability detection
