@@ -1,6 +1,8 @@
 // Widget and positioning types
-
-import type { Position } from './dom';
+export interface Position {
+    top: number;
+    left: number;
+}
 
 export interface InitialPositions {
     widgetPosition: Position;

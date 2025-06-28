@@ -136,7 +136,7 @@ export async function locateElement(element: ElementDomNode): Promise<Element | 
                 style.opacity === '0';
 
             if (!isHidden) {
-                scrollIntoViewIfNeeded(targetElement);
+                // scrollIntoViewIfNeeded(targetElement);
             }
             return targetElement;
         }

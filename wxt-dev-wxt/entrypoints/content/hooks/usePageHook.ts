@@ -20,6 +20,7 @@ interface UsePageHookReturn {
     // Getters
     getCurrentUrl: () => string;
     getCurrentTitle: () => string;
+    getElementAtCoordinate: (x: number, y: number) => Promise<void>
 }
 
 export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
@@ -27,95 +28,67 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
     const [isHighlighting, setIsHighlighting] = useState(false);
     const [isScanning, setIsScanning] = useState(false);
 
-    // Refs for tracking page stability
+    // Refs for tracking page stability and debouncing
     const mutationObserverRef = useRef<MutationObserver | null>(null);
-    const isPageStableRef = useRef<boolean>(false);
+    const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const hasInitialScanRef = useRef<boolean>(false);
-
-    // Helper function to check if an element should be ignored
-    const isIgnoredElement = useCallback((element: Element): boolean => {
-        if (!element) return false;
-
-        // Check if the element itself is an ignored container
-        if (element.id === 'playwright-highlight-container' ||
-            element.className?.includes('content-app')) {
-            return true;
-        }
-
-        // Check if the element is inside an ignored container
-        const playwrightContainer = element.closest('#playwright-highlight-container');
-        const contentAppContainer = element.closest('.content-app');
-
-        return !!(playwrightContainer || contentAppContainer);
-    }, []);
+    const isUpdatingRef = useRef<boolean>(false);
 
     // Initialize page tracking
     const initializePageTracking = useCallback((): void => {
         console.log('initializePageTracking started');
 
         mutationObserverRef.current = new MutationObserver((mutations) => {
-            // console.log('MutationObserver triggered with mutations:', mutations.length);
-
-            // Filter significant mutations
-            const significentMutations = mutations.filter(mutation => {
+            // Filter out highlight-related mutations
+            const significantMutations = mutations.filter(mutation => {
                 const target = mutation.target as Element;
 
-                // Ignore mutations in specific containers
-                if (isIgnoredElement(target)) {
+                // Skip mutations on highlight elements
+                if (target.closest('[data-highlight-index]') ||
+                    target.hasAttribute('data-highlight-index')) {
                     return false;
                 }
 
-                // For childList mutations, also check if added/removed nodes should be ignored
+                // For childList mutations, check if added/removed nodes are highlights
                 if (mutation.type === 'childList') {
-                    // Check if any added nodes should be ignored
-                    const hasIgnoredAddedNodes = Array.from(mutation.addedNodes).some(node => {
-                        return node.nodeType === Node.ELEMENT_NODE && isIgnoredElement(node as Element);
-                    });
+                    const addedHighlights = Array.from(mutation.addedNodes).some(node =>
+                        node instanceof Element &&
+                        (node.hasAttribute('data-highlight-index') || node.querySelector('[data-highlight-index]'))
+                    );
+                    const removedHighlights = Array.from(mutation.removedNodes).some(node =>
+                        node instanceof Element &&
+                        (node.hasAttribute('data-highlight-index') || node.querySelector('[data-highlight-index]'))
+                    );
 
-                    // Check if any removed nodes should be ignored
-                    const hasIgnoredRemovedNodes = Array.from(mutation.removedNodes).some(node => {
-                        return node.nodeType === Node.ELEMENT_NODE && isIgnoredElement(node as Element);
-                    });
-
-                    // Skip if all changes are in ignored elements
-                    if (hasIgnoredAddedNodes || hasIgnoredRemovedNodes) {
+                    if (addedHighlights || removedHighlights) {
                         return false;
                     }
-
-                    return true;
                 }
 
+                // For attribute changes, ignore highlight-related attributes
                 if (mutation.type === 'attributes') {
                     const attr = mutation.attributeName;
-                    // Skip style/class changes that are likely animations
+                    if (attr === 'data-highlight-index' ||
+                        (attr === 'style' && target.hasAttribute('data-highlight-index'))) {
+                        return false;
+                    }
+                    // Skip other style/class changes that are likely animations
                     return attr !== 'style' && attr !== 'class';
                 }
 
                 return true;
             });
 
-            // console.log('MutationObserver significant mutations:', significentMutations.length);
-
-            if (significentMutations.length > 0) {
-                console.log('MutationObserver: Page marked as unstable');
-                isPageStableRef.current = false;
-                // Debounce stability detection
-                setTimeout(() => {
-                    console.log('MutationObserver: Page marked as stable after timeout');
-                    isPageStableRef.current = true;
-                }, 500);
+            if (significantMutations.length > 0) {
+                console.log('MutationObserver: Significant DOM changes detected, scheduling update');
+                scheduleStateUpdate();
             }
         });
 
         // Start observing when DOM is ready
         if (document.readyState === 'loading') {
-            console.log('initializePageTracking: DOM still loading, adding event listener');
-            document.addEventListener('DOMContentLoaded', () => {
-                console.log('initializePageTracking: DOMContentLoaded event fired');
-                startMutationObserver();
-            });
+            document.addEventListener('DOMContentLoaded', startMutationObserver);
         } else {
-            console.log('initializePageTracking: DOM already ready, starting observer');
             startMutationObserver();
         }
     }, []);
@@ -123,7 +96,6 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
     const startMutationObserver = useCallback((): void => {
         console.log('startMutationObserver called');
         const target = document.body || document.documentElement;
-        console.log('startMutationObserver target:', target?.tagName);
 
         if (target && mutationObserverRef.current) {
             mutationObserverRef.current.observe(target, {
@@ -133,40 +105,68 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
                 attributeFilter: ['class', 'id', 'style', 'hidden', 'disabled']
             });
             console.log('startMutationObserver: Observer started successfully');
+        }
+    }, []);
 
-            // Mark as initially stable after a short delay to allow for initial DOM mutations
-            setTimeout(() => {
-                if (!hasInitialScanRef.current) {
-                    console.log('startMutationObserver: Marking page as initially stable');
-                    isPageStableRef.current = true;
+    // Debounced state update scheduler
+    const scheduleStateUpdate = useCallback(() => {
+        if (isUpdatingRef.current) {
+            console.log('Update already in progress, skipping');
+            return;
+        }
+
+        // Clear existing timeout
+        if (updateTimeoutRef.current) {
+            clearTimeout(updateTimeoutRef.current);
+        }
+
+        // Schedule new update
+        updateTimeoutRef.current = setTimeout(() => {
+            updateState();
+        }, 500); // 500ms debounce
+    }, []);
+
+    const updateState = useCallback(async () => {
+        if (isUpdatingRef.current) {
+            console.log('Update already in progress, skipping');
+            return;
+        }
+
+        console.log('Updating page state...');
+        isUpdatingRef.current = true;
+        setIsScanning(true);
+
+        try {
+            // Get clickable elements from DOM tree
+            const { root, selectorMap } = await getClickableElementsFromDomTree();
+
+            // Update page state
+            const newPageState: PageState = {
+                url: getCurrentUrl(),
+                title: getCurrentTitle(),
+                domSnapshot: { root, selectorMap },
+                timestamp: Date.now(),
+                screenshot: null
+            };
+
+            setPageState(newPageState);
+
+            // Apply highlights if currently highlighting
+            if (isHighlighting) {
+                for (const [highlightIndex, node] of selectorMap.entries()) {
+                    const ele: Element | null = await locateElement(node);
+                    if (ele) highlightElement(ele, highlightIndex);
                 }
-            }, 1000); // Wait 1 second for initial page load to settle
-        } else {
-            console.log('startMutationObserver: Failed to start observer', {
-                hasTarget: !!target,
-                hasObserver: !!mutationObserverRef.current
-            });
+            }
+
+            console.log('Page state updated successfully');
+        } catch (error) {
+            console.error('Error updating page state:', error);
+        } finally {
+            isUpdatingRef.current = false;
+            setIsScanning(false);
         }
-    }, []);
-
-    /**
-     * Wait for page to stabilize
-     */
-    const waitForPageStability = useCallback(async (timeout: number = 5000): Promise<void> => {
-        console.log('waitForPageStability called with timeout:', timeout);
-        const startTime = Date.now();
-
-        while (!isPageStableRef.current && (Date.now() - startTime) < timeout) {
-            console.log('waitForPageStability: Waiting for stability, elapsed:', Date.now() - startTime);
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-
-        const elapsed = Date.now() - startTime;
-        console.log('waitForPageStability completed:', {
-            isStable: isPageStableRef.current,
-            elapsed
-        });
-    }, []);
+    }, [isHighlighting]);
 
     // Perform initial scan
     const performInitialScan = useCallback(async () => {
@@ -176,70 +176,30 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
         }
 
         console.log('Starting initial scan...');
-        setIsScanning(true);
-
-        try {
-            // Wait for page to stabilize before scanning
-            await waitForPageStability(10000); // Allow up to 10 seconds for initial page load
-
-            console.log('Page is stable, performing initial scan');
-
-            // Get clickable elements from DOM tree
-            const { root, selectorMap } = await getClickableElementsFromDomTree();
-
-            for (const [highlightIndex, node] of selectorMap.entries()) {
-                const ele: Element | null = await locateElement(node)
-                if (ele)
-                    highlightElement(ele, highlightIndex);
-            }
-
-            // Update page state
-            const newPageState: PageState = {
-                url: getCurrentUrl(),
-                title: getCurrentTitle(),
-                // Add your DOM tree here if available
-                // domTree: clickableElements,
-                timestamp: Date.now()
-            };
-
-            setPageState(newPageState);
-            hasInitialScanRef.current = true;
-
-            console.log('Initial scan completed successfully');
-        } catch (error) {
-            console.error('Error during initial scan:', error);
-        } finally {
-            setIsScanning(false);
-        }
-    }, [waitForPageStability]);
+        hasInitialScanRef.current = true;
+        await updateState();
+    }, [updateState]);
 
     // Hook actions
     const scanAndHighlight = useCallback(async () => {
-        setIsScanning(true);
-        try {
-            await waitForPageStability();
-            console.log('Scanning and highlighting page elements');
+        console.log('Scanning and highlighting page elements');
 
-            // Get clickable elements and highlight them
-            const { root, selectorMap } = await getClickableElementsFromDomTree();
-
-            for (const [highlightIndex, node] of selectorMap.entries()) {
-                const ele: Element | null = await locateElement(node)
-                if (ele)
-                    highlightElement(ele, highlightIndex);
-            }
-
-            setIsHighlighting(true);
-        } catch (error) {
-            console.error('Error during scan and highlight:', error);
-        } finally {
-            setIsScanning(false);
+        if (!pageState) {
+            await updateState();
         }
-    }, [waitForPageStability]);
+
+        if (pageState?.domSnapshot.selectorMap) {
+            for (const [highlightIndex, node] of pageState.domSnapshot.selectorMap.entries()) {
+                const ele: Element | null = await locateElement(node);
+                if (ele) highlightElement(ele, highlightIndex);
+            }
+        }
+
+        setIsHighlighting(true);
+    }, [pageState, updateState]);
 
     const clearHighlights = useCallback(() => {
         setIsHighlighting(false);
-        // Clear highlights from DOM using the service
         removeHighlights();
         console.log('Clearing highlights');
     }, []);
@@ -270,12 +230,29 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
                 mutationObserverRef.current.disconnect();
                 mutationObserverRef.current = null;
             }
+            if (updateTimeoutRef.current) {
+                clearTimeout(updateTimeoutRef.current);
+            }
         };
     }, [initializePageTracking]);
 
+    const getElementAtCoordinate = useCallback(async (x: number, y: number) => {
+        if (!pageState?.domSnapshot?.selectorMap) return;
+
+        for (const [highlightIndex, node] of pageState.domSnapshot.selectorMap.entries()) {
+            const element = await locateElement(node);
+            if (element) {
+                const rect = element.getBoundingClientRect();
+                if (x >= rect.left && x <= rect.right &&
+                    y >= rect.top && y <= rect.bottom) {
+                    highlightElement(element, highlightIndex)
+                }
+            }
+        }
+    }, [pageState]);
+
     // Perform initial scan when page tracking is set up
     useEffect(() => {
-        // Small delay to ensure mutation observer is set up
         const timer = setTimeout(() => {
             performInitialScan();
         }, 500);
@@ -297,5 +274,6 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
         // Getters
         getCurrentUrl,
         getCurrentTitle,
+        getElementAtCoordinate
     };
 };

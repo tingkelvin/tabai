@@ -51,11 +51,12 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const {
     clearHighlights,
     scanAndHighlight,
+    getElementAtCoordinate
   } = usePageHook()
 
-  // useEffect(() => {
-  //   scanAndHighlight()
-  // }, [])
+  useEffect(() => {
+    getElementAtCoordinate(iconPosition.left, iconPosition.top)
+  }, [iconPosition])
 
   // Page
 

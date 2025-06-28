@@ -113,19 +113,9 @@ export interface PageState {
     domSnapshot: DomSnapshot | null;
 
     /**
-     * Viewport and scroll information
-     */
-    viewport: ViewportInfo;
-
-    /**
      * Timestamp when state was captured
      */
-    capturedAt: number;
-
-    /**
-     * Whether the page is valid for interaction
-     */
-    isValid: boolean;
+    timestamp: number;
 }
 
 // Default configuration

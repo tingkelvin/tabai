@@ -188,7 +188,22 @@ export class ElementDomNode extends BaseDomNode {
         return textParts.join('\n').trim();
     }
 
-    clickableElementsToString(includeAttributes: string[] = []): string {
+    clickableElementsToString(includeAttributes: string[] = [
+        'title',
+        'type',
+        'name',
+        'role',
+        'aria-label',
+        'placeholder',
+        'value',
+        'alt',
+        'aria-expanded',
+        'data-date-format',
+        'checked',
+        'data-state',
+        'aria-checked',
+        'tabindex',
+    ]): string {
         const formattedText: string[] = [];
 
         const processNode = (node: BaseDomNode, depth: number): void => {
