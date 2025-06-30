@@ -60,7 +60,6 @@ export default defineContentScript({
       });
       ui.mount();
     };
-    await mountUI();
     // Initial mount if authenticated and enabled
     if (response.isAuthenticated && isExtensionEnabled) {
       await mountUI();

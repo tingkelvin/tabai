@@ -2,7 +2,7 @@ import { ApiResponse, ChatOptions, ChatRequest, ChatResponse, ChatWithSearchRequ
 import { ErrorHandler } from "../utils/errorUtils";
 
 // services/apiClient.ts
-const API_BASE_URL = "https://tubetor-backend-234898757030.us-central1.run.app";
+const API_BASE_URL = "http://192.168.1.136:8000";
 
 const createHeaders = (appToken: string, includeContentType: boolean = true): Record<string, string> => {
   const headers: Record<string, string> = {
@@ -72,6 +72,9 @@ export const ApiClient = {
   async verifyGoogleAccessToken(token: string): Promise<ApiResponse<GoogleVerifyTokenResponse>> {
     try {
       const payload: GoogleAccessTokenRequest = { access_token: token };
+      console.log(token)
+
+      console.log(`${API_BASE_URL}/auth/google/verify-access-token`)
 
       const response = await fetch(`${API_BASE_URL}/auth/google/verify-access-token`, {
         method: "POST",

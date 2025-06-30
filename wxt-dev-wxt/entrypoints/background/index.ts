@@ -80,12 +80,12 @@ export default defineBackground(() => {
 
     console.log("🔄 Toggling extension:", enabled);
     await extensionStorage.setValue(enabled);
-    await notifyContentScripts(enabled);
+    await notifyValidContentScripts(enabled);
   });
 
 
-  onMessage('askLlm', async ({ data: { content } }) => {
-    return withAuth(async () => { return await ChatManager.sendMessage(content); });
+  onMessage('chat', async ({ data: { message, options } }) => {
+    return withAuth(async () => { return await ChatManager.sendMessage(message, options); });
   });
 
 

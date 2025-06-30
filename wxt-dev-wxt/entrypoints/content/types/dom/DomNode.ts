@@ -203,6 +203,7 @@ export class ElementDomNode extends BaseDomNode {
         'data-state',
         'aria-checked',
         'tabindex',
+        'form'
     ]): string {
         const formattedText: string[] = [];
 

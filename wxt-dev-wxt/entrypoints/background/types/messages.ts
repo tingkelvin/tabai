@@ -3,9 +3,8 @@ import { defineExtensionMessaging } from '@webext-core/messaging';
 
 import { CheckAuthResponse, AuthenticateResponse, BaseResponse, GetAuthTokenResponse, askLlmResponse } from './responses'; // Adjust the import path as necessary
 
-
 import { ApiResponse, ChatResponse } from './api';
-import { ToggleExtensionRequest, navigateToRequest } from './requests';
+import { ToggleExtensionRequest, navigateToRequest, chatRequest } from './requests';
 // Define your protocol map with all message types and their data/return types
 export interface ProtocolMap {
   // Auth messages
@@ -13,7 +12,7 @@ export interface ProtocolMap {
   authenticate: () => AuthenticateResponse;
   logout: () => BaseResponse;
   getAuthToken: () => GetAuthTokenResponse;
-  askLlm: (data: { content: string }) => ApiResponse<ChatResponse>;
+  chat: (data: chatRequest) => ApiResponse<ChatResponse>;
 
   // // Chat messages
   // chatMessage: (data: { content: string; conversationId?: string }) => { response: string; error?: string };

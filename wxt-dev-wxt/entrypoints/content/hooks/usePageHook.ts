@@ -9,13 +9,10 @@ import { highlightElement } from '../utils/domUtils';
 interface UsePageHookReturn {
     // State
     pageState: PageState | null;
-    isHighlighting: boolean;
     isScanning: boolean;
 
     // Actions
-    scanAndHighlight: () => void;
     clearHighlights: () => void;
-    toggleHighlight: () => void;
 
     // Getters
     getCurrentUrl: () => string;
@@ -25,7 +22,6 @@ interface UsePageHookReturn {
 
 export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
     const [pageState, setPageState] = useState<PageState | null>(null);
-    const [isHighlighting, setIsHighlighting] = useState(false);
     const [isScanning, setIsScanning] = useState(false);
 
     // Refs for tracking page stability and debouncing
@@ -34,107 +30,30 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
     const hasInitialScanRef = useRef<boolean>(false);
     const isUpdatingRef = useRef<boolean>(false);
 
-    // Initialize page tracking
-    const initializePageTracking = useCallback((): void => {
-        console.log('initializePageTracking started');
-
-        mutationObserverRef.current = new MutationObserver((mutations) => {
-            // Filter out highlight-related mutations
-            const significantMutations = mutations.filter(mutation => {
-                const target = mutation.target as Element;
-
-                // Skip mutations on highlight elements
-                if (target.closest('[data-highlight-index]') ||
-                    target.hasAttribute('data-highlight-index')) {
-                    return false;
-                }
-
-                // For childList mutations, check if added/removed nodes are highlights
-                if (mutation.type === 'childList') {
-                    const addedHighlights = Array.from(mutation.addedNodes).some(node =>
-                        node instanceof Element &&
-                        (node.hasAttribute('data-highlight-index') || node.querySelector('[data-highlight-index]'))
-                    );
-                    const removedHighlights = Array.from(mutation.removedNodes).some(node =>
-                        node instanceof Element &&
-                        (node.hasAttribute('data-highlight-index') || node.querySelector('[data-highlight-index]'))
-                    );
-
-                    if (addedHighlights || removedHighlights) {
-                        return false;
-                    }
-                }
-
-                // For attribute changes, ignore highlight-related attributes
-                if (mutation.type === 'attributes') {
-                    const attr = mutation.attributeName;
-                    if (attr === 'data-highlight-index' ||
-                        (attr === 'style' && target.hasAttribute('data-highlight-index'))) {
-                        return false;
-                    }
-                    // Skip other style/class changes that are likely animations
-                    return attr !== 'style' && attr !== 'class';
-                }
-
-                return true;
-            });
-
-            if (significantMutations.length > 0) {
-                console.log('MutationObserver: Significant DOM changes detected, scheduling update');
-                scheduleStateUpdate();
-            }
-        });
-
-        // Start observing when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', startMutationObserver);
-        } else {
-            startMutationObserver();
-        }
-    }, []);
-
-    const startMutationObserver = useCallback((): void => {
-        console.log('startMutationObserver called');
-        const target = document.body || document.documentElement;
-
-        if (target && mutationObserverRef.current) {
-            mutationObserverRef.current.observe(target, {
-                childList: true,
-                subtree: true,
-                attributes: true,
-                attributeFilter: ['class', 'id', 'style', 'hidden', 'disabled']
-            });
-            console.log('startMutationObserver: Observer started successfully');
-        }
-    }, []);
-
-    // Debounced state update scheduler
-    const scheduleStateUpdate = useCallback(() => {
-        if (isUpdatingRef.current) {
-            console.log('Update already in progress, skipping');
-            return;
-        }
-
-        // Clear existing timeout
+    // Debounced update function
+    const scheduleUpdate = useCallback(() => {
         if (updateTimeoutRef.current) {
             clearTimeout(updateTimeoutRef.current);
         }
 
-        // Schedule new update
         updateTimeoutRef.current = setTimeout(() => {
             updateState();
-        }, 500); // 500ms debounce
+        }, 300);
     }, []);
 
     const updateState = useCallback(async () => {
         if (isUpdatingRef.current) {
-            console.log('Update already in progress, skipping');
             return;
         }
 
-        console.log('Updating page state...');
         isUpdatingRef.current = true;
         setIsScanning(true);
+        removeHighlights()
+
+        // Stop observing during update
+        if (mutationObserverRef.current) {
+            mutationObserverRef.current.disconnect();
+        }
 
         try {
             // Get clickable elements from DOM tree
@@ -152,65 +71,76 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
             setPageState(newPageState);
 
             // Apply highlights if currently highlighting
-            if (isHighlighting) {
-                for (const [highlightIndex, node] of selectorMap.entries()) {
-                    const ele: Element | null = await locateElement(node);
-                    if (ele) highlightElement(ele, highlightIndex);
-                }
+            for (const [highlightIndex, node] of selectorMap.entries()) {
+                const ele: Element | null = await locateElement(node);
+                if (ele) highlightElement(ele, highlightIndex);
             }
+            console.log(selectorMap)
+            console.log(root.clickableElementsToString())
 
-            console.log('Page state updated successfully');
         } catch (error) {
             console.error('Error updating page state:', error);
         } finally {
             isUpdatingRef.current = false;
             setIsScanning(false);
+
+            // Restart observing after update
+            setupDomMonitoring();
         }
-    }, [isHighlighting]);
-
-    // Perform initial scan
-    const performInitialScan = useCallback(async () => {
-        if (hasInitialScanRef.current) {
-            console.log('Initial scan already performed, skipping');
-            return;
-        }
-
-        console.log('Starting initial scan...');
-        hasInitialScanRef.current = true;
-        await updateState();
-    }, [updateState]);
-
-    // Hook actions
-    const scanAndHighlight = useCallback(async () => {
-        console.log('Scanning and highlighting page elements');
-
-        if (!pageState) {
-            await updateState();
-        }
-
-        if (pageState?.domSnapshot.selectorMap) {
-            for (const [highlightIndex, node] of pageState.domSnapshot.selectorMap.entries()) {
-                const ele: Element | null = await locateElement(node);
-                if (ele) highlightElement(ele, highlightIndex);
-            }
-        }
-
-        setIsHighlighting(true);
-    }, [pageState, updateState]);
-
-    const clearHighlights = useCallback(() => {
-        setIsHighlighting(false);
-        removeHighlights();
-        console.log('Clearing highlights');
     }, []);
 
-    const toggleHighlight = useCallback(() => {
-        if (isHighlighting) {
-            clearHighlights();
-        } else {
-            scanAndHighlight();
+    // Setup DOM monitoring
+    const setupDomMonitoring = useCallback(() => {
+        if (mutationObserverRef.current) {
+            mutationObserverRef.current.disconnect();
         }
-    }, [isHighlighting, clearHighlights, scanAndHighlight]);
+
+        const observer = new MutationObserver((mutations) => {
+            let shouldUpdate = false;
+
+            for (const mutation of mutations) {
+                // Check for relevant changes
+                if (mutation.type === 'childList') {
+                    // New nodes added or removed
+                    if (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0) {
+                        // Check if any added/removed nodes are elements (not just text nodes)
+                        const hasElementChanges = Array.from(mutation.addedNodes).some(node => node.nodeType === Node.ELEMENT_NODE) ||
+                            Array.from(mutation.removedNodes).some(node => node.nodeType === Node.ELEMENT_NODE);
+
+                        if (hasElementChanges) {
+                            shouldUpdate = true;
+                            break;
+                        }
+                    }
+                } else if (mutation.type === 'attributes') {
+                    // Attribute changes that might affect clickability
+                    const relevantAttributes = ['class', 'id', 'style', 'href', 'onclick', 'disabled', 'hidden'];
+                    if (relevantAttributes.includes(mutation.attributeName || '')) {
+                        shouldUpdate = true;
+                        break;
+                    }
+                }
+            }
+
+            if (shouldUpdate) {
+                scheduleUpdate();
+            }
+        });
+
+        // Configure observer to watch for relevant changes
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class', 'id', 'style', 'href', 'onclick', 'disabled', 'hidden']
+        });
+
+        mutationObserverRef.current = observer;
+    }, [scheduleUpdate]);
+
+    const clearHighlights = useCallback(() => {
+        removeHighlights();
+    }, []);
 
     const getCurrentUrl = useCallback((): string => {
         return window.location.href;
@@ -219,22 +149,6 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
     const getCurrentTitle = useCallback((): string => {
         return document.title;
     }, []);
-
-    // Initialize page tracking on mount
-    useEffect(() => {
-        initializePageTracking();
-
-        // Cleanup on unmount
-        return () => {
-            if (mutationObserverRef.current) {
-                mutationObserverRef.current.disconnect();
-                mutationObserverRef.current = null;
-            }
-            if (updateTimeoutRef.current) {
-                clearTimeout(updateTimeoutRef.current);
-            }
-        };
-    }, [initializePageTracking]);
 
     const getElementAtCoordinate = useCallback(async (x: number, y: number) => {
         if (!pageState?.domSnapshot?.selectorMap) return;
@@ -251,25 +165,65 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
         }
     }, [pageState]);
 
-    // Perform initial scan when page tracking is set up
+    // Perform initial scan and setup monitoring
     useEffect(() => {
-        const timer = setTimeout(() => {
-            performInitialScan();
+        const timer = setTimeout(async () => {
+            if (hasInitialScanRef.current) {
+                return;
+            }
+
+            hasInitialScanRef.current = true;
+            await updateState();
+            setupDomMonitoring();
         }, 500);
 
-        return () => clearTimeout(timer);
-    }, [performInitialScan]);
+        return () => {
+            clearTimeout(timer);
+            if (updateTimeoutRef.current) {
+                clearTimeout(updateTimeoutRef.current);
+            }
+            if (mutationObserverRef.current) {
+                mutationObserverRef.current.disconnect();
+            }
+        };
+    }, [updateState, setupDomMonitoring]);
+
+    // Handle URL changes (for SPAs)
+    useEffect(() => {
+        const handlePopState = () => {
+            scheduleUpdate();
+        };
+
+        window.addEventListener('popstate', handlePopState);
+
+        // Also monitor pushState/replaceState for SPA navigation
+        const originalPushState = history.pushState;
+        const originalReplaceState = history.replaceState;
+
+        history.pushState = function (...args) {
+            originalPushState.apply(history, args);
+            scheduleUpdate();
+        };
+
+        history.replaceState = function (...args) {
+            originalReplaceState.apply(history, args);
+            scheduleUpdate();
+        };
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+            history.pushState = originalPushState;
+            history.replaceState = originalReplaceState;
+        };
+    }, [scheduleUpdate]);
 
     return {
         // State
         pageState,
-        isHighlighting,
         isScanning,
 
         // Actions
-        scanAndHighlight,
         clearHighlights,
-        toggleHighlight,
 
         // Getters
         getCurrentUrl,

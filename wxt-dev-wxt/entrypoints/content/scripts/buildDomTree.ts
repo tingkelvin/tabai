@@ -1286,6 +1286,11 @@ export const buildDomTree = (
             if (debugMode) PERF_METRICS.nodeMetrics.skippedNodes++;
             return null;
         }
+        // Filter out elements with 'content-app' class
+        if (node.nodeType === Node.ELEMENT_NODE && node.className && node.className.includes('content-app')) {
+            if (debugMode) PERF_METRICS.nodeMetrics.skippedNodes++;
+            return null;
+        }
 
         // Early viewport check - only filter out elements clearly outside viewport
         if (viewportExpansion !== -1) {

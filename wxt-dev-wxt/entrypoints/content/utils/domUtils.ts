@@ -3,6 +3,20 @@ import { ViewportInfo } from "../types/dom/views";
 import { RawDomNode, DomTreeResult, isTextNode } from '../types/dom/DomTree';
 import { TextDomNode, ElementDomNode, BaseDomNode } from "../types/dom/DomNode";
 
+// Helper function to check if element should be filtered out
+const shouldFilterElement = (node: ElementDomNode): boolean => {
+    // Filter out elements with Terminal class
+    if (node.className && node.className.includes('Terminal')) {
+        return true;
+    }
+
+    // Add other filtering conditions here if needed
+    // e.g., filter by tag name, other classes, etc.
+
+    return false;
+};
+
+
 export function constructDomTree(evalPage: DomTreeResult): [ElementDomNode, Map<number, ElementDomNode>] {
 
     const jsNodeMap = evalPage.map;
@@ -61,16 +75,14 @@ export function constructDomTree(evalPage: DomTreeResult): [ElementDomNode, Map<
 
     }
 
-    console.log("parent", parentSelectorMap)
-
-
+    // console.log("parent", parentSelectorMap)
 
 
     if (!jsRootId) throw new Error('Failed to parse HTML to dictionary');
 
     const htmlToDict = nodeMap[jsRootId];
 
-    console.log(selectorMap)
+    // console.log(selectorMap)
 
     if (htmlToDict === undefined || !(htmlToDict instanceof ElementDomNode)) {
         throw new Error('Failed to parse HTML to dictionary');

@@ -40,9 +40,21 @@
     0 4px 8px rgba(0, 0, 0, 0.03);
 }
 
+/* Active state for mouse press */
 .custom-action-btn:active:not(:disabled) {
+  background: #e5e7eb;
+  border-color: rgba(0, 0, 0, 0.16);
+  color: #374151;
   transform: translateY(0);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Persistent active state with class */
+.custom-action-btn.active:not(:disabled) {
+  background: #e5e7eb;
+  border-color: rgba(0, 0, 0, 0.16);
+  color: #374151;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .custom-action-btn:disabled {
@@ -72,6 +84,20 @@
   background: #fee4e2;
   border-color: #f87171;
   color: #dc2626;
+}
+
+/* File action active states */
+.custom-action-btn.file-action:active:not(:disabled) {
+  background: #fca5a5;
+  border-color: #ef4444;
+  color: #b91c1c;
+}
+
+.custom-action-btn.file-action.active:not(:disabled) {
+  background: #fca5a5;
+  border-color: #ef4444;
+  color: #b91c1c;
+  box-shadow: inset 0 2px 4px rgba(239, 68, 68, 0.2);
 }
 
 .action-icon {

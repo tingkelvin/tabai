@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 // Components import
 import TerminalIcon from './TerminalIcon'
 import TerminalHeader from './TerminalHeader'
@@ -12,13 +12,29 @@ import { WIDGET_CONFIG, RESIZE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
 import { usePageHook } from '../hooks/usePageHook'
-// import { usePageHook } from '../hooks/usePageHook'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
+  // Mode
+  const [useSearch, setUseSearch] = useState(false)
+  const [useAgent, setUseAgent] = useState(false)
+
+  // Page
+  const {
+    pageState,
+    getElementAtCoordinate
+  } = usePageHook()
+
   // Chat
   const chatMessagesRef = useRef<HTMLDivElement>(null)
   const chatInputRef = useRef<HTMLTextAreaElement>(null)
-  const chatHook = customChatHook ? customChatHook() : useChat()
+  // In ContentApp component - update the useChat call:
+  const chatHook = customChatHook ? customChatHook() : useChat({
+    useSearch,
+    pageState,
+    useAgent // Add this line
+  })
+
+
   const {
     chatInput,
     chatMessages,
@@ -26,6 +42,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     handleInputChange,
     handleKeyPress,
   } = chatHook
+
 
   // Drag and resize
   const widgetRef = useRef<HTMLDivElement>(null)
@@ -47,12 +64,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     onSizeChange: setWidgetSize,
   })
 
-  // Page
-  const {
-    clearHighlights,
-    scanAndHighlight,
-    getElementAtCoordinate
-  } = usePageHook()
+
 
   useEffect(() => {
     getElementAtCoordinate(iconPosition.left, iconPosition.top)
@@ -60,33 +72,55 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
   // Page
 
-  const [isHighlighting, setIsHighlighting] = useState(false)
 
-  // const toggleHighlight = () => {
-  //   if (isHighlighting) {
-  //     clearHighlights()
-  //     scanAndHighlight()
-  //     setIsHighlighting(false)
-  //   } else {
-  //     scanAndHighlight()
-  //     setIsHighlighting(true)
-  //   }
-  // }
+  // Web Search button handler
+  const toggleWebSearch = () => {
+    setUseSearch(!useSearch)
+    // Add your web search logic here
+    console.log('Web search toggled:', !useSearch)
+  }
 
-  // const highlightToggleButton: ActionButton = {
-  //   id: 'toggle-highlight',
-  //   icon: (
-  //     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-  //       <path d="m9 11-6 6v3h3l6-6" />
-  //       <path d="m22 12-4.5 4.5L15 14l4.5-4.5L22 12z" />
-  //       <path d="M15 5l4 4" />
-  //     </svg>
-  //   ),
-  //   label: isHighlighting ? 'Clear' : 'Highlight',
-  //   onClick: toggleHighlight,
-  //   title: isHighlighting ? 'Clear highlights' : 'Scan and highlight clickable elements',
-  //   className: isHighlighting ? 'active' : '',
-  // }
+  // Agent button handler
+  const toggleAgent = () => {
+    setUseAgent(!useAgent)
+    // Add your agent logic here
+    console.log('Agent toggled:', !useAgent)
+  }
+
+  // Web Search button
+  const webSearchButton: ActionButton = {
+    id: 'web-search',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="11" cy="11" r="8" />
+        <path d="m21 21-4.35-4.35" />
+        <path d="M11 6a5 5 0 0 1 5 5" />
+      </svg>
+    ),
+    label: 'Web',
+    onClick: toggleWebSearch,
+    title: useSearch ? 'Disable web search' : 'Enable web search',
+    className: useSearch ? 'active' : '',
+  }
+
+  // Agent button
+  const agentButton: ActionButton = {
+    id: 'agent',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 8V4H8" />
+        <rect width="16" height="12" x="4" y="8" rx="2" />
+        <path d="M2 14h2" />
+        <path d="M20 14h2" />
+        <path d="M15 13v2" />
+        <path d="M9 13v2" />
+      </svg>
+    ),
+    label: 'Agent',
+    onClick: toggleAgent,
+    title: useAgent ? 'Disable agent mode' : 'Enable agent mode',
+    className: useAgent ? 'active' : '',
+  }
 
   return (
     <>
@@ -131,7 +165,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
                 <ChatInput
                   fileActions={[]}
-                  buttons={[]}
+                  buttons={[webSearchButton, agentButton]}
                   chatInputRef={chatInputRef}
                   chatInput={chatInput}
                   handleInputChange={handleInputChange}

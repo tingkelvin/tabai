@@ -4,9 +4,9 @@ import { ErrorHandler } from "../utils/errorUtils";
 import AuthManager from "./authManager";
 
 export const ChatManager = {
-    async sendMessage(content: string, options?: ChatOptions): Promise<ApiResponse<ChatResponse>> {
+    async sendMessage(message: string, options?: ChatOptions): Promise<ApiResponse<ChatResponse>> {
         try {
-            console.log('💬 Processing chat message:', content);
+            console.log('💬 Processing chat message:', message);
 
             const tokenResponse = await AuthManager.getAuthToken();
             if (!tokenResponse.success || !tokenResponse.bearerToken) {
@@ -19,9 +19,9 @@ export const ChatManager = {
             // Choose the appropriate chat method based on options
             let response;
             if (options?.useSearch) {
-                response = await ApiClient.chatWithSearch(content, tokenResponse.bearerToken, options);
+                response = await ApiClient.chatWithSearch(message, tokenResponse.bearerToken, options);
             } else {
-                response = await ApiClient.basicChat(content, tokenResponse.bearerToken);
+                response = await ApiClient.basicChat(message, tokenResponse.bearerToken);
             }
 
             return {
