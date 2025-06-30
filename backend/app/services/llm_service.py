@@ -126,16 +126,11 @@ class LlmService:
         
         return parts
 
-    def _create_search_tool_config(self) -> Dict[str, Any]:
-        """Create configuration for Google Search tool."""
-        return {
-            "google_search_retrieval": {
-                "dynamic_retrieval_config": {
-                    "mode": "MODE_DYNAMIC",
-                    "dynamic_threshold": 0.7
-                }
-            }
-        }
+    def _create_search_tool(self) -> types.Tool:
+        """Create Google Search tool configuration."""
+        return types.Tool(
+            google_search=types.GoogleSearch()
+        )
 
     @retry(
         stop=stop_after_attempt(3),  # Max 3 attempts (1 initial + 2 retries)
@@ -153,7 +148,7 @@ class LlmService:
         A single attempt to call the LLM API using Google GenAI client.
         This method is decorated for retries.
         """
-        logger.debug(f"Attempting LLM API call with Google GenAI client")
+        logger.debug(f"Attempting LLM API call with Google GenAI client (search: {use_search})")
 
         try:
             # Prepare content parts
@@ -165,27 +160,37 @@ class LlmService:
                 "contents": [{"parts": content_parts}]
             }
             
-            # Add generation config if provided
-            if config:
+            # Create or modify config for search
+            if use_search:
+                search_tool = self._create_search_tool()
+                
+                if config:
+                    # Merge existing config with search tool
+                    search_config = types.GenerateContentConfig(
+                        temperature=config.temperature,
+                        top_p=config.top_p,
+                        max_output_tokens=config.max_output_tokens,
+                        candidate_count=config.candidate_count,
+                        stop_sequences=config.stop_sequences,
+                        tools=[search_tool]
+                    )
+                else:
+                    # Create new config with search tool
+                    search_config = types.GenerateContentConfig(
+                        tools=[search_tool]
+                    )
+                
+                request_params["config"] = search_config
+            elif config:
+                # Use provided config without search
                 request_params["config"] = config
             
-            # Add search tool if requested
-            if use_search:
-                if not config:
-                    config = types.GenerateContentConfig()
-                
-                # Enable search tool
-                request_params["config"] = types.GenerateContentConfig(
-                    temperature=config.temperature if config else 0.7,
-                    top_p=config.top_p if config else 0.9,
-                    max_output_tokens=config.max_output_tokens if config else None,
-                    candidate_count=config.candidate_count if config else 1,
-                    stop_sequences=config.stop_sequences if config else [],
-                    tools=[self._create_search_tool_config()]
-                )
-            
+            logger.debug(f"Making API call with params: {request_params}")
             response = await self.client.aio.models.generate_content(**request_params)
+            
+            logger.debug(f"API response received: {type(response)}")
             return response
+            
         except Exception as e:
             logger.error(f"Error in GenAI API call: {e}")
             raise  # Re-raise for retry logic to handle
@@ -208,7 +213,7 @@ class LlmService:
             str: The LLM's response text
         """
         content_preview = content if isinstance(content, str) else content.text
-        logger.info(f"Sending chat request to LLM with content: {content_preview[:100]}...")
+        logger.info(f"Sending chat request to LLM with content: {content_preview[:100]}... (search: {use_search})")
 
         # Create generation config if custom parameters are provided
         config = None
@@ -342,50 +347,3 @@ class LlmService:
         except Exception as e:
             logger.warning(f"Health check failed: {e}")
             return False
-
-
-# Usage examples:
-"""
-# Initialize service
-llm_service = LlmService(gemini_api_key="your-api-key")
-
-# Simple text chat
-response = await llm_service.chat_with_llm("What is the weather like?")
-
-# Chat with search enabled
-response = await llm_service.chat_with_search("What are the latest news about AI?")
-
-# Chat with image from file
-response = await llm_service.chat_with_image(
-    "What do you see in this image?", 
-    image_path="path/to/image.jpg"
-)
-
-# Chat with image from bytes
-with open("image.jpg", "rb") as f:
-    image_data = f.read()
-response = await llm_service.chat_with_image(
-    "Describe this image", 
-    image_data=image_data, 
-    mime_type="image/jpeg"
-)
-
-# Chat with multiple images and search
-content = ContentMessage(
-    text="Compare these images and search for similar artworks",
-    images=[
-        ImageContent.from_file("image1.jpg"),
-        ImageContent.from_file("image2.png")
-    ]
-)
-response = await llm_service.chat_with_llm(content, use_search=True)
-
-# Chat with image and custom parameters
-response = await llm_service.chat_with_image(
-    "Analyze this chart",
-    image_path="chart.png",
-    use_search=True,
-    temperature=0.3,
-    max_tokens=1000
-)
-"""
