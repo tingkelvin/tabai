@@ -2,8 +2,6 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { PageState, PageConfig } from '../types/page';
 import { removeHighlights, getClickableElementsFromDomTree, locateElement } from '../services/DomTreeService';
 
-import { DomTreeResult } from '../types/dom/DomTree';
-import { DomSnapshot, ElementDomNode } from '../types/dom/DomNode';
 import { highlightElement } from '../utils/domUtils';
 
 interface UsePageHookReturn {

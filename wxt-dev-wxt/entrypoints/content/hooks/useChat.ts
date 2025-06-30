@@ -7,6 +7,7 @@ import { ApiResponse, ChatResponse } from '@/entrypoints/background/types/api';
 import { ChatOptions } from '@/entrypoints/background/types/api';
 import { ChatRequest } from '@/entrypoints/background/types/api';
 import { PageState } from '../types/page';
+import { getFileIcon } from '../components/Icons';
 // Dummy function to replace file context
 const getAllContentAsString = async (): Promise<string> => {
     return '';
@@ -16,10 +17,11 @@ export interface chatConfig {
     useSearch?: boolean
     useAgent?: boolean
     pageState?: PageState | null
+    getFileContent: () => Promise<string>
 }
 
 export const useChat = (config: chatConfig): ChatHookReturn => {
-    const { useSearch, useAgent, pageState } = config;
+    const { useSearch, useAgent, pageState, getFileContent } = config;
     const [chatInput, setChatInput] = useState<string>('');
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [isThinking, setIsThinking] = useState<boolean>(false);
@@ -108,6 +110,8 @@ export const useChat = (config: chatConfig): ChatHookReturn => {
         const response: ApiResponse<ChatResponse> = await sendBackgroundMessage('chat', { message: message, options: { useSearch: useSearch } });
         console.log('📡 Response from backend:', response);
         let reply = response.data?.reply || 'I do not find any response, sorry.';
+        const fileContent = await getFileContent()
+        console.log(fileContent)
         // Add the assistant response to chat messages
         if (addToChat) addAssistantMessage(reply);
         setIsThinking(false);

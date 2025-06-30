@@ -6,17 +6,21 @@ import ChatHistory from './ChatHistory'
 import ChatInput from './ChatInput'
 import ResizeHandle from './ResizeHandle'
 import Notifications from './Notifications'
+
 // Types import
 import type { ActionButton, ContentAppProps } from '../types/components'
 import { WIDGET_CONFIG, RESIZE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
 import { usePageHook } from '../hooks/usePageHook'
+import { useFile } from '../hooks/useFile'
+import { getFileIcon, PlusIcon } from './Icons'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   // Mode
   const [useSearch, setUseSearch] = useState(false)
   const [useAgent, setUseAgent] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Page
   const {
@@ -24,16 +28,30 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     getElementAtCoordinate
   } = usePageHook()
 
+  // File management with message handler
+  const addUserMessage = (message: string) => {
+    console.log(message) // Replace with your actual message handler
+  }
+
+  const {
+    uploadedFiles,
+    isUploading,
+    handleFileUpload,
+    removeFile,
+    formatFileName,
+    getFileContent
+  } = useFile(addUserMessage)
+
   // Chat
   const chatMessagesRef = useRef<HTMLDivElement>(null)
   const chatInputRef = useRef<HTMLTextAreaElement>(null)
-  // In ContentApp component - update the useChat call:
+
   const chatHook = customChatHook ? customChatHook() : useChat({
     useSearch,
     pageState,
-    useAgent // Add this line
+    useAgent,
+    getFileContent
   })
-
 
   const {
     chatInput,
@@ -42,7 +60,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     handleInputChange,
     handleKeyPress,
   } = chatHook
-
 
   // Drag and resize
   const widgetRef = useRef<HTMLDivElement>(null)
@@ -64,29 +81,60 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     onSizeChange: setWidgetSize,
   })
 
-
-
   useEffect(() => {
     getElementAtCoordinate(iconPosition.left, iconPosition.top)
   }, [iconPosition])
 
-  // Page
-
-
   // Web Search button handler
   const toggleWebSearch = () => {
     setUseSearch(!useSearch)
-    // Add your web search logic here
     console.log('Web search toggled:', !useSearch)
   }
 
   // Agent button handler
   const toggleAgent = () => {
     setUseAgent(!useAgent)
-    // Add your agent logic here
     console.log('Agent toggled:', !useAgent)
   }
 
+  // File upload handler
+  const handleOptimizedFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      await handleFileUpload(file);
+      event.target.value = ''; // Clear input
+    } catch (error) {
+      console.error('File upload failed:', error);
+      addUserMessage(`❌ Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  // File actions for the input area
+  const fileActions = [
+    {
+      id: 'upload-file',
+      label: '',
+      icon: <PlusIcon />,
+      onClick: () => fileInputRef.current?.click(),
+      className: 'upload-file-action'
+    },
+    ...uploadedFiles.map((file, index) => ({
+      id: `file-${index}`,
+      label: formatFileName(file.name),
+      icon: getFileIcon(file.name),
+      onClick: async () => {
+        try {
+          await removeFile(file);
+        } catch (error) {
+          console.error('File removal failed:', error);
+          addUserMessage(`❌ Failed to remove file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      },
+      className: 'file-action'
+    }))
+  ];
   // Web Search button
   const webSearchButton: ActionButton = {
     id: 'web-search',
@@ -164,7 +212,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                 />
 
                 <ChatInput
-                  fileActions={[]}
+                  fileActions={fileActions}
                   buttons={[webSearchButton, agentButton]}
                   chatInputRef={chatInputRef}
                   chatInput={chatInput}
@@ -194,8 +242,14 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
               onMouseDown={startResize}
               className="resize-handle resize-nw"
             />
+            {/* Hidden file input */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleOptimizedFileUpload}
+              style={{ display: 'none' }}
+            />
           </div>
-
         )}
       </div>
     </>
