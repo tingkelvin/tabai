@@ -2,7 +2,7 @@ import { ApiResponse, ChatOptions, ChatRequest, ChatResponse, ChatWithSearchRequ
 import { ErrorHandler } from "../utils/errorUtils";
 
 // services/apiClient.ts
-const API_BASE_URL = "http://192.168.1.136:8000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
 const createHeaders = (appToken: string, includeContentType: boolean = true): Record<string, string> => {
   const headers: Record<string, string> = {

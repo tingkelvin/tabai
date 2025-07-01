@@ -12,7 +12,6 @@ import {
   navigateToRequest,
 } from "@/entrypoints/background/types/requests";
 import { CheckAuthResponse } from "@/entrypoints/background/types/responses";
-import Page from "./Page";
 
 export default defineContentScript({
   matches: ["<all_urls>"],
@@ -26,7 +25,6 @@ export default defineContentScript({
     );
     const isExtensionEnabled = await extensionStorage.getValue();
     console.log("Content script loaded");
-
     let ui: any = null;
 
     onMessage(
