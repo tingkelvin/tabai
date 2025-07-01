@@ -23555,3 +23555,258 @@ Traceback (most recent call last):
 google.genai.errors.ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}
 2025-06-18 18:33:26,041 - app.api.auth - INFO - Received user info for: ya29.a0AS3H6NxpVm4DniFXaCzifBdxEcrmDLRSiE2tUpZpOUxSeyVJATv4E9j58r847BwQXSRY-mElJ2lcIus7coBW6aOanaAknVIijRahWLhMjV3pxDUZRrfyN1A9mYILjX0rv4Rwi2pPDt-Wqy2kf5NQhdtaWye_5pZXSIzmpJ4ApTBfx8d5wGs_BvbDE3pJennMTvuuErfdX_m_4Rz8s-kQd3z0KRQ5MTkttZwCDxj5abT0a3waCgYKAZISARMSFQHGX2Mij0PN6ws1s1SDQkTBhgDZQw0246
 2025-06-18 18:33:26,394 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 10:38:30,957 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxiFn_3dbwLWYzxkhk932iIvRqnbrNPu9GzY00NiJqkU27Ph1y5F0M-6HthQn9oOEuKojdn1toJvr2ngVNYad4rj5DkDgdPjXxExGUCNS9EiTe940wAXhdidDcoZv-nGvYGOH4zxh2BU__NeOCA_URiFmDuM81TMReR0aCgYKAUoSARASFQHGX2MipKixfFJc8ScbzO4evAFq2A0175
+2025-06-21 10:38:31,310 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 10:38:38,073 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxi0Yjw1-3wItOz01T5VNAbD5QU7FLw8Am2Zw7kiAKiXs-KfGOmRlmju12thW_cMprZzmjfRIivHYbqzWONQXPSJMJcODXbOAuwK2Hlib1vmxNFW6ycfYrCSxLRCpFlJHxsutJMeJyVypKoyYKow9bO6IIqRTU_mAvPXvlzPFX8hBmwgQC0onpv5ETtq1IRDueB_1a58R7BoFBj_4FZEepqUetlBC-qc3qA9mjtUaCgYKAU4SARQSFQHGX2MiHDWzSG7urgO46HkmrJjPtg0243
+2025-06-21 10:38:38,429 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 11:22:09,238 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxif_XxRlPVCuzAD7ziLbD92ajve5Z-gkD4W3y9sBQwliXA6DpOBfjytHe3SfXTXpHb7MFnF71oy01mJAUM-G08VkD_yFIwNaDSWKLt-opUaB2_jHy28novcbig_b6z-boATVQzOpaevJoFHLVLgtAJhdBWT2KPi7NhsYDQ2qmi036zO3V-qyDFZzp3eX1sENDfItZXnI6ZSBGAHRk9YkLHByOoq8ZIxLZH8X8XZaCgYKAUASARASFQHGX2MijDiScmjZTD8y-n8CDf20Qw0243
+2025-06-21 11:22:09,685 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 11:22:45,650 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxi0pJXu6F42K2GwdAdqluvH82lEfnVjmBsPa9j4vkkWOu7Vqm3WkLQfQ_XnBP09goaO_0-pLecpHxv9aHTMA25cFN-2bBDlHTrJ85-Sw19U5pDQfq20toxEA-84PIRqVKDn0oq-E2AM6Bk7OA1DdTVmxMQKZiYiH51MqBh1V1pqNc9A7b0zGIixbUXw5KXM2h48-qq_XhUPDO5EzHA92Lmqu_MK1CTg8p2KPSRAQQaCgYKAcUSARQSFQHGX2MijVywmlpqQjwfh9DIwC28lA0245
+2025-06-21 11:22:46,001 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 11:34:14,849 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxisFAyoeHUsJG9XAph_5i-XQzm88Y3vk8tpgLHaIBiPOeZg-GFKdXnK-69Iiiw-2K5LdYwru8OJPApm0MdaAH3C2HDgW1_cvtT_JV22j47OOAhzRt72JMc0NO7MvUN_AiuA_5ILoeIc308NdPrXun18kH8knBvN9gpMXX4oBZxgxScOoL9R-oOLvjtJgq88GLLmNoMiEERZaiSDJoepohMUcSSw7_jT7lD3kLgKrQaCgYKARISARASFQHGX2MidBoqPNWBPTgdTarurL40_A0245
+2025-06-21 11:34:15,288 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 11:37:06,178 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxhPhaekdIIleHBAUNtYVgEynJcRfPj6OKKX-H-wvvafCFii0ltCMtyLzrxTbgZVM9py9T5y7BCgR2Q41xh966AxxbUJmY34Gdxsk_Rs1W-CWW7vRFuEVqgQi-0cr3MQ1OmbHhvydYTWGFn9mN14AJCP9vkYkGu6j8yLL0QeOcPY27P2FholUKxiEoLH5R47RVO92tVRPN_fw3m4VovCR5-ep6Fy6WgiXbQ1AZfSaCgYKAZISARQSFQHGX2Mi8EBzlMJ42gB2hETjfOObfQ0243
+2025-06-21 11:37:06,488 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 11:37:35,214 - app.api.auth - INFO - Received user info for: ya29.a0AS3H6NzK1rXAvDfEdDdUND_arqKu4_BY6Rc3_Rf-_GN11Y7xnkHhpFCKAuNVNPk0Y9gFaQ-R_goIHlXJJ6SCytPaqAALAZY1igGXZiTK8HtABmVy9XQl7ZIn1qPrt7PsYxh7J6xTW_ORNauk51T5qQTvvn4fepnRqmPjqP0Eh04OZrBjRDPHIKjlwqnx2siMgGS54TOXoUOk9CXCdmYMt_cDiTwR-Ye1-IhdAeYgvDTYJAaCgYKAUsSARASFQHGX2MiVDAejpXCwGdgIQeYqhtjPg0245
+2025-06-21 11:37:35,797 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 11:38:07,740 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxjbWRdTtAJ0XTxO87C_ZdYi2QpIOkyZDWEduLe8sDZ8dcDwrGijDzmRw2p6seyQqC8tPQUQUleoQGa92gYNrKNlMh7Z9gaM38zzxnCMRSj-YBvJU8UOlfJ3S-s8kPWc9RY3sPCKflccvZoukIDhaE3i4rnKkwwEvnlprXTLAwFxqlwatkM5Ma_kcrQvPDIZyFd6B3m3dmaVu902eM4ax3bgoQVTdsQL_QMLMLO0gQaCgYKAeUSARQSFQHGX2MiglOAzGaqC4CciWbgfwbMWQ0245
+2025-06-21 11:38:08,090 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 11:38:56,031 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxjHqrMfwXq2JyKe4llpCbaVXFR9OgV-HLUft7VXK8_-uCNOS39WdmRyymWT2WriZ1Mw1ff3eBBQdmFFoVZOQi63IjqEBuHrfkLZzPprzsxZtLvS8y_1LHZ8woLwvssBS2MKl5ggW3MY5aJQwS4lNphM8EUSzHRYOzD3htNBwr9bGrBmiQTQJ6TJ2wOqk9-DHMINGk11CJdb2kXHtXyyH6G1K4lltB8O6qIBHztw9gaCgYKAS8SARQSFQHGX2MiLCbp5HWrilk_sv910UeU6w0245
+2025-06-21 11:38:56,336 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 11:39:14,944 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxhYxpGjKj2G0fckoJbJCo8IsUjij3rNhxJ5cVvqTnr8QCuvyvXlZ8PB7XTHqkDxqXwi70LDPJj3Ty2vLkuRGpvGetnTWm640PqVBa8E7UpN9_VNpic7RIAd1c9Zw-eKDTH1i_7pxf68vBm4mLZngfzadVD8BYOh4zjnPNoZl8pg247EW6EcwjSWJAWHMFuR7-WDe_Z4ZX_qOobvUzr_AooHm0A91AYaYGBWqg90ugaCgYKAcgSARASFQHGX2MiKID6WbKklYMZt7wFX3lTvQ0245
+2025-06-21 11:39:15,291 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 11:43:31,878 - app.api.auth - INFO - Received user info for: ya29.a0AS3H6NwBPRo4-GXFW7YfiDvM9ORwRwM_0aFr6nC5DBCLlAZdsVPrrFoRBFY4GWsf2I0RULfYNxpAccXDRlHBsQuwixYEVABTFl0Zgm5Bg8r4hdBqXsSYjet3QQlTNGj2TF4s-UThQx59Ez0SAK1GtvppApvBW1uGS8v7SJ7NhmW8rwg9qUNw-qA-u4czUVxc0ZZXV-7B2_ir-w3r5Xlz4r9oG89X3_BYFXfihjBpatQD7AaCgYKAQgSARQSFQHGX2MiJCFxIVukGyoy-3yFK6O1VA0245
+2025-06-21 11:43:32,259 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 11:48:08,734 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxhED9ZO3I1Fer7CGrQGy2fuGIAeWYZR6T00v84vzCKUcQeEvA_AOPXuVkzf0uj2Ny7oypWUjjb8H74Ui4_51VqCymHNd-Ac9rX3d5wcDxs7Ob5giN75dnqt-sz362bWcTHE0oc4zsHeUMzpaalo1JUyCCqKD5HLwWFZGN3kuiMgD6UOCNFLJyUReuZi-kQtcAPNzt3RMJeKvyuqVAMR7XaQHt5VQFECvP7KGnku-QaCgYKARISARASFQHGX2MiZXtQ5ew9OEHbpv_FuxIa9A0245
+2025-06-21 11:48:09,070 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 11:48:29,962 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxg7S7EtyTv_8mrjuFxgNvOZJI1FBEnkmyiJYNXbdY4nSZ_FMAa4SSoBN2jpXK8US8yxDa3l5rZ3pT_dQuxXGZgdg_bTAJvU8qpa3XAANMiVkG3jHL4hTeL3AETggGN7C_hXpcIKP2OT2hvX3vA0VcY3BznMEexNV-ya6o-GQPEHqIKLe8wafZLPwA4FCJF91oaauc453SafyM_BRYpzFmPPHiIklwFEWfKjz50h7gaCgYKAY0SARQSFQHGX2MiSNjf1QgNMSoXBUjl94pqkw0245
+2025-06-21 11:48:30,352 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 12:06:11,975 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxh1QDgMHXjc166E5F1uNletP3UGvHahcTaUzRdFKCeF1NT_ObA6ibCMX2ux52LOdWCsFw0_NZKv8DcwxyxE51h_5g2MHKPNxY1vAS4UrJI0W9Zu-steraoG-Gi7nsyVg8ko5214Udp-5OPHYbNZFM2Ryzb4T7Zyu9ZACRcf32VT64VhxQJxPYoLKmSwREj0ewBeadYK1VHxMI9Ulrh9f1TsNYDmh4Bi0XdkwldnYgaCgYKAR0SARASFQHGX2MiI4zm95nysIEL5GgbXu2_Yg0245
+2025-06-21 12:06:12,295 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 12:06:34,030 - app.api.auth - INFO - Received user info for: ya29.a0AS3H6NwdIWenftBHHZHIoTGwqE6JDZqm2at1ByVilo9-rOl66C4hIdqXY_e0UoCmBeTILlwdS4WfKT-vyoG996n_BqXJimsW6UhvyGbaup1iFabv7B-a8XYvJ-zMmwocEOVDdDRDyujmMvhFGDjR1ZgSLvaOWUJe3kXUkF7uzIRVj3nwE-h-eUhDARebd5VuGTFVDiK4-2hSZAWApX4ldk_Ep_Kv3CcbDGYNYXvZxzCAhwaCgYKAcoSARASFQHGX2Mikgdv1sKe0aURqTXX3_zsWA0245
+2025-06-21 12:06:34,410 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 12:07:13,000 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxgqpgI3YRnL4kY7Red8tzW_gCnRC2aSqHpnuD2FOI-MdzFj9yHBOq1wSQ5nGUWASx21aFeUkphcv-4b_JDXEoqVpW4Toja6NGtYXF36mYgWgAzw7wCe0xVKTXK9Y2-6apAY7yCbIaAc4wSL6uZaUpeYBEAyfNT2l6VJ2nK1xpb9E9CHcOhIKSzTGZtw3exJh9zf-8RkRNRAT3LhxwG9hVV5yw5y58eeNwtioXqQCQaCgYKAWMSARASFQHGX2Mi88f0Gdxm-XoLds-GjV-BDw0245
+2025-06-21 12:07:13,386 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 12:16:18,064 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxh64x8edwE7CwUBzWDOp1NhFunsltCsCnehR8x7g4j_6wrAxuVheK9ftQ_hAJ16e2cSXjcnKPeVD5Lhrnvv61Fgh2gRr1Qn0WNQp8pziW0AZU-ZqMqdRwWNpQi4qq5T5XQCnBxSjHeLioEffE65OEDDW1X1wOoLM6N3YqvjqOpdl-4xffZUoQFZy1I3bR1J7do3dxoP7jpBzWYq6t9a-m6IpE-dDq8B6NEKxFN53waCgYKAT4SARASFQHGX2Midr5f1PT1ScAaRxtfNCAWsQ0245
+2025-06-21 12:16:18,506 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 12:18:17,660 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxiS6CVh9NZsf1ea2HuhGJpXZdO-prnkqCMRV2YmrU541fDYvOpmmQxahUBJiT5bw81HWYBtNIufh0H36JAPCaikmfS_fTqiOX2jw_51U5e_SlMTIyGnftYNf4-k8jek5fh_gZm9kjVVXEXqU0FOR-9-KTNdS7WWr4uTcG8gQtyC_SKDxOjuLer0HeyBJVV8z0OeL16uTOgXKQsQRto_iRtGayCMctHoBH-MDCDtEAaCgYKAXESARQSFQHGX2MiPb6KnbLZ2311UfgIyIFToA0245
+2025-06-21 12:18:18,027 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 12:32:44,625 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxiP5WlLvO2Yn0v3FOCSEC9hzIg5U5ttit9ak8QYp96RrG2Ek5MaaoCVt6TPZNhg9JPh8xX_5A98OmG--Fv_YUFj5W-pxTXLxNjgkf8D_G6v81Vn_H9ffN7E3SYU80HQaFF_B7NdYtDUp3iBut4GOXG5afN6soIlsCdHxMr6neJsV253bUBcSBZwWxw2gqCDriaHLH2l-4vUtFmK94qfj6NH9EIKbcE4k2mRgPsCXwaCgYKATgSARASFQHGX2Mi-wnzgcK19uTEwjmmNbJXCw0245
+2025-06-21 12:32:45,021 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 12:33:56,010 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxhe6yQP-d6Ty5Ogr1hEGr9pEwqRkMdX_0n8x1vk2IR7xKAxjr42we0T-iaNDY1n42EKP-5E3iwyyMZTD33ShbzHD-iDKRa2DBKLuBZs4n0dgoMGxfLNI3xS5OX1XoIciEmSVZIpcoXzinMhSbhyT2Qgd4nsadCRPYkW7mhxVw7zMt1L1Ea0hrG0bxrDz33uKA4TtTGOUzDY-VyCqxXh630Rz6GZH-gqLGfAgFP7SwaCgYKAfgSARASFQHGX2Mi7DtF0WuhmeUgZGU724vJJw0245
+2025-06-21 12:33:56,372 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 12:34:02,342 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxjDZur0BEx71f9qUNfKyklD3aaPvIRDblaYj-1bwGTB51algrUJZxNbGVA1pIXcUFKwnzdtuGrtE9bRW_nNLTDI7MJuTQI7UUriXQVGnOgnuwFX8MoZqgCWfzyFEVidcEuRyNZYCf5n_0rAwMsiYWQIwdeJkD_rvKLhxmJ0KEnF2oogPqZtQKh_nNDWg0zqxYeXX0qOWh0FBzEOyhPul5M3Lhugk06F0XTo6zOzZwaCgYKAa0SARASFQHGX2MixINCembv2NmOFak1K0-QiA0245
+2025-06-21 12:34:02,939 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 12:34:25,850 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxjEM758ehQgJOmk_Y2eYGmvMWMbskt2iaMJb8A21NnB85xlXfVX23eSbBjMKQG5t984VUCtGfqAobR8cJYfdT8arOqNdXpHOgzN1CdfiHFUsPqkPAuBTlC-n8q_odTUQEXQ5Iy6kRLp4MIOXwStpp88tHquck8aTbR66fSSmpVFfiO9kSsSXLqANT6qK_Fzcv_7fqeFV4UITBeX5CJVKbbtpQOWPUlTVkufm4yABwaCgYKAUwSARASFQHGX2MipN5RS5oa96La3fBzPFWFVg0245
+2025-06-21 12:34:26,456 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 12:34:38,406 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxjPBHO1lWEYoV21wxby12zyAFtcfps_HTGpR_tlLsASOiAAR4NmfDQ1orm6Rnhiw_6x56D1PfDI-VW0QsECnCX0uxga6JEORQhZmagxlFNhHE3aDbw0BHF6BJqkA68ANVNirb19QyRMY3fSp1s_s9vyP_Txf0nNLxy3stM0DAvULJbuVsQTOUOmAWa0zpr_jAvdXbxGh-nOG0VnTz5KIDxv71AuWvVEDeodCPigEAaCgYKAY0SARASFQHGX2MiM9MmjZVoYRYAV3ADWBbOAA0245
+2025-06-21 12:34:38,981 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 12:34:55,286 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxhtrfPNEJVqsyTsyoGGotTdTM8QGQvNtLPltmDI1aJlqN0QxbVpT4GOVwPbhXvl2RIdtWBjwkj3X7W3c5c8_hoKi1ArxxrBtBsd4A7m1Rc8Wcc-Xj04rAuciVSK7jpaXLDpqlEr7IY29N7d3KXWLQh7K49kudjdgYdXxptzx4rKvJ2__Sr8egnL-G3T1cxCBd3i3cgCkrfCxbDrlSUxs9gtu8yseewmIV9Z0MqdaCgYKAdsSARQSFQHGX2Mivs4ex0PKIDTZWEliU689Eg0243
+2025-06-21 12:34:55,898 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 12:46:45,141 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxhk-_Xr21j4sytqN2RSWdg7cKT6bH6KIVubBTLbZvNy-aWvR9CndltBdEJFXaWvSM9fWsHWwO192WSHvcUPHViw1-ZgbXzREZBsVPZPbOhLVIchGm2T7T4jwHdrTRy-TK6oAYm7VcczTWVdkFQrBL7NVuseS4SbvOKh81lYfO7rS8BXJa8HWgtRvRV9dgq9ybQ6azDLaC-CwwBagwkabVgvlX9X2HmaOaj2fpX-aCgYKARUSARASFQHGX2MiZPXwihOBSzNISgYRrGhJ8Q0243
+2025-06-21 12:46:45,527 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 12:47:20,388 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxh2SmNlGMn_p90LJqs1SDDWwl0mcI_lYPRx7J8RU8MSggu-GvZMUF0cu-VfollPzC9tSIJUgQNoVz7o1OYsb4b51T8I6Xv3zNhHCUzp1okMwMl5fK9p0C5atMqxa7GLHvRBwkKbcGovOsoSfo2ZQv9uXHZSQaja-_NDBkoBV8s3WzS_B0s_BcrDH9IQzIcOPuQMSOgRr7__t-FMtkDc17rXeEJ5NE0GOn3q6vi-WgaCgYKARgSARQSFQHGX2MiOjU5VfGErGK_y5rRTZhCpg0245
+2025-06-21 12:47:20,727 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 13:20:36,135 - app.api.auth - INFO - Received user info for: ya29.a0AS3H6Ny3-HbGBj4Ovk4ZI9i8qpHtefKVAkBBGREXxRpDiTRYwol3NVQjAMWo3paijyKyf0wzESw4zdxscUV0UP-S7UV6N0XFxnUyHbrQs6ow9OB3gMCN707Be5T8X-NIj59oZhT_NAeQRu1T-YEIFMIllUyofOjcO_vcZZ24zhaiuleAqUjbw_A7uNic4UJI3x5JKmxyDynz3Aa68CmzGjp8RGvjWWmNFjo1MboWN_SxaCgYKAf8SARASFQHGX2Mis6Qkg_k-ycmysmYvDr5iVg0243
+2025-06-21 13:20:36,457 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 13:26:23,751 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxjQLbNuz9xlEml-LeKHuk4MNLVtMPZg9mU0WgQz8EV1Ci4vWS0Mvwk6El-KtVl43mZglga6q5LQYjinNbAuTho65MDywicB-pU27bK-G8JaWLtDnw9ZJekbIp1vh7s-fIwFinJMh_BBcDWopREqeGpMvyczv6qZnDmyyTjMVJPSnM-Xvu_wLoYhhTktt0jGhF8HL0euWXbwAU5OAwSZQo_fDlVn8-W6X4qrVVt_jngaCgYKAS4SARcSFQHGX2MiyP0FzQNgldhovRHH6k4Oiw0246
+2025-06-21 13:26:24,387 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 16:29:55,577 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxgj4Ryi401anPRlh86fMrwRRqhjgCsrkvrVEkWOrJ2hW422Eyd0yudlUQAvginSdljtOsfpOXfkEwbLuaVDAN0JTLVSz7YatkhpmOlNdhVoBFHSXmR1tjzfbAZL_Nh-18sdRBNlG98xXcjxzxinqYYFwOP_qfvm7MkrIKea2YV1CYzVgiLCvI4JV-LnwjyONy0c5tx3KBdF0g2kXVoW2V57OmndxvwUA1UeanPpPQaCgYKAV4SARQSFQHGX2MiGI3aKEjnnyMFNnT9fMrzFQ0245
+2025-06-21 16:29:55,930 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 16:32:31,569 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxijYIRTsQFoRMv_sQ8Q1Z12Ud_Q63lO4awKYBJvhk63DKVcMd9IDi6MXMWvHwaKdFAGScxu4E5qT2DCHmYn3RXdY-uwbmbEGhbQj2jCVE0IIAcxYg_aCap-BXu8sSQeJeT3_8lTD1xdvecnEE6dDwUXlftxNZpxSIl6aqFfwq18R8MRfMCxIdkV0wFfugRRMPNTbVqEcEs3qwo2ll4GgqK2qgyIlxgTratEne_gtwaCgYKAZ0SARQSFQHGX2Mi2neEC3WaMv2IbRUFiEgItg0245
+2025-06-21 16:32:31,912 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 17:06:10,857 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxjhwz0DaSHEeSFzCmJEBS15xTbVkPA1WWLSgIxeJpKbm9nH3Kr3jF0rqYEP7hyaaCDt3qknOi4G9S0hQqhIXkywXjl-3Vjup-SaLabJAPrFAnrQO8djOHsuHIkLwufWIfFq3yiulaz8T_eDFD01_hY_i_FGD_fvAiQRd64-80LjBboyxWRHS9-ULQivD7Cwt84afGe0asxIFGdNEhQZJq1WdDEt5_if_bFLgZY-dQaCgYKAZ8SARASFQHGX2MiHOO-kf1f3z3BSiIx6jDwYw0245
+2025-06-21 17:06:11,204 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 17:06:30,416 - app.api.auth - INFO - Received credentials: scheme='Bearer' credentials='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAzMjkyMTA5MjQ0NjI4ODcyNzEzIiwiZW1haWwiOiJ0aW5nazE4QGdtYWlsLmNvbSIsIm5hbWUiOiJEZWxsaWNhdG8iLCJleHAiOjE3NTA1Nzc3NzEsImlhdCI6MTc1MDQ5MTM3MX0.j2yO78cGBjN_D3W5f3K0Qa6j5Xrhm38lGKqukpYYbmY'
+2025-06-21 17:06:30,417 - app.api.llm - INFO - Received basic chat request
+2025-06-21 17:06:30,417 - app.services.llm_service - INFO - Sending chat request to LLM with content: <user_message>hi</user_message>...
+2025-06-21 17:06:30,417 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-06-21 17:06:32,408 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-06-21 17:06:32,411 - app.services.llm_service - INFO - LLM responded: Hi there! How can I help you today?
+...
+2025-06-21 17:07:10,882 - app.api.auth - INFO - Received credentials: scheme='Bearer' credentials='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAzMjkyMTA5MjQ0NjI4ODcyNzEzIiwiZW1haWwiOiJ0aW5nazE4QGdtYWlsLmNvbSIsIm5hbWUiOiJEZWxsaWNhdG8iLCJleHAiOjE3NTA1Nzc3NzEsImlhdCI6MTc1MDQ5MTM3MX0.j2yO78cGBjN_D3W5f3K0Qa6j5Xrhm38lGKqukpYYbmY'
+2025-06-21 17:07:10,883 - app.api.llm - INFO - Received basic chat request
+2025-06-21 17:07:10,883 - app.services.llm_service - INFO - Sending chat request to LLM with content: <user_message>Yo what sup?</user_message>...
+2025-06-21 17:07:10,883 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-06-21 17:07:11,829 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-06-21 17:07:11,830 - app.services.llm_service - INFO - LLM responded: Hey! Not much, just hanging out. What's up with you?
+...
+2025-06-21 17:08:23,940 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxinJElzpLwRgRDyJVkBTVcT7xtfc73pu1IITUiXBXwGRw_RLmvuFIBpSNse_hJzuGthGMFvFw8VHXMH5sr2_xGBl2pOLs6JrofmM7QWKGDXOU7Qwytilw8_hCKy65VHTNp-PcWYC_qnTi-LVmNRFngBX0iiFoSNEa3QwR35Pyqar15By8WxCLR-tpAc3UD118SDWU_VfVx7w8Ram8YDJSbWsSyB_d6vjQavWAZyggaCgYKAVISARQSFQHGX2MicyPbJezz3Dn4_R-QNrRz3A0245
+2025-06-21 17:08:24,453 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 17:08:30,815 - app.api.auth - INFO - Received credentials: scheme='Bearer' credentials='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAzMjkyMTA5MjQ0NjI4ODcyNzEzIiwiZW1haWwiOiJ0aW5nazE4QGdtYWlsLmNvbSIsIm5hbWUiOiJEZWxsaWNhdG8iLCJleHAiOjE3NTA1Nzc5MDQsImlhdCI6MTc1MDQ5MTUwNH0.FMWqXTyg7OBdePSkrJ9D60VLRKYWO6Adpg4AYX5li5w'
+2025-06-21 17:08:30,815 - app.api.llm - INFO - Received basic chat request
+2025-06-21 17:08:30,816 - app.services.llm_service - INFO - Sending chat request to LLM with content: <user_message>hi</user_message>...
+2025-06-21 17:08:30,816 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-06-21 17:08:31,590 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-06-21 17:08:31,591 - app.services.llm_service - INFO - LLM responded: Hi there! How can I help you today?
+...
+2025-06-21 17:18:59,960 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxjlfb4VNtvAPxWyarJm3084kOqwHm9OgdLCf15jzCRkoP2kCbQEcqsDlyeCaKJa3pAqK-Ck8VVGthHPhOuNqhPyfj4Y5VYebJgukyo-N71DGwipC4Cf9ApKrcOZY24jeQp9bK0bxT2-WUshQoKHxoqN4LPAczyeyGKsXgLztaxmrIyBtzNgcFLAKKK-7x02BWEzvQcBZlssVDEmNF-GGTZy7wl4yCEQMZMVdDpAyQaCgYKATASARASFQHGX2MiBRs1QCqrfWZxqpesEaB6ZQ0245
+2025-06-21 17:19:00,379 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 17:20:45,076 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxgJgGOq4geFatzl2upfQ_qTtbEImQlfEo5j6tp9-s9zrBDN2XDGfXldT64OIt9UiWgO8KXB-hQ6SOxbRnhAT_dw033BAfFicXCm6sTXThppbc_k8SGjiUeNBtSEorP1OOvgu0HzaA3w59u7thUKYp3JVe_mF2eoeal0P1_2sm7MNmcOglghc8eotciKXkBCRXW1EwEs_fzzLsHSrgrQW2B8FPAtKhRZ39c2CfkfaCgYKAdsSARASFQHGX2Mi_Ob4tQKClFgVMdS5uYpb4g0243
+2025-06-21 17:20:45,431 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 17:20:49,202 - app.api.auth - INFO - Received credentials: scheme='Bearer' credentials='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAzMjkyMTA5MjQ0NjI4ODcyNzEzIiwiZW1haWwiOiJ0aW5nazE4QGdtYWlsLmNvbSIsIm5hbWUiOiJEZWxsaWNhdG8iLCJleHAiOjE3NTA1Nzg2NDUsImlhdCI6MTc1MDQ5MjI0NX0.UfYKmhp4Diu6Pw0BUKk0YTNegNKBJy9SGXzXviv0vSA'
+2025-06-21 17:20:49,202 - app.api.llm - INFO - Received basic chat request
+2025-06-21 17:20:49,202 - app.services.llm_service - INFO - Sending chat request to LLM with content: <user_message>hi</user_message>...
+2025-06-21 17:20:49,203 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-06-21 17:20:50,109 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-06-21 17:20:50,114 - app.services.llm_service - INFO - LLM responded: Hi there! How can I help you today?
+...
+2025-06-21 17:31:50,167 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxhVXuG1AgQJfGi96Cng_97VuaNWBdOcLRBm59dE3LPsft8MtjkaY7txjhHCsCvDJvqTP4SKe-pv0hd2EI7l1CDcSbQew6LqJNTAaUIlg0zgAti4NsovMreEQ6S7ODtNsRMiPAkPBKlahf3NZzb1Y8sbLShOLGe-8iMlfx4L5OZ29gcFMeVj8dnys-w2FzXi3ljE7hcxaYmQXH_vGA5LB13N4m_aX9wGmylN-TMgaCgYKAbMSARASFQHGX2MipCXUFeNDlHZl6geAxu-0RA0243
+2025-06-21 17:31:50,597 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 17:31:54,501 - app.api.auth - INFO - Received credentials: scheme='Bearer' credentials='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAzMjkyMTA5MjQ0NjI4ODcyNzEzIiwiZW1haWwiOiJ0aW5nazE4QGdtYWlsLmNvbSIsIm5hbWUiOiJEZWxsaWNhdG8iLCJleHAiOjE3NTA1NzkzMTAsImlhdCI6MTc1MDQ5MjkxMH0.1Ffk4sD1ILmBIcoWXqI7w8apxa14E_WjE13no0Ew_WA'
+2025-06-21 17:31:54,501 - app.api.llm - INFO - Received basic chat request
+2025-06-21 17:31:54,501 - app.services.llm_service - INFO - Sending chat request to LLM with content: <user_message>hi</user_message>...
+2025-06-21 17:31:54,502 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-06-21 17:31:56,347 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-06-21 17:31:56,348 - app.services.llm_service - INFO - LLM responded: Hi there! How can I help you today?
+...
+2025-06-21 17:32:10,452 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxhdmyufzVeD5CrLin8U1E743r44gLe1jDKxWPuvY_Lr7tCjLiF0TbSesx6uayAcFf6X5EqGRaOhGDK86MpHElDPeiFwpMU_OMoqq39ppVsEuSSpEzgdgzKNATKgFvS20-wQdNOj8Smi56vsb0a2NcrSizTLsMFpQEdyUCFiP3_K_-ybondWDtHQ_Ugl9sxF7Za7hMo3T0Anlp7c63eN2SW1yIQBx2biOd7Xq5BOoQaCgYKAcMSARQSFQHGX2MijJO3LrF8nxP6iuTRyK73gg0245
+2025-06-21 17:32:11,119 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 17:40:58,476 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxiYjNEtnJ3Txsn0AbihmR4xqV2J3T-cW_O5Ld9sEPfzLmigXmlw-7nxrnyIq7BlA1ysuf_xQsizXIlV9O8MVG8nBWEXsaxhafS4Ns8PgYpf6wCnky1D8YbGhdjT2cMaZXSRxRCMreyyrugGXqzKWEWwhBf3NedCAPI8zy_efhbodXrRo-wdW3x9TRq1Nv80bi828TLEQKzndPftdvVsJ7QWceeAqBMhC5UjLKEIKAaCgYKAV0SARQSFQHGX2MiE5GqOJ4eXdGBlZiMrlF1jw0245
+2025-06-21 17:40:59,055 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 17:41:19,569 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxga7MYcbsI3eaQnj2Hkj3FmHRK5lAZYTCAV-RSR5itQBnTmgn9mW2QDZ698x7-VyVu4_kzZZRqNLZYkFRN0x6m-Gos-dASpfcf2sKX9rsiZJlpuAqyc_pVeZkbBNcHKqh4N_b2nkAr1gmHzSMzERvVtsprWkqNZvNemkSmNsVxDKzBhyQ5tch96khhJgW3v80wLOtJstsQVxLnIO1M5teSEk3oum1gfNh4xmRR2pAaCgYKAR0SARQSFQHGX2MiRkr3oL_8XWBKpio31LHb2A0245
+2025-06-21 17:41:20,176 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 17:45:22,339 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxj4acecy05Plr7wY8PKRKuhMB1oWE7JZVstqdC8Zy3M7BFtaqiR67NPJO6P3fuPGYXNoc22O3-3YoHrUmBe32rcYarXoBncCxp3HTmZ7xqhCzyyA8EHUawk1TXPA4NbM5jX5qFPYXWOolBeNGJPvwQjOwy2Pd0gemd9hscK4lWdqXACnDmN-8A-gK1m-Miy_oxaVX4fbg7gFYYaBTPE-MovbHxcXurTPHGbvyzu1AaCgYKAeQSARASFQHGX2MiXDrE0hHVPMytof4r7aZV6g0245
+2025-06-21 17:45:22,660 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 17:46:21,181 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxhhWA7ogCdRPi9YXmixNT1cwFuV9Q2gEa7DHMlfgo0Y0AQ2RXPQ4fU2Cjv2uGeadgd4xLdV8D6RSH3fWDdXRHLeW9SRqAyLZORJEhiSjpaHmGvA7e2iqkoLE6jOdND7zUk1oijcBRFHE6TiW2MhHsBF6OEi7c6YlfWL-ZA7pHFZxSL-nl-A_yhlf05MXyiSeVkbbGZDRPIYSI2XYg2sMzK_71USkAUVjhALX2BJaCgYKAWwSARQSFQHGX2MiAipUEPfB_I3KWDD4UedXqw0243
+2025-06-21 17:46:21,621 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 17:46:42,984 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxjsfBMw5lybTxReZAwvoX66thrYRFpPmJx16KE3gLS4xnPh7cAvqoJXC7WD1SzfmwA7gfK5VDZiLgootjeq2kl5eoQXLmw9akOYnHLVd9FR9XGGkCkA2IBN8h-upDfNlwcuG_QzpN4DfdwUVWQC1MpVaCmRpiGKBk4lekrmOcXEPjCskJImz07h5f1WmosiJdhyTdEv1M8GjwtrMPH2DW-D8FJTxZujhQZ0bdsvaCgYKAW0SARQSFQHGX2MiAyGdXDODf_lqpscwVFwr5g0243
+2025-06-21 17:46:43,378 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 17:46:52,403 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxhoW42gvT-nc4CCFPmLDMcGFjLj75XDcj7Oe7fICWBAytJ3JRhORRA3wizAXF0d6HEaFgm6xkWIwa4sSFJw6TTEjfDDdTnM1JqoB1bAU1IKxvNJG--1QyT_rn8GXyOceEb4iRoulTzuOFpQD14R6IKpGBPqUlPHgde-rJwekXSxja686-FJ3bIVj-XSxnKdUJ-moA9OF76h44ChRg99e4w90SXpQ-PniHNndk5KUQaCgYKAbASARASFQHGX2MiQji4kydgHHvmRZcaJQuhSQ0245
+2025-06-21 17:46:52,865 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 17:50:36,720 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxihEBHrYjIF25PhFxBKpeM-A5qDC5IWw3LnTZQsZ_lPxaI50whZjbHB86ocMOacdfBZPC9EqogGmthliBycQkXB0t0w6Gp5wlwTp16DPiDYdv8BXYbEwOjF7KeX4v-bPNjNykqFxSN0QjI-9VGmjsvfCbgUQObKu2-INTsV1Rl_MrcAjzauIkvb8wleqDJ7hlG8ttGjZ4qGU42SoH0sdbWQZX2SnD-KOUN0vg254gaCgYKAewSARQSFQHGX2MiwrQ2irvjKhxV-hOGjVLWOw0245
+2025-06-21 17:50:37,113 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 17:50:37,114 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxihEBHrYjIF25PhFxBKpeM-A5qDC5IWw3LnTZQsZ_lPxaI50whZjbHB86ocMOacdfBZPC9EqogGmthliBycQkXB0t0w6Gp5wlwTp16DPiDYdv8BXYbEwOjF7KeX4v-bPNjNykqFxSN0QjI-9VGmjsvfCbgUQObKu2-INTsV1Rl_MrcAjzauIkvb8wleqDJ7hlG8ttGjZ4qGU42SoH0sdbWQZX2SnD-KOUN0vg254gaCgYKAewSARQSFQHGX2MiwrQ2irvjKhxV-hOGjVLWOw0245
+2025-06-21 17:50:37,455 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 17:50:37,456 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxihEBHrYjIF25PhFxBKpeM-A5qDC5IWw3LnTZQsZ_lPxaI50whZjbHB86ocMOacdfBZPC9EqogGmthliBycQkXB0t0w6Gp5wlwTp16DPiDYdv8BXYbEwOjF7KeX4v-bPNjNykqFxSN0QjI-9VGmjsvfCbgUQObKu2-INTsV1Rl_MrcAjzauIkvb8wleqDJ7hlG8ttGjZ4qGU42SoH0sdbWQZX2SnD-KOUN0vg254gaCgYKAewSARQSFQHGX2MiwrQ2irvjKhxV-hOGjVLWOw0245
+2025-06-21 17:50:37,914 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 17:51:03,574 - app.api.auth - INFO - Received credentials: scheme='Bearer' credentials='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAzMjkyMTA5MjQ0NjI4ODcyNzEzIiwiZW1haWwiOiJ0aW5nazE4QGdtYWlsLmNvbSIsIm5hbWUiOiJEZWxsaWNhdG8iLCJleHAiOjE3NTA1ODA0MzcsImlhdCI6MTc1MDQ5NDAzN30.5-yOISc3OeK0pkF9BHS7qTFWViFFKC11LZtdiBLjhcY'
+2025-06-21 17:51:03,575 - app.api.llm - INFO - Received basic chat request
+2025-06-21 17:51:03,575 - app.services.llm_service - INFO - Sending chat request to LLM with content: <user_message>hi</user_message>...
+2025-06-21 17:51:03,576 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-06-21 17:51:05,315 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-06-21 17:51:05,317 - app.services.llm_service - INFO - LLM responded: Hi there! How can I help you today?
+...
+2025-06-21 17:57:46,871 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxiLkyO1gq_oZQpPRAAHO_dBt-cvoF13ax1ErMESeqI1YxAj2BtRZ2XaKDsyku3s0LrC345OdpkwkVTZ7XIE53mS169iDOFrS-BgLb4AWIxhv1p0jXp-Rvey1Iw1OWa-xgBav9rLPEY_dmm1BexL0Y9txhXsUs3mrA1AgnhsvVGkdmF9uHn_8kc9M39F0F94lnvWzhUShhNmUZYR80sRumeLpybPQxV9c9EZkRjZmgaCgYKASQSARQSFQHGX2Mi8WPwmjWnAPJuJ_ZBE1a5Cg0245
+2025-06-21 17:57:47,292 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 18:00:37,845 - app.api.auth - INFO - Received user info for: ya29.a0AS3H6NyawlBsg9VSW6LVLIPPf_kyOqLQa1H82JOxyIOMmqzeYTxBZx8HsAv2Y0nHFcBbBLYqwJadNs6Z9A4mQeO_6gMv1GuA-vQG7e0VBHpQhbzTz6rCRJAdBZF3aMMXg_WSfpVu7gviSyL2lli9BKDRffM_QTc5mcf6rsO4PnKTmLsbGVNXrY3MbJcgkoDNfQ4I3TR02Au4Kf6d8Fy6lpODVxy3ke48jZifhj7gIP5l-waCgYKAVQSARQSFQHGX2MiMRieb6xcJHGT-4K7-KB1uQ0245
+2025-06-21 18:00:38,278 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 18:00:46,631 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxggG4GnqXigDRhfOH9ZNQvljSOWSapRmcqFfNMMKks8blyZ7VIfnUoBW0pyXTcPUkwlRmaJygFtNewqacsaoBX3VAfNKj1rUUWnAS2Mz_JYUjzq1TlUFjFpDhFuR_lbmNXiTml9Yafnv3T6ylHErLxlAWUODw1CTlwYHifEtXmbPdHNkCEtxkT3NlAWrrTrOB_-mY6KtIAThMsVxD1xbsZK-X29TCtFrxUlOMW7TQaCgYKARUSARQSFQHGX2MihlWU_K5qfbQaJkSccE2idw0245
+2025-06-21 18:00:47,299 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 18:01:12,958 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxhnN8uF0mB6io6V154uL-lw9AxD4nKXsQTbLeP4O8TbcEwpEycn1V4VJni2Tj_ZRUWuCCXN80G5q88aiBDk14_oxm3fRhvqhzIo4cgliNRzPfkCU8jk4gDH12SzaqnMcNtr6NRfNURftUYBfmFKaeXi4o1U6lF3BszQeQDUSyTjSYqZnMCaokvIpPz9ZN2ngc9azGMviaAehh2WVTVEUqKlbdm98GSlVSTdijwmwAaCgYKAcQSARASFQHGX2MiSAXKDdLGQzJxLRnUwDUeZw0245
+2025-06-21 18:01:13,320 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 18:02:51,265 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxjjIX9qEQfWiITjLNoVAL6RxRRsTeTyuk9vjStZFsY3yOIXazPJkUXkbeQOhd738F0u_FkOs7b6y8JpZwRzHTR9F3iwi2hQ8OW5IyXTTR5PvtvSkSgs3EKi4-OrjUXfJuQ58PlHmI0yU1JsDZH-h2wqnYd_N3uRDeJ0ZceaIq8zWWbFWKDpMfCuc-bdXT11XLCjbnVNMKrsrX2Z4kHHLGRtVuEgWDhE9hxkvh72bQaCgYKAXISARASFQHGX2Mij3u1mXWeN3TEXxtrdFnf3Q0245
+2025-06-21 18:02:51,590 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 18:04:42,513 - app.api.auth - INFO - Received user info for: ya29.a0AS3H6NyxJjib3FdYlolQZmYAk5QHuNMNCzSIaiWlWBO_re_ywO6BQIGqn5pyAnN2R7AJTk2-3QZq2D9VwHSKyYiCTQY0geaVOGqT_8h9KTfUpwEMtfnJ-mTaaeOTMnTFTW4O0_ibD57MrnKSitfJFjs2lZZrEUBSrkIy3vVDgSuAWMTGNh1MM4m-_bUAopdt3n7tXTNWWhG9rhcOWJNDY9fMXQYUoWRSHjXkwRBXOLzT4QaCgYKAZASARQSFQHGX2MiqsNRKLVZaLZaDwvaOkNRsA0245
+2025-06-21 18:04:42,914 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 18:06:19,636 - app.api.auth - INFO - Received user info for: ya29.a0AS3H6Nxl2YFH76YaPUqt8uMcKjttmwU8XBPnxGTcMEiWYay06Ukq0aTivEm8zh7E3xVJ-QueIJc3hzAw2y8GV2ge8eqIw5YcOkbVXFuI-N9Ow5w38f0CGb1BqiHp90jmgqqsoHH0VVHDOn-8fTih3nFU0KVgcpI-gzKjhtVHhJXlAYFUjajaCSBHcrYnN4vxKEazQZa4VuRN-OtWKG20G7HzRFlewkmMqKv3JR2L4DFgPAaCgYKATMSARASFQHGX2MidDjXGSD8fVNL6BI7_wM7zw0245
+2025-06-21 18:06:20,071 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 18:10:04,589 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxgFRw6KLF-BKV7zDkKRvSxXhudo5cbirjc65XMunDv19ihKxw-XXd2tAmc-SORumrtLB4do616JZCVimrXfHnu3dCsuks4iQwpJMbIOYpaHsCFI-Rx8PP4DOfdHwz307AWqIqkZwhw4U4ppo-lW__rEAXinecebTXey9u18h15fbwJEDKXACR9WtRx11QPNMRKA8iQ5iMMjvxeiNYqq-xkGKbhdxlHEm458p83WygaCgYKAbcSARQSFQHGX2MiFCaJWrzWmFtv-ZMrw8j3Yw0245
+2025-06-21 18:10:04,917 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 18:10:44,177 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxjCPfqxf2XEDzI0j7QQYlOVnFyY6N06TaTX1q6kf12tNto2s1KmeVe8lc5IH82f9xKk__2PLB---ZZU-rbTt1KncrOhDxs4cHgThTLvSwmoqQeAzYtDThWq1gh_9cVqcUzOmEN_w2ziL4kcHskRPGP-ndJUOPNT5E-gyjClShgvwS3sIatbj03kxgaAz2pBW6zJfTNfICBBArVNa8m3yMkDzYNS8HQ2qdDyGKrxaCgYKAcgSARASFQHGX2MioX2DzziKtqjZg8ZdWEwKRg0243
+2025-06-21 18:10:44,502 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 18:12:23,547 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxjCwOEjGVrAR-ABXXWkKfWvbKL95A0kYesUr_Q-gPrwCIwyjpCeShgXHIrl5GUCsq0pRX4gUxtwvQ1kqI_hQZOJzPu-IZ5S7T8n-jhq2Vw4enx_48gh9i1J103sdmTPmhOtf-fG0KvQzwhx9eGNbxferyO_Y57TgDileAJaxqhNT5akr6e4HngL4SgdwroWc4XTIqQAnllFOpenBiJkQtpBo6SWpViPJxuKAMGPpQaCgYKAdcSARQSFQHGX2MiLDxWOOoeh3E43on8K-kr2w0245
+2025-06-21 18:12:23,907 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 18:13:02,288 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxjCCeN_W7Q-jbSDxbTd3ouJ78-wIo7uXoTg2BWJAf_ogBFBrJB1GC9HAbWFItybD_RrTqUIOmDMf96hflw7Ye8z41H8yc-NPjGbXjm0Abu2syS3c1b5DjBuUpgVU91pagFMCGQjvRckscGESJR3NOEoOebI1J3JJjW9H56iFdE2-uQoaj0xzsna6VoFSVMQeVMFCDwzv5NBvQTov2dBrzRw1wak8WlbOL2O1xanfwaCgYKAb0SARASFQHGX2Mi8bc_m7W_6Zhh-cDOZFLDjA0245
+2025-06-21 18:13:02,631 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 18:14:07,607 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxikRgp5yql9-PplHZNYUgPbu8_SR9DH8vtOVGugBPe5wpcDDva_02LEbO2XRl9F2YcxgHD39nWaLWG0P8RL22dgmD2n9UXV8cTNh72sdtdvOj9Fsb-1mEZF1tQJcu6QrqPw95M2IQ9bUxnr5g4VUK5G8GUMFfHJeIhF8up0BM810UmUdjzRWQmlpPHEcio_nS2eTHQdRmSrmDn3guqoRnJ27AWKDlYvOd8XRzP0GAaCgYKAYUSARASFQHGX2Mij9FfTEwOD-rKGER2Z3YpuA0245
+2025-06-21 18:14:08,074 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 21:14:23,192 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxg0eBcnNZ1UDv9g-1LUZXkyVxtwvwHZ2_TAWDMEVfSVJlbYDMeBD1t6pVt_gAPC5OuxgpJKZfl3NKfyF5RPS-Rp6nQWUlyTS715GGzBuUNBLD4z27SrYbxV_Kgo-fEF-Q6FunjCFObDHnC_DCLbXY73rgP2nK5mFv1n9wqBYb4tEMQ4jABcg8iFx-IOgajsbmn68Qg2ptaqbOA5VILbRnt6zGFi-zmhCo6l15CZaCgYKAecSARQSFQHGX2MiGxHoL0JMuq0mi2fJBNeC7Q0243
+2025-06-21 21:14:23,584 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 23:05:26,476 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxiVtYiE8sYTd3R65KU6Bk89qHyLYulC3nAfEAx6w3rWth--ChuTXiouuj6aFz_wGod-QCDB3kKg9rp9UbFTja_nLbhJF7lz2QxBka1Cu2OIckgQ5hPEi8BXq50gijV-T2WYhqYDdnqq-3BVfNPU2lUOD0Z0Ssb8W5m_XqarHjXiyh5M7HzELHNjyB9NeB8o-X4wUQgheVm2ACe2s33_tDJIuBi_C3UOABdr0rO1XwaCgYKAcgSARQSFQHGX2Mi528dhte_6dJbTOJsnvzdSg0245
+2025-06-21 23:05:26,820 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 23:08:35,178 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxjrB0Ji8CcvVxBre5CHvvGejOTn1ep23TvPs2zBmScTX0PXfoh6UK54jUCzJ94kg7OP2DYtoR3WRbZLGaeMPZO59DoHON2c1i1SXKftnHEQ8qu-oeMf8yJBq5GvpFZMwEUlPITHhDhtz6LaYBArIPHqoIFZ8c-a0t6g5iyYd8jnUiPHbtwJWIo-qBdr1RTP1eRLrMmBFJhffxK9NlGE0hkvUfDvPPczK_CaUQzraCgYKAWoSARASFQHGX2MifO_SkJ4AGly8Oo0NKEylrg0243
+2025-06-21 23:08:35,674 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 23:12:53,340 - app.api.auth - INFO - Received user info for: ya29.a0AS3H6NyP6WCPxKWYfjRcZghoVulptLV_eKaXgzsuZB-IqTBn9w_0GQZTbheUazk4WL-iVlphk7glfmJ_XxHlT8ZGXFbBeJfg6-W9FTT1ulgyiE4rcOv1-NxpsrS4071ByGglIr2FVLg9sp1L0LmNYYvEp0I5qZd274c6mFvFne2H-zuHlU8lPwSXBpqCsHw59GF1WYdnyaAlhGRxU3EAFa-puZp1i_nIo15iFLWEBUdIKAaCgYKAbESARQSFQHGX2Mi5-giy-EcY7raU93YlFPT3g0245
+2025-06-21 23:12:53,680 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-21 23:14:09,221 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxh5Xm4X688AVrJPHVcZZbzhIJsyP1ZZD7Qcwo57y8H94cBuBz0g34EdQbNHppeBYH34yB_Aw6BGU-qKgCAEckWMsaT1BgCHigkwtSwwc2hDb4IP5E8ryI9nfkTPxTWwSJgPeJKjiB-gqne9Kf6VNAXxSC_j0g8l-8RzqYOvYTe6PYaQhl9Re7XRhjeVLCRLVZAKz941lBzFQGDH_sfu-OsHjG-bAIwqPwLMSORfaCgYKAV0SARASFQHGX2MiuCb4VbC4P-BrDnuf4Zcaxg0243
+2025-06-21 23:14:09,543 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-22 11:05:35,550 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxgWKBgslLUyY2ihCNDFMkKVGZwsVgPK9q_FiL02r1UMmPABFcVg8LYa-fxLaM66YoaCxH5k7uJd-Ylgt40gOISPRcJB9_lRZal_kdNn5LtoZQiITVP7ymmsf_xKkcqX2tfHqptcgngB7XPO6F-3evGCY-E0xb14daBGSPDSzGMQXaeDgRLPT40-4_TgnMny1MO8uCl4v8pjlDkRN0DxACg0qV42RH00zMYjZ1GgwwaCgYKAS8SARQSFQHGX2MiXkUphF4IhkO8Ph0cfHAKFg0245
+2025-06-22 11:05:35,885 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-22 15:15:44,734 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxh4pV6WX-OLYIOkV7FSgOD8_yjMo03UuWduQl59wfHI5TRKAvScsnHtScm4Ckvr8QJIA_Qhjb56r2sbhk7txoDAWpMu95AaeKjUkptFtk4DPAk8gC3ug_5nghf3B1rgtQbHvC0QyCB8OpZcyqq9kgBEiO3kjtUcTpfbFf2JL1_N3C0QCL1pPWAmByp_Rh9Y7pwREN6hruDIB0RQEBtHoOgbCx62WnykVnKZvcIMnQaCgYKAUMSARASFQHGX2MigDwcHr8-fcvt8B5G9FTB-w0245
+2025-06-22 15:15:45,113 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-22 15:20:18,536 - app.api.auth - INFO - Received user info for: ya29.a0AS3H6NyYjGfhaDTmgcg8Tvp3bUkdhoAWzxfOQyQWZmRW2rZFge4-FDmpQRMopIiT5q14TbAK4x1uC5LPEwFU9vXr6w1dws9lEOJCObkJAm1DhBEfCkSX3g9qDPFlZDMlW6XjF-gAnKS937Jt00zs6Mi5iXhW4yqZT5B4qmI5Ckuc7JksEQ9x3Wk260NMepYlCnwDvN_GGzF_Cqh1eKtFTRa2rmGh9euqCpjbGMrKNWYndgaCgYKAfQSARASFQHGX2MiuE0-izvw8dsbBo3YLXCXJw0245
+2025-06-22 15:20:18,869 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-22 15:25:17,314 - app.api.auth - INFO - Received user info for: ya29.a0AW4XtxhgDbpFBbcfzrQEGAaYUxnU0Es5XTnS5Pc5ijX6TPoQyWmf4xKObbCjH55-oUVB77Opqj-87RpsdktQ6QLgffpq0Y58vHxBVn1XAz1ZNNA4EpBNec0tK5PvFJxJ3foMUDgy0QOE8k0FCxRLcb4KGT78CuOoL2RHtCLgIRFuZCfEE1MwlS_3DkIGJFC9IbzELzb3RjqbFcyJIuR2rry8pQdbt5sumasUNpYR-qaLVQaCgYKATESARASFQHGX2MijFZu86rKv29GkpR_qsD88g0245
+2025-06-22 15:25:17,636 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-22 17:16:57,234 - app.api.auth - INFO - Received user info for: ya29.a0AW4Xtxg98ZoUHNAUUTZcG9Ni7m7N-9Ux0k8UJKJzaI3GlkBujzF9NlV3sd520WttguKvEGnr5zduXCdTNwa1DSb8pSUDBUUC2LKUYFjhniqqbSqAEazWPKV44Rq-8YbWBQdx3AT2CEdgYgKLql0eeU3j45MU_61A7xKogE_Y4wjOg0xlch_EpUCj88Gs3hwV1U7ZexNyXNYRYLHI_XuHo27XJQipzn9HODRVMcTHGbKFaCgYKARkSARASFQHGX2MiXCfo3j94CL294Xa2fZECIQ0243
+2025-06-22 17:16:57,568 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-30 18:13:48,903 - app.api.auth - INFO - Received user info for: ya29.a0AS3H6Nz41i_ZGT2VYZVwVxU6lFki7De0YWkOyjObc4LnGInHbQiSrTKQCfgkwvXEV997Ryvb4jaMCna3TZz7tqLPhqsS7eI3lvtccvWAGTAY96eQUcgPTLWc42U5rDHhHUOpO-bVPEnUdxXPPRokeYJeI8wK_0-TrVKeO7cJ90n8PH890P2xna3h3wQDev15chevk5vvmcW-J1KQsySlsbgRZp63BPBnkkyCzkj-Q6tmDgaCgYKAZASARQSFQHGX2Mi_g_fNBi3YgP1kY5_LN_9hw0245
+2025-06-30 18:13:49,245 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-30 19:32:38,492 - app.api.auth - INFO - Received credentials: scheme='Bearer' credentials='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAzMjkyMTA5MjQ0NjI4ODcyNzEzIiwiZW1haWwiOiJ0aW5nazE4QGdtYWlsLmNvbSIsIm5hbWUiOiJEZWxsaWNhdG8iLCJleHAiOjE3NTEzNTk0MjksImlhdCI6MTc1MTI3MzAyOX0.cWAIp4Oa9NgzOeC5v1NOU6EDaBJBbXzddohpp6gPot8'
+2025-06-30 19:32:38,492 - app.api.llm - INFO - Received basic chat request
+2025-06-30 19:32:38,493 - app.services.llm_service - INFO - Sending chat request to LLM with content: <user_message>hi</user_message>... (search: False)
+2025-06-30 19:32:38,493 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-06-30 19:32:40,030 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-06-30 19:32:40,031 - app.services.llm_service - INFO - LLM responded: Hi there! How can I help you today?
+...
+2025-06-30 19:48:24,780 - app.api.auth - INFO - Received credentials: scheme='Bearer' credentials='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAzMjkyMTA5MjQ0NjI4ODcyNzEzIiwiZW1haWwiOiJ0aW5nazE4QGdtYWlsLmNvbSIsIm5hbWUiOiJEZWxsaWNhdG8iLCJleHAiOjE3NTEzNTk0MjksImlhdCI6MTc1MTI3MzAyOX0.cWAIp4Oa9NgzOeC5v1NOU6EDaBJBbXzddohpp6gPot8'
+2025-06-30 19:48:24,781 - app.api.llm - INFO - Received basic chat request
+2025-06-30 19:48:24,781 - app.services.llm_service - INFO - Sending chat request to LLM with content: <user_message>hi</user_message>... (search: False)
+2025-06-30 19:48:24,781 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-06-30 19:48:26,157 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-06-30 19:48:26,158 - app.services.llm_service - INFO - LLM responded: Hi there! How can I help you today?
+...
+2025-06-30 19:48:57,512 - app.api.auth - INFO - Received credentials: scheme='Bearer' credentials='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAzMjkyMTA5MjQ0NjI4ODcyNzEzIiwiZW1haWwiOiJ0aW5nazE4QGdtYWlsLmNvbSIsIm5hbWUiOiJEZWxsaWNhdG8iLCJleHAiOjE3NTEzNTk0MjksImlhdCI6MTc1MTI3MzAyOX0.cWAIp4Oa9NgzOeC5v1NOU6EDaBJBbXzddohpp6gPot8'
+2025-06-30 19:48:57,512 - app.api.llm - INFO - Received basic chat request
+2025-06-30 19:48:57,512 - app.services.llm_service - INFO - Sending chat request to LLM with content: <user_message>hi</user_message>... (search: False)
+2025-06-30 19:48:57,512 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-06-30 19:48:59,711 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-06-30 19:48:59,711 - app.services.llm_service - INFO - LLM responded: Hi there! How can I help you today?
+...
+2025-06-30 19:49:29,554 - app.api.auth - INFO - Received credentials: scheme='Bearer' credentials='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAzMjkyMTA5MjQ0NjI4ODcyNzEzIiwiZW1haWwiOiJ0aW5nazE4QGdtYWlsLmNvbSIsIm5hbWUiOiJEZWxsaWNhdG8iLCJleHAiOjE3NTEzNTk0MjksImlhdCI6MTc1MTI3MzAyOX0.cWAIp4Oa9NgzOeC5v1NOU6EDaBJBbXzddohpp6gPot8'
+2025-06-30 19:49:29,554 - app.api.llm - INFO - Received basic chat request
+2025-06-30 19:49:29,555 - app.services.llm_service - INFO - Sending chat request to LLM with content: <user_message>hi</user_message>... (search: False)
+2025-06-30 19:49:29,555 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-06-30 19:49:31,590 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-06-30 19:49:31,591 - app.services.llm_service - INFO - LLM responded: Hi there! How can I help you today?
+...
+2025-06-30 19:53:14,813 - app.api.auth - INFO - Received credentials: scheme='Bearer' credentials='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAzMjkyMTA5MjQ0NjI4ODcyNzEzIiwiZW1haWwiOiJ0aW5nazE4QGdtYWlsLmNvbSIsIm5hbWUiOiJEZWxsaWNhdG8iLCJleHAiOjE3NTEzNTk0MjksImlhdCI6MTc1MTI3MzAyOX0.cWAIp4Oa9NgzOeC5v1NOU6EDaBJBbXzddohpp6gPot8'
+2025-06-30 19:53:14,814 - app.api.llm - INFO - Received basic chat request
+2025-06-30 19:53:14,814 - app.services.llm_service - INFO - Sending chat request to LLM with content: <user_message>hi</user_message>... (search: False)
+2025-06-30 19:53:14,814 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-06-30 19:53:16,759 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-06-30 19:53:16,760 - app.services.llm_service - INFO - LLM responded: Hi there! How can I help you today?
+...
+2025-06-30 19:55:41,375 - app.api.auth - INFO - Received credentials: scheme='Bearer' credentials='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAzMjkyMTA5MjQ0NjI4ODcyNzEzIiwiZW1haWwiOiJ0aW5nazE4QGdtYWlsLmNvbSIsIm5hbWUiOiJEZWxsaWNhdG8iLCJleHAiOjE3NTEzNTk0MjksImlhdCI6MTc1MTI3MzAyOX0.cWAIp4Oa9NgzOeC5v1NOU6EDaBJBbXzddohpp6gPot8'
+2025-06-30 19:55:41,376 - app.api.llm - INFO - Received basic chat request
+2025-06-30 19:55:41,376 - app.services.llm_service - INFO - Sending chat request to LLM with content: <user_message>hi</user_message>... (search: False)
+2025-06-30 19:55:41,377 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-06-30 19:55:43,367 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-06-30 19:55:43,368 - app.services.llm_service - INFO - LLM responded: Hi there! How can I help you today?
+...
+2025-06-30 19:56:39,574 - app.api.auth - INFO - Received credentials: scheme='Bearer' credentials='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAzMjkyMTA5MjQ0NjI4ODcyNzEzIiwiZW1haWwiOiJ0aW5nazE4QGdtYWlsLmNvbSIsIm5hbWUiOiJEZWxsaWNhdG8iLCJleHAiOjE3NTEzNTk0MjksImlhdCI6MTc1MTI3MzAyOX0.cWAIp4Oa9NgzOeC5v1NOU6EDaBJBbXzddohpp6gPot8'
+2025-06-30 19:56:39,574 - app.api.llm - INFO - Received basic chat request
+2025-06-30 19:56:39,574 - app.services.llm_service - INFO - Sending chat request to LLM with content: <user_message>hi</user_message>... (search: False)
+2025-06-30 19:56:39,574 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-06-30 19:56:40,417 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-06-30 19:56:40,418 - app.services.llm_service - INFO - LLM responded: Hi there! How can I help you today?
+...
+2025-06-30 21:37:58,146 - app.api.auth - INFO - Received user info for: ya29.a0AS3H6Nx5_St8e_bKRUviEH65o93w_K7pV8Sm65TfMP2qZ-55UdBzmnFJV9q-rjywnR0VwV-MwhKEdRSB1Wu1_mzw0uZDktd4-sLnbBr6N8gg0ZpUeLLnY4xJUYY_YMoGckttMmL60ilZaTz1K_HOBfWXGvYRw8LfNB4bObmp3YkZZyGHBCzpdYtHUV3JevFM6lO9GMladx6D_mNspgKDjQ50QWqvUCoK-43Hkq8X7Z4taCgYKARoSARASFQHGX2Min1IsCVo_x0XyKnukbI4FOA0243
+2025-06-30 21:37:58,508 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-06-30 21:42:57,301 - app.api.auth - INFO - Received credentials: scheme='Bearer' credentials='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAzMjkyMTA5MjQ0NjI4ODcyNzEzIiwiZW1haWwiOiJ0aW5nazE4QGdtYWlsLmNvbSIsIm5hbWUiOiJEZWxsaWNhdG8iLCJleHAiOjE3NTEzNzE2NzgsImlhdCI6MTc1MTI4NTI3OH0.UT773qwF__YZBaMTXDXBZGtaUPyObRF5Y6Vr6RVlq-Q'
+2025-06-30 21:42:57,302 - app.api.llm - INFO - Received basic chat request
+2025-06-30 21:42:57,302 - app.services.llm_service - INFO - Sending chat request to LLM with content: <user_message>hi</user_message>... (search: False)
+2025-06-30 21:42:57,302 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-06-30 21:42:58,552 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-06-30 21:42:58,553 - app.services.llm_service - INFO - LLM responded: Hi there! How can I help you today?
+...
+2025-06-30 21:43:45,340 - app.api.auth - INFO - Received credentials: scheme='Bearer' credentials='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAzMjkyMTA5MjQ0NjI4ODcyNzEzIiwiZW1haWwiOiJ0aW5nazE4QGdtYWlsLmNvbSIsIm5hbWUiOiJEZWxsaWNhdG8iLCJleHAiOjE3NTEzNzE2NzgsImlhdCI6MTc1MTI4NTI3OH0.UT773qwF__YZBaMTXDXBZGtaUPyObRF5Y6Vr6RVlq-Q'
+2025-06-30 21:43:45,341 - app.api.llm - INFO - Received basic chat request
+2025-06-30 21:43:45,342 - app.services.llm_service - INFO - Sending chat request to LLM with content: <user_message>jo</user_message>... (search: False)
+2025-06-30 21:43:45,342 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-06-30 21:43:48,106 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-06-30 21:43:48,107 - app.services.llm_service - INFO - LLM responded: "Jo" is a very short message and could mean a few things depending on the context:
+
+*   **Informal g...
+2025-06-30 21:44:19,819 - app.api.auth - INFO - Received credentials: scheme='Bearer' credentials='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAzMjkyMTA5MjQ0NjI4ODcyNzEzIiwiZW1haWwiOiJ0aW5nazE4QGdtYWlsLmNvbSIsIm5hbWUiOiJEZWxsaWNhdG8iLCJleHAiOjE3NTEzNzE2NzgsImlhdCI6MTc1MTI4NTI3OH0.UT773qwF__YZBaMTXDXBZGtaUPyObRF5Y6Vr6RVlq-Q'
+2025-06-30 21:44:19,820 - app.api.llm - INFO - Received basic chat request
+2025-06-30 21:44:19,820 - app.services.llm_service - INFO - Sending chat request to LLM with content: <user_message>hi</user_message>... (search: False)
+2025-06-30 21:44:19,821 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-06-30 21:44:22,131 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-06-30 21:44:22,132 - app.services.llm_service - INFO - LLM responded: Hi there! How can I help you today?
+...
+2025-07-01 18:07:55,774 - app.api.auth - INFO - Received user info for: ya29.a0AS3H6Nygq54gUDWKSc_axTXhfTQapnV2JiBNJMRfTswWD6jAOaIx--20vQ3gTlMJSzNkTCkDdI2n6V36azX3dcULmfw7LoWMWM0owSsuvgwgEyOdZefbASbfxz62J6oXnJ-OQTx1yF_rFC9j6vEKWppKOGIoPR-sc9F-aoPLhqcmpvm7CzASsXSiWR8xZu-p6kMOnb_8tIy5FT2DIXjWChiHWps0Vgnd-_l1C4H-wP3p3gaCgYKAWwSARQSFQHGX2Mi9vusBJCSnvcXZWif5tDPEQ0245
+2025-07-01 18:07:56,383 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
+2025-07-01 18:12:32,702 - app.api.auth - INFO - Received user info for: ya29.a0AS3H6NzI8NZfApxHfmazin5x4tnZIMMDtv_hHXswm2By1Y-HZGMSYYvsTBU7ulzGAHFhEcro8GCLHVVDPtJ6dxsXQShSo5SIPogWGzQnza_26o4dy9EjjwpFMOfV5zRS7T5-lTLwo-4CpJRd033sBt60ZBQXGEp8cmvB0_OK0dawFoQQEufb7kAxQ8CU_teHE_Y78UOC_tYbISu3QVZQtm_0-l-YtDbHk_TAV9aoIitQqwaCgYKASYSARQSFQHGX2Mis92AEAZYBNLFHV3IYpEdvA0245
+2025-07-01 18:12:33,071 - app.services.google_auth_service - INFO - Google access token verified successfully via userinfo API.
