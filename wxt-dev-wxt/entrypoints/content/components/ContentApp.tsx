@@ -12,7 +12,7 @@ import type { ActionButton, ContentAppProps } from '../types/components'
 import { WIDGET_CONFIG, RESIZE_TYPES, MESSAGE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
-import { usePageHook } from '../hooks/usePageHook'
+import { usePage } from '../hooks/usePage'
 import { useFile } from '../hooks/useFile'
 import { getFileIcon, PlusIcon } from './Icons'
 import { useAgentChat } from '../hooks/useAgent'
@@ -33,12 +33,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     pageState,
     getElementAtCoordinate,
     withMutationPaused
-  } = usePageHook()
-
-  // File management with message handler
-  const addUserMessage = (message: string) => {
-    console.log(message) // Replace with your actual message handler
-  }
+  } = usePage()
 
   const {
     uploadedFiles,
@@ -47,7 +42,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     removeFile,
     formatFileName,
     getFileContent
-  } = useFile(addUserMessage)
+  } = useFile()
 
   // Chat
   const chatMessagesRef = useRef<HTMLDivElement>(null)
@@ -132,7 +127,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       event.target.value = ''; // Clear input
     } catch (error) {
       console.error('File upload failed:', error);
-      addUserMessage(`❌ Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -154,7 +148,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
           await removeFile(file);
         } catch (error) {
           console.error('File removal failed:', error);
-          addUserMessage(`❌ Failed to remove file: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       },
       className: 'file-action'

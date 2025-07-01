@@ -3,7 +3,7 @@ import { PageState, PageConfig } from '../types/page';
 import { removeHighlights, getClickableElementsFromDomTree, locateElement } from '../services/DomTreeService';
 import { highlightElement } from '../utils/domUtils';
 
-interface UsePageHookReturn {
+interface UsePageReturn {
     // State
     pageState: PageState | null;
     isScanning: boolean;
@@ -19,7 +19,7 @@ interface UsePageHookReturn {
     withMutationPaused: <T>(callback: () => T | Promise<T>) => Promise<T>;
 }
 
-export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
+export const usePage = (config?: PageConfig): UsePageReturn => {
     const [pageState, setPageState] = useState<PageState | null>(null);
     const [isScanning, setIsScanning] = useState(false);
 

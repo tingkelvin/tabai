@@ -25,7 +25,7 @@ interface UseFileReturn {
     cleanup: () => void;
 }
 
-export const useFile = (sendMessage?: (message: string) => void): UseFileReturn => {
+export const useFile = (): UseFileReturn => {
     const [uploadedFiles, setUploadedFiles] = useState<FileWithId[]>([]);
     const [isUploading, setIsUploading] = useState<boolean>(false);
     const fileContentsRef = useRef<Map<string, string>>(new Map());
@@ -107,25 +107,19 @@ export const useFile = (sendMessage?: (message: string) => void): UseFileReturn 
             f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
         );
 
-        if (existingFile) {
-            sendMessage?.(`📄 File "${file.name}" is already uploaded`);
-            return;
-        }
 
         setIsUploading(true);
 
         try {
             await fileStorage.saveFile(file);
             setUploadedFiles(prev => [...prev, file as FileWithId]);
-            sendMessage?.(`✅ File "${file.name}" uploaded successfully`);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             console.error('File upload error:', error);
-            sendMessage?.(`❌ Failed to upload "${file.name}": ${errorMessage}`);
         } finally {
             setIsUploading(false);
         }
-    }, [uploadedFiles, isUploading, fileStorage, sendMessage]);
+    }, [uploadedFiles, isUploading, fileStorage]);
 
     const removeFile = useCallback(async (fileToRemove: string | File): Promise<void> => {
         try {
@@ -147,13 +141,11 @@ export const useFile = (sendMessage?: (message: string) => void): UseFileReturn 
             cacheKeys.filter(key => key.startsWith(fileName))
                 .forEach(key => fileContentsRef.current.delete(key));
 
-            sendMessage?.(`🗑️ File "${fileName}" removed`);
         } catch (error) {
             const fileName = typeof fileToRemove === 'string' ? fileToRemove : fileToRemove.name;
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            sendMessage?.(`❌ Failed to remove "${fileName}": ${errorMessage}`);
         }
-    }, [uploadedFiles, fileStorage, sendMessage]);
+    }, [uploadedFiles, fileStorage]);
 
     const getFileContent = useCallback(async (): Promise<string> => {
         if (uploadedFiles.length === 0) return '';
@@ -192,12 +184,10 @@ export const useFile = (sendMessage?: (message: string) => void): UseFileReturn 
             sessionStorage.removeItem(FILE_CONFIG.STORAGE_KEY);
             setUploadedFiles([]);
             fileContentsRef.current.clear();
-            sendMessage?.('🗑️ All files cleared');
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            sendMessage?.(`❌ Failed to clear files: ${errorMessage}`);
         }
-    }, [sendMessage]);
+    }, []);
 
     const getFileStats = useCallback((): FileStats => {
         const totalSize = uploadedFiles.reduce((sum, f) => sum + f.size, 0);
