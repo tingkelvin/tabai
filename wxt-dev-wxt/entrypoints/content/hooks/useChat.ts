@@ -1,5 +1,5 @@
 // hooks/useChat.ts
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { MESSAGE_TYPES } from '../utils/constant';
 import { ChatMessage, ChatHookReturn } from '../types/chat';
 import { sendMessage as sendBackgroundMessage } from '@/entrypoints/background/types/messages';
@@ -25,6 +25,9 @@ export const useChat = (config: chatConfig): ChatHookReturn => {
     const [chatInput, setChatInput] = useState<string>('');
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [isThinking, setIsThinking] = useState<boolean>(false);
+    const [lastAgentReply, setLastAgentReply] = useState<string>(''); // Add this
+    const isSendingManually = useRef(false);
+    const fileContent = useRef("");
 
     const task = useRef("");
     const lastPageStateTimestamp = useRef<number | null>(null);
@@ -53,10 +56,11 @@ export const useChat = (config: chatConfig): ChatHookReturn => {
 
         // If no message is provided, use chatInput
         if (!message) {
+            isSendingManually.current = true;
             const chatInputTrimmed = chatInput.trim();
             if (!chatInputTrimmed) return '';
+            fileContent.current = await getFileContent();
 
-            const fileContents = await getAllContentAsString();
             if (useAgent) {
                 message = `<task>${chatInputTrimmed}</task>`;
             }
@@ -64,31 +68,31 @@ export const useChat = (config: chatConfig): ChatHookReturn => {
                 message = `<user_message>${chatInputTrimmed}</user_message>`;
             }
 
-            if (fileContents) {
-                message += `<file_content>${fileContents}<file_content>`;
+            if (fileContent.current) {
+                message += `<context>${fileContent.current}</context>`;
             }
             // Add pageState only when agent mode is enabled
             if (useAgent && pageState) {
                 task.current = chatInputTrimmed
                 message += `<page_state>${JSON.stringify(pageState.domSnapshot?.root.clickableElementsToString())}</page_state>`;
                 message += `<instructions>
-                Complete the task by interacting with the page elements, it preserves the hierarchy structure of the web.
-                
-                Actions available:
-                - "click" - Click buttons, links, or interactive elements
-                - "fill" - Enter text into input fields  
-                - "select" - Choose from dropdown/select options
-                
-                Return only JSON with actions and reasoning:
-                {
-                  "actions": [
-                    {"id": 0, "type": "fill", "value": "your_suggested_input"},
-                    {"id": 3, "type": "select", "value": "your_suggested_option"},
-                    {"id": 5, "type": "click"}
-                  ],
-                  "reasoning": "Brief explanation of the action sequence"
-                }
-                </instructions>`;
+                    Complete the task by interacting with the page elements, it preserves the hierarchy structure of the web.
+                    
+                    Actions available:
+                    - "click" - you can only click buttons, links, or interactive elements
+                    - "fill" - you can only fill text into input elements like <input >
+                    - "select" - you can only choose from dropdown/select elements likw <select >
+                    Return only JSON with actions and reasoning, do not include any other text:
+                    {
+                    "actions": [
+                        {"id": 0, "type": "fill", "value": "your_suggested_input"},
+                        {"id": 3, "type": "select", "value": "your_suggested_option"},
+                        {"id": 5, "type": "click"}
+                    ],
+                    "reasoning": "Brief explanation of the action sequence"
+                    }
+            </instructions>`;
+
             }
         }
 
@@ -110,11 +114,18 @@ export const useChat = (config: chatConfig): ChatHookReturn => {
         const response: ApiResponse<ChatResponse> = await sendBackgroundMessage('chat', { message: message, options: { useSearch: useSearch } });
         console.log('📡 Response from backend:', response);
         let reply = response.data?.reply || 'I do not find any response, sorry.';
-        const fileContent = await getFileContent()
-        console.log(fileContent)
-        // Add the assistant response to chat messages
-        if (addToChat) addAssistantMessage(reply);
+        // const fileContent = await getFileContent()
+        // console.log(fileContent)
+        // Add the assistant response to chat messages if not in agent mode
+        // Handle agent replies with callback
+        if (useAgent) {
+            setLastAgentReply(reply); // Store agent reply for processing
+        }
+
+        if (addToChat && !useAgent)
+            addAssistantMessage(reply);
         setIsThinking(false);
+        isSendingManually.current = false;
         return reply;
 
     }, [chatInput, addAssistantMessage, useSearch, useAgent, pageState]);
@@ -131,7 +142,7 @@ export const useChat = (config: chatConfig): ChatHookReturn => {
         }
 
         // Only proceed if agent mode is enabled and we have a current task
-        if (!useAgent || !task.current || !pageState?.timestamp) {
+        if (!useAgent || !task.current || !pageState?.timestamp || isSendingManually.current) {
             return;
         }
 
@@ -141,27 +152,25 @@ export const useChat = (config: chatConfig): ChatHookReturn => {
 
             // Update the timestamp tracking
             lastPageStateTimestamp.current = pageState.timestamp;
-
             // Create a message about the page state update
-            let autoMessage = `<task>Page updated. Continue with task: ${task.current}</task>`;
+            let autoMessage = `<task>Page updated. Continue with task: ${task.current}</task><context>${fileContent.current}</context>`;
             autoMessage += `<page_state>${pageState.domSnapshot?.root.clickableElementsToString()}</page_state>`;
             autoMessage += `<instructions>
-            Complete the task by interacting with the page elements, it preserves the hierarchy structure of the web.
-            
-            Actions available:
-            - "click" - Click buttons, links, or interactive elements
-            - "fill" - Enter text into input fields  
-            - "select" - Choose from dropdown/select options
-            
-            Return only JSON with actions and reasoning:
-            {
-              "actions": [
-                {"id": 0, "type": "fill", "value": "your_suggested_input"},
-                {"id": 3, "type": "select", "value": "your_suggested_option"},
-                {"id": 5, "type": "click"}
-              ],
-              "reasoning": "Brief explanation of the action sequence"
-            }
+                    Complete the task by interacting with the page elements, it preserves the hierarchy structure of the web.
+                    
+                    Actions available:
+                    - "click" - you can only click buttons, links, or interactive elements
+                    - "fill" - you can only fill text into input elements like <input >
+                    - "select" - you can only choose from dropdown/select elements likw <select >
+                    Return only JSON with actions and reasoning, do not include any other text:
+                    {
+                    "actions": [
+                        {"id": 0, "type": "fill", "value": "your_suggested_input"},
+                        {"id": 3, "type": "select", "value": "your_suggested_option"},
+                        {"id": 5, "type": "click"}
+                    ],
+                    "reasoning": "Brief explanation of the action sequence"
+                    }
             </instructions>`;
 
             // Send the message without adding to chat history as user message
@@ -265,6 +274,7 @@ export const useChat = (config: chatConfig): ChatHookReturn => {
         chatInput,
         chatMessages,
         isThinking,
+        lastAgentReply, // Add this to return object
         handleInputChange,
         handleKeyPress,
         sendMessage,

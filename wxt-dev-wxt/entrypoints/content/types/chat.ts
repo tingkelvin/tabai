@@ -14,6 +14,7 @@ export interface ChatHookReturn {
     handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
     handleKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
     sendMessage: (messageOrInput?: string, addToChat?: boolean) => Promise<string>;
+    lastAgentReply: string;
     addMessage: (message: Partial<ChatMessage>) => void;
     addMessages: (messages: Partial<ChatMessage>[]) => void;
     clearMessages: () => void;

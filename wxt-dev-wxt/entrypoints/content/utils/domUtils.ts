@@ -3,20 +3,6 @@ import { ViewportInfo } from "../types/dom/views";
 import { RawDomNode, DomTreeResult, isTextNode } from '../types/dom/DomTree';
 import { TextDomNode, ElementDomNode, BaseDomNode } from "../types/dom/DomNode";
 
-// Helper function to check if element should be filtered out
-const shouldFilterElement = (node: ElementDomNode): boolean => {
-    // Filter out elements with Terminal class
-    if (node.className && node.className.includes('Terminal')) {
-        return true;
-    }
-
-    // Add other filtering conditions here if needed
-    // e.g., filter by tag name, other classes, etc.
-
-    return false;
-};
-
-
 export function constructDomTree(evalPage: DomTreeResult): [ElementDomNode, Map<number, ElementDomNode>] {
 
     const jsNodeMap = evalPage.map;
@@ -151,9 +137,10 @@ interface IframeOffset {
 const HIGHLIGHT_CONTAINER_ID: string = "playwright-highlight-container";
 
 export function highlightElement(
-    element: Element,
     index: number,
-    parentIframe: HTMLIFrameElement | null = null
+    element: Element,
+    text: string = "",
+    parentIframe: HTMLIFrameElement | null = null,
 ): number {
     if (!element) return index;
 
@@ -249,7 +236,11 @@ export function highlightElement(
         label.style.padding = "1px 4px";
         label.style.borderRadius = "4px";
         label.style.fontSize = `${Math.min(12, Math.max(8, firstRect.height / 2))}px`;
-        label.textContent = index.toString();
+
+        if (text)
+            label.textContent = text;
+        else
+            label.textContent = index.toString();
 
         labelWidth = label.offsetWidth > 0 ? label.offsetWidth : labelWidth;
         labelHeight = label.offsetHeight > 0 ? label.offsetHeight : labelHeight;

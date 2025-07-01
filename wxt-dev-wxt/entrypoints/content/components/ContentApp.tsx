@@ -9,23 +9,30 @@ import Notifications from './Notifications'
 
 // Types import
 import type { ActionButton, ContentAppProps } from '../types/components'
-import { WIDGET_CONFIG, RESIZE_TYPES } from '../utils/constant'
+import { WIDGET_CONFIG, RESIZE_TYPES, MESSAGE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
 import { usePageHook } from '../hooks/usePageHook'
 import { useFile } from '../hooks/useFile'
 import { getFileIcon, PlusIcon } from './Icons'
+import { useAgentChat } from '../hooks/useAgent'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   // Mode
   const [useSearch, setUseSearch] = useState(false)
   const [useAgent, setUseAgent] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const widgetRef = useRef<HTMLDivElement>(null)
+  const [widgetSize, setWidgetSize] = useState({
+    width: WIDGET_CONFIG.DEFAULT_WIDTH,
+    height: WIDGET_CONFIG.DEFAULT_HEIGHT,
+  })
 
   // Page
   const {
     pageState,
-    getElementAtCoordinate
+    getElementAtCoordinate,
+    withMutationPaused
   } = usePageHook()
 
   // File management with message handler
@@ -57,21 +64,17 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     chatInput,
     chatMessages,
     isThinking,
+    lastAgentReply,
     handleInputChange,
     handleKeyPress,
   } = chatHook
 
-  // Drag and resize
-  const widgetRef = useRef<HTMLDivElement>(null)
-  const [widgetSize, setWidgetSize] = useState({
-    width: WIDGET_CONFIG.DEFAULT_WIDTH,
-    height: WIDGET_CONFIG.DEFAULT_HEIGHT,
-  })
   const {
     handleMouseDown,
     handleToggle,
     startResize,
     isMinimized,
+    setIsMinimized,
     isDragging,
     isResizing,
     currentSize,
@@ -80,6 +83,28 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     widgetSize,
     onSizeChange: setWidgetSize,
   })
+
+  // Initialize agent hook
+  const { processAgentReply } = useAgentChat(chatHook, {
+    pageState,
+    onActionExecuted: (action) => {
+      console.log('Agent action executed:', action);
+      if (!isMinimized)
+        setIsMinimized(true)
+    }
+  });
+
+  useEffect(() => {
+    console.log("changes")
+    if (lastAgentReply) {
+      withMutationPaused(() => processAgentReply(lastAgentReply));
+
+    }
+  }, [lastAgentReply]);
+
+  // Drag and resize
+
+
 
   useEffect(() => {
     getElementAtCoordinate(iconPosition.left, iconPosition.top)

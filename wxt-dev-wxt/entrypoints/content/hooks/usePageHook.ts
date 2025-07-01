@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { PageState, PageConfig } from '../types/page';
 import { removeHighlights, getClickableElementsFromDomTree, locateElement } from '../services/DomTreeService';
-
 import { highlightElement } from '../utils/domUtils';
 
 interface UsePageHookReturn {
@@ -9,13 +8,15 @@ interface UsePageHookReturn {
     pageState: PageState | null;
     isScanning: boolean;
 
-    // Actions
-    clearHighlights: () => void;
-
     // Getters
     getCurrentUrl: () => string;
     getCurrentTitle: () => string;
-    getElementAtCoordinate: (x: number, y: number) => Promise<void>
+    getElementAtCoordinate: (x: number, y: number) => Promise<void>;
+
+    // Mutation observer controls
+    stopMutationObserver: () => void;
+    startMutationObserver: () => void;
+    withMutationPaused: <T>(callback: () => T | Promise<T>) => Promise<T>;
 }
 
 export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
@@ -46,7 +47,7 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
 
         isUpdatingRef.current = true;
         setIsScanning(true);
-        removeHighlights()
+        removeHighlights();
 
         // Stop observing during update
         if (mutationObserverRef.current) {
@@ -69,12 +70,12 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
             setPageState(newPageState);
 
             // Apply highlights if currently highlighting
-            for (const [highlightIndex, node] of selectorMap.entries()) {
-                const ele: Element | null = await locateElement(node);
-                if (ele) highlightElement(ele, highlightIndex);
-            }
-            console.log(selectorMap)
-            console.log(root.clickableElementsToString())
+            // for (const [highlightIndex, node] of selectorMap.entries()) {
+            //     const ele: Element | null = await locateElement(node);
+            //     if (ele) highlightElement(ele, highlightIndex);
+            // }
+            // console.log(selectorMap)
+            // console.log(root.clickableElementsToString())
 
         } catch (error) {
             console.error('Error updating page state:', error);
@@ -136,9 +137,30 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
         mutationObserverRef.current = observer;
     }, [scheduleUpdate]);
 
-    const clearHighlights = useCallback(() => {
-        removeHighlights();
+    // Mutation observer control methods
+    const stopMutationObserver = useCallback(() => {
+        if (mutationObserverRef.current) {
+            mutationObserverRef.current.disconnect();
+        }
     }, []);
+
+    const startMutationObserver = useCallback(() => {
+        setupDomMonitoring();
+    }, [setupDomMonitoring]);
+
+    // Utility method to run code with mutation observer paused
+    const withMutationPaused = useCallback(async <T>(callback: () => T | Promise<T>): Promise<T> => {
+        stopMutationObserver();
+        try {
+            const result = await callback();
+            return result;
+        } finally {
+            // Small delay to ensure DOM changes are complete before restarting
+            setTimeout(() => {
+                startMutationObserver();
+            }, 50);
+        }
+    }, [stopMutationObserver, startMutationObserver]);
 
     const getCurrentUrl = useCallback((): string => {
         return window.location.href;
@@ -157,7 +179,7 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
                 const rect = element.getBoundingClientRect();
                 if (x >= rect.left && x <= rect.right &&
                     y >= rect.top && y <= rect.bottom) {
-                    highlightElement(element, highlightIndex)
+                    highlightElement(highlightIndex, element)
                 }
             }
         }
@@ -220,12 +242,14 @@ export const usePageHook = (config?: PageConfig): UsePageHookReturn => {
         pageState,
         isScanning,
 
-        // Actions
-        clearHighlights,
-
         // Getters
         getCurrentUrl,
         getCurrentTitle,
-        getElementAtCoordinate
+        getElementAtCoordinate,
+
+        // Mutation observer controls
+        stopMutationObserver,
+        startMutationObserver,
+        withMutationPaused
     };
 };
