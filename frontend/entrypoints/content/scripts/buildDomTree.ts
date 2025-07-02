@@ -1362,7 +1362,7 @@ export const buildDomTree = (
                         }
                     }
                 } catch (e) {
-                    console.warn("Unable to access iframe:", e);
+                    console.warn("Unable to access iframe");
                 }
             }
             // Handle rich text editors and contenteditable elements
