@@ -27,7 +27,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
   // Agent state management
   const taskRef = useRef<string>("")
-  const fileContentRef = useRef<string>("")
   const lastPageStateTimestamp = useRef<number | null>(null);
   const isInitialMount = useRef(true);
   const isSendingManually = useRef(false);
@@ -50,7 +49,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     handleFileUpload,
     removeFile,
     formatFileName,
-    getFileContent
+    fileContentAsString
   } = useFile()
 
   // Chat refs
@@ -90,26 +89,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   // Agent hook
   const { processAgentResponse } = useAgentChat(chatHook, {
     pageState,
-    onActionExecuted: (action) => {
-      console.log('Agent action executed:', action);
-      if (!isMinimized) {
-        setIsMinimized(true)
-      }
-    }
   });
-
-  // Update file content when files change
-  useEffect(() => {
-    const updateFileContent = async () => {
-      try {
-        fileContentRef.current = await getFileContent();
-      } catch (error) {
-        console.error('Failed to get file content:', error);
-        fileContentRef.current = "";
-      }
-    };
-    updateFileContent();
-  }, [uploadedFiles, getFileContent]);
 
   // Clear task when agent mode is disabled
   useEffect(() => {
@@ -147,7 +127,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         useSearch,
         task: useAgent ? taskRef.current : undefined,
         userMessage: !useAgent ? input : undefined,
-        fileContent: fileContentRef.current,
+        fileContent: fileContentAsString,
         pageState: useAgent ? pageState : null
       };
       const message = PromptBuilder.buildMessage(promptConfig);

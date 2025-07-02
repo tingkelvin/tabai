@@ -5,6 +5,7 @@ interface UseFileReturn {
     // State
     uploadedFiles: FileWithId[];
     isUploading: boolean;
+    fileContentAsString: string; // New export
 
     // File operations
     handleFileUpload: (file: File) => Promise<void>;
@@ -28,6 +29,7 @@ interface UseFileReturn {
 export const useFile = (): UseFileReturn => {
     const [uploadedFiles, setUploadedFiles] = useState<FileWithId[]>([]);
     const [isUploading, setIsUploading] = useState<boolean>(false);
+    const [fileContentAsString, setFileContentAsString] = useState<string>(''); // New state
     const fileContentsRef = useRef<Map<string, string>>(new Map());
     const fileStorage = useMemo(() => createFileStorage(), []);
 
@@ -85,6 +87,33 @@ export const useFile = (): UseFileReturn => {
         }
     }, []);
 
+    // Helper function to update file content string
+    const updateFileContentString = useCallback(async (files: FileWithId[]) => {
+        if (files.length === 0) {
+            setFileContentAsString('');
+            return;
+        }
+
+        try {
+            const contentPromises = files.map(async (file): Promise<string> => {
+                try {
+                    const content = await readFileContent(file);
+                    return `File: ${file.name}\n${content}`;
+                } catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                    return `[Error reading ${file.name}: ${errorMessage}]`;
+                }
+            });
+
+            const allContents = await Promise.all(contentPromises);
+            const combinedContent = allContents.join('\n\n---\n\n');
+            setFileContentAsString(combinedContent);
+        } catch (error) {
+            console.error('Failed to update file content string:', error);
+            setFileContentAsString('');
+        }
+    }, [readFileContent]);
+
     const loadSessionFiles = useCallback((): void => {
         try {
             const sessionFiles = fileStorage.loadFiles();
@@ -93,11 +122,13 @@ export const useFile = (): UseFileReturn => {
                     .map(sf => fileStorage.getFileObject(sf))
                     .filter((f): f is FileWithId => f !== null);
                 setUploadedFiles(fileObjects);
+                // Update content string when loading session files
+                updateFileContentString(fileObjects);
             }
         } catch (error) {
             console.error('Error loading session files:', error);
         }
-    }, [fileStorage]);
+    }, [fileStorage, updateFileContentString]);
 
     const handleFileUpload = useCallback(async (file: File): Promise<void> => {
         if (!file || isUploading) return;
@@ -107,19 +138,21 @@ export const useFile = (): UseFileReturn => {
             f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
         );
 
-
         setIsUploading(true);
 
         try {
             await fileStorage.saveFile(file);
-            setUploadedFiles(prev => [...prev, file as FileWithId]);
+            const newFiles = [...uploadedFiles, file as FileWithId];
+            setUploadedFiles(newFiles);
+            // Update content string when adding new file
+            await updateFileContentString(newFiles);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             console.error('File upload error:', error);
         } finally {
             setIsUploading(false);
         }
-    }, [uploadedFiles, isUploading, fileStorage]);
+    }, [uploadedFiles, isUploading, fileStorage, updateFileContentString]);
 
     const removeFile = useCallback(async (fileToRemove: string | File): Promise<void> => {
         try {
@@ -134,7 +167,10 @@ export const useFile = (): UseFileReturn => {
             sessionStorage.setItem(FILE_CONFIG.STORAGE_KEY, JSON.stringify(updatedFiles));
 
             // Update state
-            setUploadedFiles(prev => prev.filter(f => f.name !== fileName));
+            const newFiles = uploadedFiles.filter(f => f.name !== fileName);
+            setUploadedFiles(newFiles);
+            // Update content string when removing file
+            await updateFileContentString(newFiles);
 
             // Clear cache
             const cacheKeys = Array.from(fileContentsRef.current.keys());
@@ -144,30 +180,14 @@ export const useFile = (): UseFileReturn => {
         } catch (error) {
             const fileName = typeof fileToRemove === 'string' ? fileToRemove : fileToRemove.name;
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            console.error('File removal error:', error);
         }
-    }, [uploadedFiles, fileStorage]);
+    }, [uploadedFiles, fileStorage, updateFileContentString]);
 
     const getFileContent = useCallback(async (): Promise<string> => {
-        if (uploadedFiles.length === 0) return '';
-
-        try {
-            const contentPromises = uploadedFiles.map(async (file): Promise<string> => {
-                try {
-                    const content = await readFileContent(file);
-                    return `File: ${file.name}\n${content}`;
-                } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-                    return `[Error reading ${file.name}: ${errorMessage}]`;
-                }
-            });
-
-            const allContents = await Promise.all(contentPromises);
-            return allContents.join('\n\n---\n\n');
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            throw new Error(`Failed to get all content: ${errorMessage}`);
-        }
-    }, [uploadedFiles, readFileContent]);
+        // Now this can just return the cached string
+        return fileContentAsString;
+    }, [fileContentAsString]);
 
     const displayFileContent = useCallback(async (file: File): Promise<string> => {
         try {
@@ -183,9 +203,11 @@ export const useFile = (): UseFileReturn => {
         try {
             sessionStorage.removeItem(FILE_CONFIG.STORAGE_KEY);
             setUploadedFiles([]);
+            setFileContentAsString(''); // Clear content string
             fileContentsRef.current.clear();
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            console.error('Clear files error:', error);
         }
     }, []);
 
@@ -211,6 +233,7 @@ export const useFile = (): UseFileReturn => {
         // State
         uploadedFiles,
         isUploading,
+        fileContentAsString, // Export the string directly
 
         // File operations
         handleFileUpload,
