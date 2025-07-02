@@ -149,7 +149,7 @@ export async function locateElement(element: ElementDomNode): Promise<Element | 
     return null;
 }
 
-function scrollIntoViewIfNeeded(element: Element): void {
+export function scrollIntoViewIfNeeded(element: Element): void {
     const rect = element.getBoundingClientRect();
     const isInViewport = rect.top >= 0 &&
         rect.left >= 0 &&

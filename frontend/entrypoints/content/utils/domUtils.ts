@@ -46,24 +46,6 @@ export function constructDomTree(evalPage: DomTreeResult): [ElementDomNode, Map<
         }
     }
 
-    // Third pass: filter children node - exclude nodes whose parents are highlighted
-    for (const [highlightIndex, node] of selectorMap.entries()) {
-        // Check if this node should be included
-        const shouldInclude = !node.parent || // Include if no parent
-            !(node.parent instanceof ElementDomNode) || // Include if parent is not ElementDomNode
-            !node.parent.highlightIndex || // Include if parent has no highlightIndex
-            node.parent.highlightIndex === null || // Include if parent highlightIndex is null
-            node.parent.highlightIndex === undefined; // Include if parent highlightIndex is undefined
-
-        if (shouldInclude) {
-            parentSelectorMap.set(highlightIndex, node);
-        }
-
-    }
-
-    // console.log("parent", parentSelectorMap)
-
-
     if (!jsRootId) throw new Error('Failed to parse HTML to dictionary');
 
     const htmlToDict = nodeMap[jsRootId];
@@ -74,7 +56,7 @@ export function constructDomTree(evalPage: DomTreeResult): [ElementDomNode, Map<
         throw new Error('Failed to parse HTML to dictionary');
     }
 
-    return [htmlToDict, parentSelectorMap];
+    return [htmlToDict, selectorMap];
 }
 
 export function parse_node(nodeData: RawDomNode): [BaseDomNode | null, string[]] {

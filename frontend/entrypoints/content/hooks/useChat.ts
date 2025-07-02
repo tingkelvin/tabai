@@ -114,6 +114,7 @@ export const useChat = (config: chatConfig): ChatHookReturn => {
         const response: ApiResponse<ChatResponse> = await sendBackgroundMessage('chat', { message: message, options: { useSearch: useSearch } });
         console.log('📡 Response from backend:', response);
         let reply = response.data?.reply || 'I do not find any response, sorry.';
+        setIsThinking(false);
         // const fileContent = await getFileContent()
         // console.log(fileContent)
         // Add the assistant response to chat messages if not in agent mode
@@ -124,7 +125,7 @@ export const useChat = (config: chatConfig): ChatHookReturn => {
 
         if (addToChat && !useAgent)
             addAssistantMessage(reply);
-        setIsThinking(false);
+
         isSendingManually.current = false;
         return reply;
 
