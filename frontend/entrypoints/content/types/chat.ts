@@ -1,5 +1,6 @@
 import { MESSAGE_TYPES } from "../utils/constant";
 import { AgentResponse } from "../utils/prompMessages";
+import { ChatOptions } from '@/entrypoints/background/types/api';
 
 export interface ChatMessage {
     id: string;
@@ -8,14 +9,15 @@ export interface ChatMessage {
     timestamp: Date;
 }
 
+
+
 export interface ChatHookReturn {
     chatInput: string;
     chatMessages: ChatMessage[];
     isThinking: boolean;
     handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
     handleKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-    sendMessage: (messageOrInput?: string, addToChat?: boolean) => Promise<string>;
-    lastAgentResponse: AgentResponse | null;
+    sendMessage: (message: string, options: ChatOptions) => Promise<string>;
     addMessage: (message: Partial<ChatMessage>) => void;
     addMessages: (messages: Partial<ChatMessage>[]) => void;
     clearMessages: () => void;

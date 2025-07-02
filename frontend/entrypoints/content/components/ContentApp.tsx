@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 // Components import
 import TerminalIcon from './TerminalIcon'
 import TerminalHeader from './TerminalHeader'
@@ -16,54 +16,62 @@ import { usePage } from '../hooks/usePage'
 import { useFile } from '../hooks/useFile'
 import { getFileIcon, PlusIcon } from './Icons'
 import { useAgentChat } from '../hooks/useAgent'
+import { AgentResponse, PROMPT_TEMPLATES, PromptBuilder, PromptConfig } from '../utils/prompMessages'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
-  // Mode
+  // Mode states
   const [useSearch, setUseSearch] = useState(false)
   const [useAgent, setUseAgent] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null)
+
+  // Agent state management
+  const taskRef = useRef<string>("")
+  const fileContentRef = useRef<string>("")
+  const lastPageStateTimestamp = useRef<number | null>(null);
+  const isInitialMount = useRef(true);
+  const isSendingManually = useRef(false);
+
   const [widgetSize, setWidgetSize] = useState({
     width: WIDGET_CONFIG.DEFAULT_WIDTH,
     height: WIDGET_CONFIG.DEFAULT_HEIGHT,
   })
 
-  // Page
+  // Page hooks
   const {
     pageState,
     getElementAtCoordinate,
     withMutationPaused
   } = usePage()
 
+  // File hooks
   const {
     uploadedFiles,
-    isUploading,
     handleFileUpload,
     removeFile,
     formatFileName,
     getFileContent
   } = useFile()
 
-  // Chat
+  // Chat refs
   const chatMessagesRef = useRef<HTMLDivElement>(null)
   const chatInputRef = useRef<HTMLTextAreaElement>(null)
 
-  const chatHook = customChatHook ? customChatHook() : useChat({
-    useSearch,
-    pageState,
-    useAgent,
-    getFileContent
-  })
-
+  // Chat hook - simple and pure
+  const chatHook = customChatHook ? customChatHook() : useChat()
   const {
     chatInput,
     chatMessages,
     isThinking,
-    lastAgentResponse,
     handleInputChange,
-    handleKeyPress,
+    addAssistantMessage,
+    addUserMessage,
+    sendMessage,
+    setIsThinking,
+    handleKeyPress: baseHandleKeyPress
   } = chatHook
 
+  // UI hooks
   const {
     handleMouseDown,
     handleToggle,
@@ -79,44 +87,222 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     onSizeChange: setWidgetSize
   })
 
-  // Initialize agent hook
+  // Agent hook
   const { processAgentResponse } = useAgentChat(chatHook, {
     pageState,
     onActionExecuted: (action) => {
       console.log('Agent action executed:', action);
-      if (!isMinimized)
+      if (!isMinimized) {
         setIsMinimized(true)
+      }
     }
   });
 
+  // Update file content when files change
   useEffect(() => {
-    console.log("changes")
-    if (lastAgentResponse) {
-      withMutationPaused(() => processAgentResponse(lastAgentResponse));
+    const updateFileContent = async () => {
+      try {
+        fileContentRef.current = await getFileContent();
+      } catch (error) {
+        console.error('Failed to get file content:', error);
+        fileContentRef.current = "";
+      }
+    };
+    updateFileContent();
+  }, [uploadedFiles, getFileContent]);
 
+  // Clear task when agent mode is disabled
+  useEffect(() => {
+    if (!useAgent) {
+      taskRef.current = "";
+      console.log('🤖 Agent mode disabled, cleared task');
     }
-  }, [lastAgentResponse]);
+  }, [useAgent]);
 
-  // Drag and resize
+  // Complex orchestrated send message
+  const handleSendMessage = useCallback(async (input: string) => {
+    console.log('🎬 Starting orchestrated message flow');
+    isSendingManually.current = true;
 
+    try {
+      // 1. Validation for agent mode
+      if (useAgent) {
+        const validation = PromptBuilder.validateTask(input);
+        if (!validation.valid) {
+          addAssistantMessage(validation.error || PROMPT_TEMPLATES.INVALID_TASK);
+          return;
+        }
+        taskRef.current = input;
+
+        // Auto-minimize for agent mode
+        console.log('🤖 Agent mode: Auto-minimizing widget');
+        if (!isMinimized) {
+          setIsMinimized(true);
+        }
+      }
+
+      // 3. Build the prompt message
+      const promptConfig: PromptConfig = {
+        useAgent,
+        useSearch,
+        task: useAgent ? taskRef.current : undefined,
+        userMessage: !useAgent ? input : undefined,
+        fileContent: fileContentRef.current,
+        pageState: useAgent ? pageState : null
+      };
+      const message = PromptBuilder.buildMessage(promptConfig);
+
+      // 4. Send message
+      setIsThinking(true);
+      const reply = await sendMessage(message, { useSearch });
+
+      // 5. Process response
+      if (useAgent) {
+        // Parse agent response
+        const agentResponse: AgentResponse | null = PromptBuilder.parseAgentResponse(reply);
+        if (!agentResponse) {
+          addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
+        } else {
+          console.log('🤖 Processing agent response:', agentResponse);
+          withMutationPaused(() => {
+            processAgentResponse(agentResponse);
+          });
+        }
+      } else {
+        // Regular chat mode
+        addAssistantMessage(reply);
+      }
+
+    } catch (error) {
+      console.error('❌ Orchestration error:', error);
+      addAssistantMessage(PROMPT_TEMPLATES.ERROR_GENERIC);
+    } finally {
+      setIsThinking(false);
+      isSendingManually.current = false;
+    }
+  }, [
+    chatInput,
+    useAgent,
+    useSearch,
+    pageState,
+    isMinimized,
+    setIsMinimized,
+    addUserMessage,
+    addAssistantMessage,
+    sendMessage,
+    setIsThinking,
+    withMutationPaused,
+    processAgentResponse,
+  ]);
+
+  // Auto-continuation for agent mode
+  // const handleAutoContinuation = useCallback(async () => {
+  //   if (!useAgent || !taskRef.current || !pageState) return;
+
+  //   console.log('🔄 Auto-continuation triggered');
+  //   setIsThinking(true);
+
+  //   try {
+  //     // Build continuation message
+  //     const continuationMessage = PromptBuilder.buildContinuationMessage(
+  //       taskRef.current,
+  //       fileContentRef.current,
+  //       pageState
+  //     );
+
+  //     console.log('🔄 Sending continuation:', continuationMessage.substring(0, 100) + '...');
+
+  //     // Send continuation
+  //     const reply = await sendMessage(continuationMessage, { useSearch });
+
+  //     // Parse and process agent response
+  //     const agentResponse: AgentResponse | null = PromptBuilder.parseAgentResponse(reply);
+  //     if (agentResponse) {
+  //       console.log('🤖 Auto-continuation response:', agentResponse);
+  //       withMutationPaused(() => {
+  //         processAgentResponse(agentResponse);
+  //       });
+  //     } else {
+  //       console.error('❌ Failed to parse auto-continuation response');
+  //       addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
+  //     }
+
+  //   } catch (error) {
+  //     console.error('❌ Auto-continuation error:', error);
+  //     addAssistantMessage(PROMPT_TEMPLATES.ERROR_GENERIC);
+  //   } finally {
+  //     setIsThinking(false);
+  //   }
+  // }, [useAgent, useSearch, pageState, sendMessage, setIsThinking, withMutationPaused, processAgentResponse, addAssistantMessage]);
+
+  // Auto-continuation when pageState updates in agent mode
   // useEffect(() => {
-  //   getElementAtCoordinate(iconPosition.left, iconPosition.top)
-  // }, [iconPosition])
+  //   // Skip on initial mount
+  //   if (isInitialMount.current) {
+  //     isInitialMount.current = false;
+  //     if (pageState?.timestamp) {
+  //       lastPageStateTimestamp.current = pageState.timestamp;
+  //     }
+  //     return;
+  //   }
 
-  // Web Search button handler
-  const toggleWebSearch = () => {
-    setUseSearch(!useSearch)
-    console.log('Web search toggled:', !useSearch)
-  }
+  //   // Only proceed if agent mode is enabled and we have a current task
+  //   if (!useAgent || !taskRef.current || !pageState?.timestamp || isSendingManually.current) {
+  //     return;
+  //   }
 
-  // Agent button handler
-  const toggleAgent = () => {
-    setUseAgent(!useAgent)
-    console.log('Agent toggled:', !useAgent)
-  }
+  //   // Check if this is a new page state update
+  //   if (lastPageStateTimestamp.current !== pageState.timestamp) {
+  //     console.log('🤖 PageState updated, triggering auto-continuation');
+  //     lastPageStateTimestamp.current = pageState.timestamp;
+  //     handleAutoContinuation();
+  //   }
+  // }, [pageState?.timestamp, useAgent, handleAutoContinuation]);
+
+  // Custom key press handler
+  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+
+      const input = chatInput.trim();
+      baseHandleKeyPress(e)
+
+      // Additional validation for agent mode
+      if (useAgent) {
+        const validation = PromptBuilder.validateTask(input);
+        if (!validation.valid) {
+          addAssistantMessage(validation.error || PROMPT_TEMPLATES.INVALID_TASK);
+          return;
+        }
+      }
+
+      // Use orchestrated send message
+      handleSendMessage(input);
+
+      // Reset textarea height
+      setTimeout(() => {
+        const target = e.target as HTMLTextAreaElement;
+        if (target) {
+          target.style.height = '44px';
+          target.style.overflowY = 'hidden';
+        }
+      }, 0);
+    }
+  }, [chatInput, useAgent, addAssistantMessage, handleSendMessage]);
+
+  // Toggle handlers
+  const toggleWebSearch = useCallback(() => {
+    setUseSearch(!useSearch);
+    console.log('Web search toggled:', !useSearch);
+  }, [useSearch]);
+
+  const toggleAgent = useCallback(() => {
+    setUseAgent(!useAgent);
+    console.log('Agent toggled:', !useAgent);
+  }, [useAgent]);
 
   // File upload handler
-  const handleOptimizedFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleOptimizedFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -126,7 +312,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     } catch (error) {
       console.error('File upload failed:', error);
     }
-  };
+  }, [handleFileUpload]);
 
   // File actions for the input area
   const fileActions = [
@@ -151,7 +337,8 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       className: 'file-action'
     }))
   ];
-  // Web Search button
+
+  // Action buttons
   const webSearchButton: ActionButton = {
     id: 'web-search',
     icon: (
@@ -167,7 +354,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     className: useSearch ? 'active' : '',
   }
 
-  // Agent button
   const agentButton: ActionButton = {
     id: 'agent',
     icon: (

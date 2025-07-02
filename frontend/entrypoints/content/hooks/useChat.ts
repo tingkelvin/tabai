@@ -18,18 +18,10 @@ export interface chatConfig {
     getFileContent: () => Promise<string>;
 }
 
-export const useChat = (config: chatConfig): ChatHookReturn => {
-    const { useSearch, useAgent, pageState, getFileContent } = config;
+export const useChat = (): ChatHookReturn => {
     const [chatInput, setChatInput] = useState<string>('');
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [isThinking, setIsThinking] = useState<boolean>(false);
-    const [lastAgentResponse, setLastAgentResponse] = useState<AgentResponse | null>(null);
-    const isSendingManually = useRef(false);
-    const fileContent = useRef("");
-    const task = useRef("");
-    const lastPageStateTimestamp = useRef<number | null>(null);
-    const isInitialMount = useRef(true);
-
     // Method to directly add assistant messages to the chat
     const addAssistantMessage = useCallback((content: string) => {
         const newMessage: ChatMessage = {
@@ -43,53 +35,10 @@ export const useChat = (config: chatConfig): ChatHookReturn => {
     }, []);
 
     // Clear task when agent mode is disabled
-    useEffect(() => {
-        if (!useAgent) {
-            task.current = "";
-        }
-        console.log("task: ", task.current);
-    }, [useAgent]);
 
-    const sendMessage = useCallback(async (messageOrInput?: string, addToChat: boolean = true): Promise<string> => {
-        let message = messageOrInput;
-
-        // If no message is provided, use chatInput
-        if (!message) {
-            isSendingManually.current = true;
-            const chatInputTrimmed = chatInput.trim();
-            if (!chatInputTrimmed) return '';
-
-            // Validate task if in agent mode
-            if (useAgent) {
-                const validation = PromptBuilder.validateTask(chatInputTrimmed);
-                if (!validation.valid) {
-                    addAssistantMessage(validation.error || PROMPT_TEMPLATES.INVALID_TASK);
-                    return '';
-                }
-                task.current = chatInputTrimmed;
-            }
-
-            // Get file content
-            fileContent.current = await getFileContent();
-
-            // Build the prompt message using PromptBuilder
-            const promptConfig: PromptConfig = {
-                useAgent,
-                useSearch,
-                task: useAgent ? chatInputTrimmed : undefined,
-                userMessage: !useAgent ? chatInputTrimmed : undefined,
-                fileContent: fileContent.current,
-                pageState: useAgent ? pageState : null
-            };
-
-            message = PromptBuilder.buildMessage(promptConfig);
-
-            // Debug logging
-            console.log('🔧 Debug Info:', PromptBuilder.createDebugMessage(promptConfig));
-        }
-
+    const sendMessage = useCallback(async (message: string, options: ChatOptions): Promise<string> => {
         // Only add user message to chat if it's from chatInput (not auto-init)
-        if (!messageOrInput && chatInput.trim()) {
+        if (chatInput.trim()) {
             const userMessage: ChatMessage = {
                 id: `msg-${Date.now()}`,
                 type: MESSAGE_TYPES.USER,
@@ -99,91 +48,16 @@ export const useChat = (config: chatConfig): ChatHookReturn => {
             setChatMessages(prev => [...prev, userMessage]);
         }
 
-        // Always show Thinking when sending a message
-        setIsThinking(true);
         console.log('🚀 Sending to backend:', message.substring(0, 100) + '...');
+        const response: ApiResponse<ChatResponse> = await sendBackgroundMessage('chat', {
+            message: message,
+            options: options
+        });
 
-        try {
-            // Send directly to background script
-            const response: ApiResponse<ChatResponse> = await sendBackgroundMessage('chat', {
-                message: message,
-                options: { useSearch: useSearch }
-            });
-
-            console.log('📡 Response from backend:', response);
-            let reply = response.data?.reply || PROMPT_TEMPLATES.ERROR_GENERIC;
-
-            // Handle agent replies
-            if (useAgent) {
-                // Try to parse agent response
-                const agentResponse = PromptBuilder.parseAgentResponse(reply);
-                if (!agentResponse) {
-                    // If parsing fails, add error message and ask for retry
-                    addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
-                    reply = PROMPT_TEMPLATES.PARSING_ERROR;
-                } else {
-                    // Store parsed agent reply for processing
-                    setLastAgentResponse(agentResponse);
-                    console.log('🤖 Parsed agent response:', agentResponse);
-                }
-            }
-
-            // Add the assistant response to chat messages if not in agent mode
-            if (addToChat && !useAgent) {
-                addAssistantMessage(reply);
-            }
-
-            setIsThinking(false);
-            isSendingManually.current = false;
-            return reply;
-
-        } catch (error) {
-            console.error('❌ Error sending message:', error);
-            setIsThinking(false);
-            const errorMessage = PROMPT_TEMPLATES.ERROR_GENERIC;
-            if (addToChat) {
-                addAssistantMessage(errorMessage);
-            }
-            isSendingManually.current = false;
-            return errorMessage;
-        }
-
-    }, [chatInput, addAssistantMessage, useSearch, useAgent, pageState, getFileContent]);
-
-    // Auto-send message when pageState updates in agent mode
-    useEffect(() => {
-        // Skip on initial mount
-        if (isInitialMount.current) {
-            isInitialMount.current = false;
-            if (pageState?.timestamp) {
-                lastPageStateTimestamp.current = pageState.timestamp;
-            }
-            return;
-        }
-
-        // Only proceed if agent mode is enabled and we have a current task
-        if (!useAgent || !task.current || !pageState?.timestamp || isSendingManually.current) {
-            return;
-        }
-
-        // Check if this is a new page state update
-        if (lastPageStateTimestamp.current !== pageState.timestamp) {
-            console.log('🤖 Agent mode: PageState updated, auto-sending message');
-
-            // Update the timestamp tracking
-            lastPageStateTimestamp.current = pageState.timestamp;
-
-            // Build continuation message using PromptBuilder
-            const autoMessage = PromptBuilder.buildContinuationMessage(
-                task.current,
-                fileContent.current,
-                pageState
-            );
-
-            // Send the message without adding to chat history as user message
-            sendMessage(autoMessage, true);
-        }
-    }, [pageState?.timestamp, useAgent, sendMessage]);
+        console.log('📡 Response from backend:', response);
+        const reply = response.data?.reply || PROMPT_TEMPLATES.ERROR_GENERIC;
+        return reply;
+    }, [chatInput, addAssistantMessage]);
 
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setChatInput(e.target.value);
@@ -203,23 +77,6 @@ export const useChat = (config: chatConfig): ChatHookReturn => {
     const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-
-            // Validate input before sending
-            const inputTrimmed = chatInput.trim();
-            if (!inputTrimmed) return;
-
-            // Additional validation for agent mode
-            if (useAgent) {
-                const validation = PromptBuilder.validateTask(inputTrimmed);
-                if (!validation.valid) {
-                    addAssistantMessage(validation.error || PROMPT_TEMPLATES.INVALID_TASK);
-                    return;
-                }
-            }
-
-            // Send message - user message and response will be added automatically
-            sendMessage();
-
             // Clear input and reset textarea height
             setChatInput('');
 
@@ -231,7 +88,7 @@ export const useChat = (config: chatConfig): ChatHookReturn => {
                 }
             }, 0);
         }
-    }, [sendMessage, chatInput, useAgent, addAssistantMessage]);
+    }, [sendMessage, chatInput, addAssistantMessage]);
 
     // Method to directly add messages to the chat
     const addMessage = useCallback((message: Partial<ChatMessage>) => {
@@ -274,7 +131,6 @@ export const useChat = (config: chatConfig): ChatHookReturn => {
     // Method to clear all messages
     const clearMessages = useCallback(() => {
         setChatMessages([]);
-        task.current = ""; // Also clear the current task
     }, []);
 
     // Method to remove a specific message by ID
@@ -295,7 +151,6 @@ export const useChat = (config: chatConfig): ChatHookReturn => {
         chatInput,
         chatMessages,
         isThinking,
-        lastAgentResponse,
         handleInputChange,
         handleKeyPress,
         sendMessage,
