@@ -6,16 +6,12 @@ import { removeHighlights, getClickableElementsFromDomTree, locateElement } from
 
 import { highlightElement } from '../utils/domUtils';
 import { ElementDomNode } from '../types/dom/DomNode';
+import { AgentResponse } from '../utils/prompMessages';
 
 export interface AgentAction {
     id: number;
     type: 'click' | 'fill' | 'select';
     value?: string;
-}
-
-export interface AgentResponse {
-    actions: AgentAction[];
-    reasoning: string;
 }
 
 export interface UseAgentActionsConfig {
@@ -125,7 +121,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
     }, [pageState, onActionExecuted, onError]);
 
     // Execute multiple actions from JSON string
-    const executeActions = useCallback(async (actionsJson: string): Promise<{
+    const executeActions = useCallback(async (agentResponse: AgentResponse): Promise<{
         success: boolean;
         executedCount: number;
         totalCount: number;
@@ -142,8 +138,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         let reasoning = '';
 
         try {
-            const parsed: AgentResponse = JSON.parse(actionsJson);
-            const { actions, reasoning: parsedReasoning } = parsed;
+            const { actions, reasoning: parsedReasoning } = agentResponse;
 
             reasoning = parsedReasoning;
             totalCount = actions.length;
@@ -189,24 +184,6 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         }
     }, [executeAction, actionDelay, onError]);
 
-    // Parse actions without executing (for preview/validation)
-    const parseActions = useCallback((actionsJson: string): AgentResponse | null => {
-        try {
-            const parsed: AgentResponse = JSON.parse(actionsJson);
-
-            // Validate structure
-            if (!parsed.actions || !Array.isArray(parsed.actions)) {
-                throw new Error('Invalid actions format');
-            }
-
-            return parsed;
-        } catch (error) {
-            console.error('Failed to parse agent actions:', error);
-            onError?.(`Invalid action format: ${error}`);
-            return null;
-        }
-    }, [onError]);
-
     // Check if actions are currently executing
     const isExecuting = useCallback(() => isExecutingRef.current, []);
 
@@ -240,7 +217,6 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
     return {
         executeAction,
         executeActions,
-        parseActions,
         validateAction,
         isExecuting
     };
@@ -256,16 +232,14 @@ export const useAgentChat = (chatHook: any, agentConfig: UseAgentActionsConfig =
         }
     });
 
-    const processAgentReply = useCallback(async (reply: string) => {
-        const jsonMatch = reply.match(/\{[\s\S]*"actions"[\s\S]*\}/);
-        if (jsonMatch) {
-            const result = await agentActions.executeActions(jsonMatch[0]);
-            chatHook.addAssistantMessage(result.reasoning);
-        }
+    const processAgentResponse = useCallback(async (response: AgentResponse) => {
+        await agentActions.executeActions(response);
+        chatHook.addAssistantMessage(response.reasoning);
+
     }, [agentActions]);
 
     return {
         ...agentActions,
-        processAgentReply
+        processAgentResponse
     };
 };

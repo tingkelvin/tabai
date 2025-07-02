@@ -59,7 +59,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     chatInput,
     chatMessages,
     isThinking,
-    lastAgentReply,
+    lastAgentResponse,
     handleInputChange,
     handleKeyPress,
   } = chatHook
@@ -80,7 +80,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   })
 
   // Initialize agent hook
-  const { processAgentReply } = useAgentChat(chatHook, {
+  const { processAgentResponse } = useAgentChat(chatHook, {
     pageState,
     onActionExecuted: (action) => {
       console.log('Agent action executed:', action);
@@ -91,11 +91,11 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
   useEffect(() => {
     console.log("changes")
-    if (lastAgentReply) {
-      withMutationPaused(() => processAgentReply(lastAgentReply));
+    if (lastAgentResponse) {
+      withMutationPaused(() => processAgentResponse(lastAgentResponse));
 
     }
-  }, [lastAgentReply]);
+  }, [lastAgentResponse]);
 
   // Drag and resize
 

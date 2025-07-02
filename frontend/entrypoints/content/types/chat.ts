@@ -1,4 +1,5 @@
 import { MESSAGE_TYPES } from "../utils/constant";
+import { AgentResponse } from "../utils/prompMessages";
 
 export interface ChatMessage {
     id: string;
@@ -14,7 +15,7 @@ export interface ChatHookReturn {
     handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
     handleKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
     sendMessage: (messageOrInput?: string, addToChat?: boolean) => Promise<string>;
-    lastAgentReply: string;
+    lastAgentResponse: AgentResponse | null;
     addMessage: (message: Partial<ChatMessage>) => void;
     addMessages: (messages: Partial<ChatMessage>[]) => void;
     clearMessages: () => void;
