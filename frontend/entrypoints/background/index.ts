@@ -3,12 +3,8 @@ import AuthManager from './managers/authManager';
 import { withAuth } from './middleware/authMiddleware';
 import { ChatManager } from './managers/chatManager';
 import { isValidPage } from './utils/pageUtils';
-import { ContentAppState } from './types/state';
-
-import { stateManager, setupStateHandlers } from './managers/stateManager';
 
 const extensionStorage = storage.defineItem<boolean>('sync:extensionEnabled');
-const contentAppStates = new Map<number, ContentAppState>();
 
 // Enhanced notification function with validation
 const notifyValidContentScripts = async (enabled: boolean) => {
@@ -29,9 +25,6 @@ const notifyValidContentScripts = async (enabled: boolean) => {
 
 export default defineBackground(() => {
   console.log('✅ Background script loaded successfully!');
-  stateManager.initialize();
-  setupStateHandlers();
-
   // Debug functions with validation
   const debugFunctions = {
     async testOnValidTabs() {
@@ -93,31 +86,6 @@ export default defineBackground(() => {
 
   onMessage('chat', async ({ data: { message, options } }) => {
     return withAuth(async () => { return await ChatManager.sendMessage(message, options); });
-  });
-
-  // Add these message handlers to your existing background script
-  // onMessage('updateContentState', async ({ data: { state }, sender }) => {
-  //   const tabId = sender.tab?.id;
-  //   if (tabId) {
-  //     contentAppStates.set(tabId, state);
-  //     console.log(`💾 Saved state for tab ${tabId}`);
-  //   }
-  // });
-
-  // onMessage('getContentState', async ({ sender }) => {
-  //   const tabId = sender.tab?.id;
-  //   if (tabId) {
-  //     const state = contentAppStates.get(tabId);
-  //     console.log(`📤 Retrieved state for tab ${tabId}`, state ? 'found' : 'not found');
-  //     return { state };
-  //   }
-  //   return { state: null };
-  // });
-
-  // Clean up state when tabs are closed
-  chrome.tabs.onRemoved.addListener((tabId) => {
-    contentAppStates.delete(tabId);
-    console.log(`🗑️ Cleaned up state for closed tab ${tabId}`);
   });
 
 
