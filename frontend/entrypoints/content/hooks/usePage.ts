@@ -84,8 +84,8 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
                 screenshot: null
             };
 
-            console.log(root.clickableElementsToString())
-            console.log(selectorMap)
+            // console.log(root.clickableElementsToString())
+            // console.log(selectorMap)
 
             setPageState(newPageState);
 

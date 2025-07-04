@@ -17,6 +17,7 @@ import { useFile } from '../hooks/useFile'
 import { getFileIcon, PlusIcon } from './Icons'
 import { useAgentChat } from '../hooks/useAgent'
 import { AgentResponse, PROMPT_TEMPLATES, PromptBuilder, PromptConfig } from '../utils/prompMessages'
+import { useAppState } from '../hooks/useAppState'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   // Mode states
@@ -24,6 +25,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const [useAgent, setUseAgent] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null)
+  const { state, updateChatState, loadState } = useAppState();
 
   // Agent state management
   const taskRef = useRef<string>("")
@@ -56,8 +58,19 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const chatMessagesRef = useRef<HTMLDivElement>(null)
   const chatInputRef = useRef<HTMLTextAreaElement>(null)
 
-  // Chat hook - simple and pure
-  const chatHook = customChatHook ? customChatHook() : useChat()
+  // Chat hook now receives state and updaters
+  const chatHook = customChatHook ? customChatHook() : useChat({
+    chatMessages: state.chatMessages,
+    isThinking: state.isThinking,
+    onMessagesChange: (messagesOrUpdater) => {
+      const newMessages = typeof messagesOrUpdater === 'function'
+        ? messagesOrUpdater(chatMessages) // Use chatMessages instead of state.chatMessages
+        : messagesOrUpdater;
+      updateChatState({ chatMessages: newMessages });
+    },
+    onThinkingChange: (thinking) => updateChatState({ isThinking: thinking })
+  });
+
   const {
     chatInput,
     chatMessages,
@@ -103,6 +116,8 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const handleSendMessage = useCallback(async (input: string) => {
     console.log('🎬 Starting orchestrated message flow');
     isSendingManually.current = true;
+
+    addUserMessage(input)
 
     try {
       // 1. Validation for agent mode
@@ -153,6 +168,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         addAssistantMessage(reply);
       }
 
+
     } catch (error) {
       console.error('❌ Orchestration error:', error);
       addAssistantMessage(PROMPT_TEMPLATES.ERROR_GENERIC);
@@ -175,69 +191,9 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     processAgentResponse,
   ]);
 
-  // Auto-continuation for agent mode
-  // const handleAutoContinuation = useCallback(async () => {
-  //   if (!useAgent || !taskRef.current || !pageState) return;
-
-  //   console.log('🔄 Auto-continuation triggered');
-  //   setIsThinking(true);
-
-  //   try {
-  //     // Build continuation message
-  //     const continuationMessage = PromptBuilder.buildContinuationMessage(
-  //       taskRef.current,
-  //       fileContentRef.current,
-  //       pageState
-  //     );
-
-  //     console.log('🔄 Sending continuation:', continuationMessage.substring(0, 100) + '...');
-
-  //     // Send continuation
-  //     const reply = await sendMessage(continuationMessage, { useSearch });
-
-  //     // Parse and process agent response
-  //     const agentResponse: AgentResponse | null = PromptBuilder.parseAgentResponse(reply);
-  //     if (agentResponse) {
-  //       console.log('🤖 Auto-continuation response:', agentResponse);
-  //       withMutationPaused(() => {
-  //         processAgentResponse(agentResponse);
-  //       });
-  //     } else {
-  //       console.error('❌ Failed to parse auto-continuation response');
-  //       addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
-  //     }
-
-  //   } catch (error) {
-  //     console.error('❌ Auto-continuation error:', error);
-  //     addAssistantMessage(PROMPT_TEMPLATES.ERROR_GENERIC);
-  //   } finally {
-  //     setIsThinking(false);
-  //   }
-  // }, [useAgent, useSearch, pageState, sendMessage, setIsThinking, withMutationPaused, processAgentResponse, addAssistantMessage]);
-
-  // Auto-continuation when pageState updates in agent mode
-  // useEffect(() => {
-  //   // Skip on initial mount
-  //   if (isInitialMount.current) {
-  //     isInitialMount.current = false;
-  //     if (pageState?.timestamp) {
-  //       lastPageStateTimestamp.current = pageState.timestamp;
-  //     }
-  //     return;
-  //   }
-
-  //   // Only proceed if agent mode is enabled and we have a current task
-  //   if (!useAgent || !taskRef.current || !pageState?.timestamp || isSendingManually.current) {
-  //     return;
-  //   }
-
-  //   // Check if this is a new page state update
-  //   if (lastPageStateTimestamp.current !== pageState.timestamp) {
-  //     console.log('🤖 PageState updated, triggering auto-continuation');
-  //     lastPageStateTimestamp.current = pageState.timestamp;
-  //     handleAutoContinuation();
-  //   }
-  // }, [pageState?.timestamp, useAgent, handleAutoContinuation]);
+  useEffect(() => {
+    console.log('state', state)
+  }, [])
 
   // Custom key press handler
   const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {

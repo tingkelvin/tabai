@@ -5,6 +5,8 @@ import { CheckAuthResponse, AuthenticateResponse, BaseResponse, GetAuthTokenResp
 
 import { ApiResponse, ChatResponse } from './api';
 import { ToggleExtensionRequest, navigateToRequest, chatRequest } from './requests';
+import { AppState } from '@/entrypoints/content/types/AppState';
+import { ChatMessage } from '@/entrypoints/content/types';
 // Define your protocol map with all message types and their data/return types
 export interface ProtocolMap {
   // Auth messages
@@ -32,6 +34,15 @@ export interface ProtocolMap {
   captureState: () => void;
   waitForPageLoad: () => Promise<void>;
 
+  // App State messages
+  loadAppState: () => AppState | null;
+  saveAppState: (state: AppState) => void;
+  updateAppState: (state: AppState) => void;
+
+  // ProtocolMap additions
+  addChatMessage: (message: ChatMessage) => void;
+  getChatMessages: () => ChatMessage[];
+  clearChatMessages: () => void;
 }
 
 // Create the messaging functions

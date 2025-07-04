@@ -59,5 +59,6 @@ export default defineContentScript({
         if (response.isAuthenticated && isExtensionEnabled) {
             await mountUI()
         }
+        // await mountUI()
     },
 })
