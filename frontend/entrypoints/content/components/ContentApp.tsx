@@ -21,12 +21,11 @@ import { useAppState } from '../hooks/useAppState'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   // Mode states
-  const [useSearch, setUseSearch] = useState(false)
-  const [useAgent, setUseAgent] = useState(false)
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null)
-  const { state } = useAppState();
-  const { chatMessages, isThinking } = state;
+  const { state, updateModeState } = useAppState();
+  const { chatMessages, isThinking, useSearch, useAgent } = state;
 
   // Agent state management
   const taskRef = useRef<string>("")
@@ -210,12 +209,12 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
   // Toggle handlers
   const toggleWebSearch = useCallback(() => {
-    setUseSearch(!useSearch);
+    updateModeState({ useSearch: !useSearch });
     console.log('Web search toggled:', !useSearch);
   }, [useSearch]);
 
   const toggleAgent = useCallback(() => {
-    setUseAgent(!useAgent);
+    updateModeState({ useAgent: !useAgent });
     console.log('Agent toggled:', !useAgent);
   }, [useAgent]);
 

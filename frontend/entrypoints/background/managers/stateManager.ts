@@ -1,10 +1,8 @@
-import { onMessage, sendMessage } from '@/entrypoints/background/types/messages';
-import { AppState } from '@/entrypoints/content/types/AppState';
-import { isValidPage } from '@/entrypoints/background/utils/pageUtils';
-import { WIDGET_CONFIG } from '@/entrypoints/content/utils/constant';
-import { calculateInitialPositions } from '@/entrypoints/content/utils/helper';
+import { sendMessage } from '../types/messages';
+import { AppState } from '../../content/types/AppState';
+import { WIDGET_CONFIG } from '../../content/utils/constant';
+import { isValidPage } from '../utils/pageUtils';
 
-// Default state factory
 const createDefaultState = (): AppState => ({
     // Chat state
     chatMessages: [],
@@ -30,99 +28,188 @@ const createDefaultState = (): AppState => ({
         width: WIDGET_CONFIG.DEFAULT_WIDTH,
         height: WIDGET_CONFIG.DEFAULT_HEIGHT,
     },
-    iconPosition: calculateInitialPositions().iconPosition,
+    iconPosition: {
+        top: 50,
+        left: 50
+    },
 
     // Timestamps for state management
     lastUpdated: Date.now(),
     sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 });
 
-let appStateStorage: AppState = createDefaultState()
+export const stateManager = {
+    state: createDefaultState(),
+    listeners: new Set<(state: AppState) => void>(),
 
-// Background script state management
-export const backgroundStateManager = {
     // Get current state
-    getState: (): AppState | null => {
-        return appStateStorage;
-    },
+    getState: (): AppState => ({ ...stateManager.state }),
 
-    // Set state and broadcast to all tabs
-    setState: async (newState: AppState): Promise<void> => {
-        console.log('Setting app state in background:', newState);
-        appStateStorage = newState;
+    // Broadcast current state to all valid tabs
+    broadcastToTabs: async (): Promise<void> => {
+        try {
+            const tabs = await chrome.tabs.query({});
+            const validTabs = tabs.filter(tab => isValidPage(tab.url));
 
-        // Broadcast to all tabs
-        await broadcastStateToAllTabs(newState);
-    },
+            console.log(`📡 Broadcasting to ${validTabs.length} valid tabs`);
 
-    // Update state partially and broadcast
-    updateState: async (updates: Partial<AppState>): Promise<void> => {
-        if (!appStateStorage) {
-            console.warn('No existing state to update');
-            return;
+            const broadcastPromises = validTabs.map(async (tab) => {
+                try {
+                    await sendMessage('updateAppState', stateManager.state, tab.id);
+                    console.log(`✅ Broadcast successful to tab ${tab.id}: ${tab.url?.substring(0, 50)}...`);
+                } catch (error) {
+                    console.log(`⚠️ Broadcast failed to tab ${tab.id}: ${tab.url?.substring(0, 50)}...`);
+                }
+            });
+
+            await Promise.allSettled(broadcastPromises);
+        } catch (error) {
+            console.error('❌ Failed to broadcast state:', error);
         }
+    },
 
-        const newState = {
-            ...appStateStorage,
+    // Update state and broadcast to all valid tabs
+    updateState: async (updates: Partial<AppState>): Promise<void> => {
+        const previousState = { ...stateManager.state };
+
+        stateManager.state = {
+            ...stateManager.state,
             ...updates,
             lastUpdated: Date.now(),
         };
 
-        await backgroundStateManager.setState(newState);
-    },
-};
-
-// Broadcast state to all tabs using WXT messaging with page filtering
-const broadcastStateToAllTabs = async (state: AppState): Promise<void> => {
-    try {
-        const tabs = await chrome.tabs.query({});
-        const validTabs = tabs.filter(tab => isValidPage(tab.url));
-
-        const broadcastPromises = validTabs.map(async (tab) => {
-            if (!tab.id) return;
-
-            try {
-                // Using WXT messaging to send to specific tab
-                await sendMessage('updateAppState', state, tab.id);
-                console.log(`✅ Sent to tab ${tab.id}: ${tab.url}`);
-            } catch (error) {
-                console.log(`⚠️ Failed tab ${tab.id}: ${tab.url?.substring(0, 50)}...`);
-            }
+        console.log('🔄 State updated:', {
+            previous: previousState,
+            updates,
+            new: stateManager.state
         });
 
-        await Promise.allSettled(broadcastPromises);
-        console.log(`📊 Broadcasted to ${validTabs.length}/${tabs.length} valid tabs`);
-    } catch (error) {
-        console.error('Error broadcasting state to tabs:', error);
-    }
+        // Broadcast to all valid tabs
+        await stateManager.broadcastToTabs();
+
+        // Notify local listeners
+        stateManager.listeners.forEach(listener => listener(stateManager.state));
+    },
+
+    // Set complete state (for loading from storage)
+    setState: async (newState: AppState): Promise<void> => {
+        stateManager.state = {
+            ...newState,
+            lastUpdated: Date.now(),
+        };
+
+        await stateManager.broadcastToTabs();
+        stateManager.listeners.forEach(listener => listener(stateManager.state));
+    },
+
+    // Specific state updaters with type safety
+    updateChatState: async (updates: {
+        chatMessages?: any[];
+        isThinking?: boolean;
+    }): Promise<void> => {
+        console.log('🔄 Updating chat state:', updates);
+        await stateManager.updateState(updates);
+    },
+
+    updateModeState: async (updates: {
+        useSearch?: boolean;
+        useAgent?: boolean;
+    }): Promise<void> => {
+        console.log('🔄 Updating mode state:', updates);
+        await stateManager.updateState(updates);
+    },
+
+    updateFileState: async (updates: {
+        uploadedFiles?: File[];
+        fileContentAsString?: string;
+    }): Promise<void> => {
+        console.log('🔄 Updating file state:', updates);
+        await stateManager.updateState(updates);
+    },
+
+    updateUIState: async (updates: {
+        isMinimized?: boolean;
+        widgetSize?: { width: number; height: number };
+        iconPosition?: { top: number; left: number };
+    }): Promise<void> => {
+        console.log('🔄 Updating UI state:', updates);
+        await stateManager.updateState(updates);
+    },
+
+    updateAgentState: async (updates: {
+        currentTask?: string;
+        pageState?: any;
+    }): Promise<void> => {
+        console.log('🔄 Updating agent state:', updates);
+        await stateManager.updateState(updates);
+    },
+
+    // Chat message operations
+    addChatMessage: async (message: any): Promise<void> => {
+        const newMessages = [...stateManager.state.chatMessages, message];
+        await stateManager.updateChatState({ chatMessages: newMessages });
+    },
+
+    clearChatMessages: async (): Promise<void> => {
+        await stateManager.updateChatState({ chatMessages: [] });
+    },
+
+    // Thinking state operations
+    setThinking: async (isThinking: boolean): Promise<void> => {
+        console.log(`🤔 Setting thinking state: ${isThinking}`);
+        // Use updateState directly to avoid potential chat state conflicts
+        await stateManager.updateState({ isThinking });
+    },
+
+    // Reset to default state
+    resetState: async (): Promise<void> => {
+        console.log('🔄 Resetting state to default');
+        await stateManager.setState(createDefaultState());
+    },
+
+    // Add state change listener
+    addListener: (listener: (state: AppState) => void): void => {
+        stateManager.listeners.add(listener);
+    },
+
+    // Remove state change listener
+    removeListener: (listener: (state: AppState) => void): void => {
+        stateManager.listeners.delete(listener);
+    },
+
+    // Export state as JSON
+    exportState: (): string => {
+        return JSON.stringify(stateManager.state, null, 2);
+    },
+
+    // Import state from JSON
+    importState: async (jsonState: string): Promise<boolean> => {
+        try {
+            const parsed = JSON.parse(jsonState);
+            // Add validation here if needed
+            await stateManager.setState(parsed);
+            return true;
+        } catch (error) {
+            console.error('❌ Failed to import state:', error);
+            return false;
+        }
+    },
+
+    // Force broadcast to all tabs (useful for debugging)
+    forceBroadcast: async (): Promise<void> => {
+        console.log('🔊 Force broadcasting current state');
+        await stateManager.broadcastToTabs();
+    },
+
+    // Get state statistics
+    getStateStats: () => ({
+        messageCount: stateManager.state.chatMessages.length,
+        fileCount: stateManager.state.uploadedFiles.length,
+        isThinking: stateManager.state.isThinking,
+        lastUpdated: new Date(stateManager.state.lastUpdated).toLocaleString(),
+        sessionId: stateManager.state.sessionId,
+        stateAge: Date.now() - stateManager.state.lastUpdated,
+    })
 };
 
-// Setup WXT message handlers
-export const setupBackgroundMessageHandlers = () => {
-    // Handle state load requests
-    onMessage('loadAppState', async () => {
-        console.log('Loading app state from background');
-        return appStateStorage;
-    });
-
-    // Handle state save requests
-    onMessage('saveAppState', async ({ data: state }) => {
-        console.log('Saving app state to background:', state);
-        await backgroundStateManager.setState(state);
-    });
-
-    // Handle partial state updates
-    onMessage('updateAppState', async ({ data: updates }) => {
-        console.log('Updating app state in background:', updates);
-        await backgroundStateManager.updateState(updates);
-    });
-
-    // Handle external state updates
-    onMessage('onUpdateAppState', async ({ data: state }) => {
-        console.log('External update app state in background:', state);
-        await backgroundStateManager.setState(state);
-    });
-};
-
-// Initialize background state manager
-setupBackgroundMessageHandlers();
+export default stateManager;

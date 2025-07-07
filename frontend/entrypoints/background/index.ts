@@ -7,6 +7,7 @@ import { AppState } from '../content/types/AppState';
 import { ChatMessage } from '../content/types';
 import { WIDGET_CONFIG } from '../content/utils/constant';
 import { calculateInitialPositions } from '../content/utils/helper';
+import stateManager from './managers/stateManager';
 
 const extensionStorage = storage.defineItem<boolean>('sync:extensionEnabled');
 
@@ -122,100 +123,84 @@ export default defineBackground(() => {
     await notifyValidContentScripts(enabled);
   });
 
-  let appStateStorage: AppState = createDefaultState();
-  onMessage('loadAppState', () => {
-    console.log('Loading app state from background:', appStateStorage);
-    return appStateStorage;
+
+  // Chat handler - now with proper state management
+  onMessage('chat', async ({ data: { message, options } }) => {
+    console.log('💬 Starting chat process');
+
+    try {
+      // Set thinking state
+      await stateManager.setThinking(true);
+
+      // Process the chat
+      const result = await withAuth(async () => {
+        return await ChatManager.sendMessage(message, options);
+      });
+
+      // Clear thinking state
+      await stateManager.setThinking(false);
+
+      console.log('✅ Chat completed successfully');
+      return result;
+
+    } catch (error) {
+      // Make sure to clear thinking state on error
+      await stateManager.setThinking(false);
+      console.error('❌ Chat failed:', error);
+      throw error;
+    }
   });
 
-  onMessage('chat', async ({ data: { message, options } }) => {
-    appStateStorage.isThinking = true
-    const tabs = await chrome.tabs.query({});
-    if (appStateStorage) {
-      for (const tab of tabs) {
-        try {
-          await sendMessage('updateAppState', appStateStorage, tab.id);
-          console.log(`✅ Sent to tab ${tab.id}: ${tab.url}`);
-        } catch (error) {
-          console.log(`⚠️ Failed tab ${tab.id}: ${tab.url?.substring(0, 50)}...`);
-        }
-      }
-    }
-    const result = await withAuth(async () => { return await ChatManager.sendMessage(message, options); });
-    appStateStorage.isThinking = false
-    if (appStateStorage) {
-      for (const tab of tabs) {
-        try {
-          await sendMessage('updateAppState', appStateStorage, tab.id);
-          console.log(`✅ Sent to tab ${tab.id}: ${tab.url}`);
-        } catch (error) {
-          console.log(`⚠️ Failed tab ${tab.id}: ${tab.url?.substring(0, 50)}...`);
-        }
-      }
-    }
-    return result
+  onMessage('loadAppState', () => {
+    console.log('📤 Loading app state from background');
+    return stateManager.getState();
   });
 
   // Save app state
   onMessage('saveAppState', async (message) => {
-    console.log('Saving app state to background:', message.data);
-    appStateStorage = message.data;
-    const tabs = await chrome.tabs.query({});
-
-    for (const tab of tabs) {
-      try {
-        await sendMessage('updateAppState', message.data, tab.id);
-        console.log(`✅ Sent to tab ${tab.id}: ${tab.url}`);
-      } catch (error) {
-        console.log(`⚠️ Failed tab ${tab.id}: ${tab.url?.substring(0, 50)}...`);
-      }
-    }
+    console.log('💾 Saving app state to background:', message.data);
+    await stateManager.setState(message.data);
   });
 
   onMessage('onUpdateAppState', async ({ data: updates }) => {
-    if (!appStateStorage) {
-      console.warn('No existing state to update');
-      return;
-    }
-
-    appStateStorage = {
-      ...appStateStorage,
-      ...updates,
-      lastUpdated: Date.now(),
-    };
+    console.log('🔄 Updating app state:', updates);
+    await stateManager.updateState(updates);
   });
 
-  // Optional: Load from chrome.storage on startup
-  // chrome.storage.local.get(['appState']).then((result) => {
-  //   if (result.appState) {
-  //     appStateStorage = result.appState;
-  //   }
-  // });
-
-  // In background script
-
   onMessage('addChatMessage', async (message) => {
-    appStateStorage?.chatMessages.push(message.data);
-    const tabs = await chrome.tabs.query({});
-    if (appStateStorage) {
-      for (const tab of tabs) {
-        try {
-          await sendMessage('updateAppState', appStateStorage, tab.id);
-          console.log(`✅ Sent to tab ${tab.id}: ${tab.url}`);
-        } catch (error) {
-          console.log(`⚠️ Failed tab ${tab.id}: ${tab.url?.substring(0, 50)}...`);
-        }
-      }
-    }
-
+    console.log('➕ Adding chat message');
+    await stateManager.addChatMessage(message.data);
   });
 
   onMessage('getChatMessages', () => {
-    return appStateStorage?.chatMessages;
+    console.log('📤 Getting chat messages');
+    return stateManager.getState().chatMessages;
   });
 
-  onMessage('clearChatMessages', () => {
-    if (appStateStorage?.chatMessages) appStateStorage.chatMessages = [];
+  onMessage('clearChatMessages', async () => {
+    console.log('🗑️ Clearing chat messages');
+    await stateManager.clearChatMessages();
   });
+
+  // Additional state management handlers
+  // onMessage('updateChatState', async ({ data }) => {
+  //   await stateManager.updateChatState(data);
+  // });
+
+  // onMessage('updateModeState', async ({ data }) => {
+  //   await stateManager.updateModeState(data);
+  // });
+
+  // onMessage('updateFileState', async ({ data }) => {
+  //   await stateManager.updateFileState(data);
+  // });
+
+  // onMessage('updateUIState', async ({ data }) => {
+  //   await stateManager.updateUIState(data);
+  // });
+
+  // onMessage('updateAgentState', async ({ data }) => {
+  //   await stateManager.updateAgentState(data);
+  // });
 
 })
