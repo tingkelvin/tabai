@@ -326,7 +326,6 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
         // State
         pageState,
         isScanning,
-
         // Getters
         getCurrentUrl,
         getCurrentTitle,

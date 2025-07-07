@@ -6,8 +6,9 @@ import { isValidPage } from './utils/pageUtils';
 import { AppState } from '../content/types/AppState';
 import { ChatMessage } from '../content/types';
 import { WIDGET_CONFIG } from '../content/utils/constant';
-import { calculateInitialPositions } from '../content/utils/helper';
+
 import stateManager from './managers/stateManager';
+import { PromptBuilder } from './utils/prompMessages';
 
 const extensionStorage = storage.defineItem<boolean>('sync:extensionEnabled');
 
@@ -27,42 +28,6 @@ const notifyValidContentScripts = async (enabled: boolean) => {
 
   console.log(`📊 Processed ${validTabs.length}/${tabs.length} valid tabs`);
 };
-
-// Default state factory
-const createDefaultState = (): AppState => ({
-  // Chat state
-  chatMessages: [],
-  isThinking: false,
-
-  // Mode states
-  useSearch: false,
-  useAgent: false,
-
-  // File state
-  uploadedFiles: [],
-  fileContentAsString: '',
-
-  // Page state
-  pageState: null,
-
-  // Agent state
-  currentTask: '',
-
-  // UI state
-  isMinimized: false,
-  widgetSize: {
-    width: WIDGET_CONFIG.DEFAULT_WIDTH,
-    height: WIDGET_CONFIG.DEFAULT_HEIGHT,
-  },
-  iconPosition: {
-    top: 50, // Default safe position
-    left: 50
-  },
-
-  // Timestamps for state management
-  lastUpdated: Date.now(),
-  sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-});
 
 export default defineBackground(() => {
   console.log('✅ Background script loaded successfully!');
@@ -105,7 +70,6 @@ export default defineBackground(() => {
   (globalThis as any).debug = debugFunctions;
 
   onMessage('checkAuth', async () => {
-
     return await AuthManager.checkAuthStatus();
   });
 
@@ -125,8 +89,17 @@ export default defineBackground(() => {
 
 
   // Chat handler - now with proper state management
-  onMessage('chat', async ({ data: { message, options } }) => {
+  onMessage('chat', async ({ data: { message } }) => {
     console.log('💬 Starting chat process');
+    const state = stateManager.getState()
+
+    const messageToSend: string = PromptBuilder.buildMessage(message, state)
+    console.log("state in prompt", state)
+    const { useSearch, useAgent } = state
+
+    if (useAgent) {
+      await stateManager.setTask(message);
+    }
 
     try {
       // Set thinking state
@@ -134,7 +107,7 @@ export default defineBackground(() => {
 
       // Process the chat
       const result = await withAuth(async () => {
-        return await ChatManager.sendMessage(message, options);
+        return await ChatManager.sendMessage(messageToSend, { useSearch });
       });
 
       // Clear thinking state

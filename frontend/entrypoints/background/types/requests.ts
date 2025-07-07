@@ -10,5 +10,4 @@ export interface navigateToRequest {
 
 export interface chatRequest {
   message: string
-  options: ChatOptions
 }

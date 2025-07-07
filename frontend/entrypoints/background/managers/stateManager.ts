@@ -17,10 +17,10 @@ const createDefaultState = (): AppState => ({
     fileContentAsString: '',
 
     // Page state
-    pageState: null,
+    pageState: '',
 
     // Agent state
-    currentTask: '',
+    task: '',
 
     // UI state
     isMinimized: false,
@@ -70,7 +70,10 @@ export const stateManager = {
 
     // Update state and broadcast to all valid tabs
     updateState: async (updates: Partial<AppState>): Promise<void> => {
+        console.log("updaing:", updates)
         const previousState = { ...stateManager.state };
+
+        if (updates.useAgent === false) updates.task = ""
 
         stateManager.state = {
             ...stateManager.state,
@@ -137,7 +140,7 @@ export const stateManager = {
     },
 
     updateAgentState: async (updates: {
-        currentTask?: string;
+        task?: string;
         pageState?: any;
     }): Promise<void> => {
         console.log('🔄 Updating agent state:', updates);
@@ -159,6 +162,12 @@ export const stateManager = {
         console.log(`🤔 Setting thinking state: ${isThinking}`);
         // Use updateState directly to avoid potential chat state conflicts
         await stateManager.updateState({ isThinking });
+    },
+
+    setTask: async (task: string): Promise<void> => {
+        console.log(`🤔 Setting task state: ${task}`);
+        // Use updateState directly to avoid potential chat state conflicts
+        await stateManager.updateState({ task });
     },
 
     // Reset to default state

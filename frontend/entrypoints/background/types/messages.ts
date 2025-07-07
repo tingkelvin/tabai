@@ -35,7 +35,7 @@ export interface ProtocolMap {
   waitForPageLoad: () => Promise<void>;
 
   // App State messages
-  loadAppState: () => AppState | null;
+  loadAppState: () => AppState;
   saveAppState: (state: AppState) => void;
   updateAppState: (state: AppState) => void;
   onUpdateAppState: (state: AppState) => void;

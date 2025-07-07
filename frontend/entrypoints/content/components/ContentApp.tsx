@@ -24,8 +24,8 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null)
-  const { state, updateModeState } = useAppState();
-  const { chatMessages, isThinking, useSearch, useAgent } = state;
+  const { state, updateModeState, updatePageState } = useAppState();
+  const { chatMessages, isThinking, useSearch, useAgent, task } = state;
 
   // Agent state management
   const taskRef = useRef<string>("")
@@ -88,52 +88,15 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const { processAgentResponse } = useAgentChat(chatHook, {
     pageState,
   });
-
-  // Clear task when agent mode is disabled
-  useEffect(() => {
-    if (!useAgent) {
-      taskRef.current = "";
-      console.log('🤖 Agent mode disabled, cleared task');
-    }
-  }, [useAgent]);
-
   // Complex orchestrated send message
-  const handleSendMessage = useCallback(async (input: string) => {
+  const handleSendMessage = useCallback(async (message: string) => {
     console.log('🎬 Starting orchestrated message flow');
     isSendingManually.current = true;
 
-    addUserMessage(input)
+    addUserMessage(message)
 
     try {
-      // 1. Validation for agent mode
-      if (useAgent) {
-        const validation = PromptBuilder.validateTask(input);
-        if (!validation.valid) {
-          addAssistantMessage(validation.error || PROMPT_TEMPLATES.INVALID_TASK);
-          return;
-        }
-        taskRef.current = input;
-
-        // Auto-minimize for agent mode
-        console.log('🤖 Agent mode: Auto-minimizing widget');
-        if (!isMinimized) {
-          setIsMinimized(true);
-        }
-      }
-
-      // 3. Build the prompt message
-      const promptConfig: PromptConfig = {
-        useAgent,
-        useSearch,
-        task: useAgent ? taskRef.current : undefined,
-        userMessage: !useAgent ? input : undefined,
-        fileContent: fileContentAsString,
-        pageState: useAgent ? pageState : null
-      };
-      const message = PromptBuilder.buildMessage(promptConfig);
-
-      const reply = await sendMessage(message, { useSearch });
-
+      const reply = await sendMessage(message);
       // 5. Process response
       if (useAgent) {
         // Parse agent response
@@ -150,8 +113,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         // Regular chat mode
         addAssistantMessage(reply);
       }
-
-
     } catch (error) {
       console.error('❌ Orchestration error:', error);
       addAssistantMessage(PROMPT_TEMPLATES.ERROR_GENERIC);
@@ -173,8 +134,27 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   ]);
 
   useEffect(() => {
-    console.log('state', state)
-  }, [])
+    const handlePageStateChange = async () => {
+      console.log('state', state)
+      if (pageState) {
+        updatePageState({ pageState })
+        if (useAgent && task) {
+          const reply = await sendMessage(task);
+          const agentResponse: AgentResponse | null = PromptBuilder.parseAgentResponse(reply);
+          if (!agentResponse) {
+            addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
+          } else {
+            console.log('🤖 Processing agent response:', agentResponse);
+            withMutationPaused(() => {
+              processAgentResponse(agentResponse);
+            });
+          }
+        }
+      }
+    };
+
+    handlePageStateChange();
+  }, [pageState])
 
   // Custom key press handler
   const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {

@@ -4,10 +4,7 @@ import { AppState } from '../types/AppState';
 import { calculateInitialPositions } from '../utils/helper'
 import { Position } from '../types';
 import { sendMessage, onMessage } from '@/entrypoints/background/types/messages';
-
-
-const STATE_STORAGE_KEY = 'contentapp_state';
-const STATE_VERSION = '1.0.0';
+import { PageState } from '../types/page';
 
 // Generate unique session ID
 const generateSessionId = (): string => {
@@ -29,10 +26,10 @@ const createDefaultState = (): AppState => ({
     fileContentAsString: '',
 
     // Page state
-    pageState: null,
+    pageState: "",
 
     // Agent state
-    currentTask: '',
+    task: '',
 
     // UI state
     isMinimized: false,
@@ -54,7 +51,7 @@ const validateState = (state: any): state is AppState => {
     const requiredFields = [
         'chatMessages', 'isThinking', 'useSearch', 'useAgent',
         'uploadedFiles', 'fileContentAsString', 'pageState',
-        'currentTask', 'isMinimized', 'widgetSize', 'iconPosition',
+        'task', 'isMinimized', 'widgetSize', 'iconPosition',
         'lastUpdated', 'sessionId'
     ];
 
@@ -77,10 +74,7 @@ const loadState = async (): Promise<AppState> => {
 };
 
 
-
 // Save state to memory
-
-
 export const useAppState = (initialState?: Partial<AppState>) => {
     const [state, setState] = useState<AppState>(() => createDefaultState());
     const lastSavedState = useRef<AppState | null>(null);
@@ -108,19 +102,12 @@ export const useAppState = (initialState?: Partial<AppState>) => {
 
     const saveTimeoutRef = useRef<NodeJS.Timeout>(null);
     // Update state with automatic saving
-    const updateState = useCallback((updates: Partial<AppState> | ((prev: AppState) => Partial<AppState>)) => {
+    const updateState = useCallback((updates: Partial<AppState>) => {
         console.log("sending updates")
         setState(prevState => {
-            const newUpdates = typeof updates === 'function' ? updates(prevState) : updates;
-
-            // Only process pageState if it exists and has the expected structure
-            if (newUpdates.pageState?.domSnapshot?.root?.clickableElementsToString) {
-                newUpdates.pageState = newUpdates.pageState.domSnapshot.root.clickableElementsToString();
-            }
-
             const newState = {
                 ...prevState,
-                ...newUpdates,
+                ...updates,
                 lastUpdated: Date.now(),
             };
 
@@ -128,6 +115,14 @@ export const useAppState = (initialState?: Partial<AppState>) => {
             return newState;
         });
     }, [saveState]);
+
+    // Specific state updaters
+    const updatePageState = useCallback((updates: {
+        pageState: PageState;
+    }) => {
+        if (updates.pageState.domSnapshot?.root)
+            updateState({ pageState: updates.pageState.domSnapshot?.root.clickableElementsToString() });
+    }, [updateState]);
 
     // Specific state updaters
     const updateChatState = useCallback((updates: {
@@ -164,7 +159,7 @@ export const useAppState = (initialState?: Partial<AppState>) => {
     }, [updateState]);
 
     const updateAgentState = useCallback((updates: {
-        currentTask?: string;
+        task?: string;
         pageState?: any;
     }) => {
         updateState(updates);
@@ -235,6 +230,7 @@ export const useAppState = (initialState?: Partial<AppState>) => {
         updateUIState,
         updateAgentState,
         loadState,
+        updatePageState,
 
         // State management
         clearState,

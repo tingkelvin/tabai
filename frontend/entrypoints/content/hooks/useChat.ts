@@ -30,12 +30,9 @@ export const useChat = (): ChatHookReturn => {
         await sendBackgroundMessage('addChatMessage', newMessage);
     }, []);
 
-    const sendMessage = useCallback(async (message: string, options: ChatOptions): Promise<string> => {
+    const sendMessage = useCallback(async (message: string): Promise<string> => {
         console.log('🚀 Sending to backend:', message.substring(0, 100) + '...');
-        const response: ApiResponse<ChatResponse> = await sendBackgroundMessage('chat', {
-            message: message,
-            options: options
-        });
+        const response: ApiResponse<ChatResponse> = await sendBackgroundMessage('chat', { message });
 
         console.log('📡 Response from backend:', response);
         return response.data?.reply || PROMPT_TEMPLATES.ERROR_GENERIC;

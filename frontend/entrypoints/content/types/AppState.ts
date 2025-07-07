@@ -1,3 +1,4 @@
+import { PageState } from "./page";
 import { Position } from "./widget";
 
 export interface AppState {
@@ -14,10 +15,10 @@ export interface AppState {
     fileContentAsString: string;
 
     // Page state
-    pageState: any;
+    pageState: string;
 
     // Agent state
-    currentTask: string;
+    task: string;
 
     // UI state
     isMinimized: boolean;
