@@ -7,29 +7,8 @@ import { ApiResponse, ChatResponse } from '@/entrypoints/background/types/api';
 import { ChatOptions } from '@/entrypoints/background/types/api';
 import { PROMPT_TEMPLATES } from '../utils/prompMessages';
 
-interface UseChatProps {
-    chatMessages: ChatMessage[];
-    isThinking: boolean;
-    onMessagesChange: (messages: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => void;
-    onThinkingChange: (thinking: boolean) => void;
-}
-
-export const useChat = ({
-    chatMessages,
-    isThinking,
-    onMessagesChange,
-    onThinkingChange
-}: UseChatProps): ChatHookReturn => {
+export const useChat = (): ChatHookReturn => {
     const [chatInput, setChatInput] = useState<string>('');
-
-    // In component
-    useEffect(() => {
-        const loadMessages = async () => {
-            const messages = await sendBackgroundMessage('getChatMessages');
-            onMessagesChange(messages);
-        };
-        loadMessages();
-    }, []);
 
     const addUserMessage = useCallback(async (content: string) => {
         const newMessage: ChatMessage = {
@@ -39,9 +18,7 @@ export const useChat = ({
             timestamp: new Date()
         };
         await sendBackgroundMessage('addChatMessage', newMessage);
-        const messages = await sendBackgroundMessage('getChatMessages');
-        onMessagesChange(messages);
-    }, [onMessagesChange]);
+    }, []);
 
     const addAssistantMessage = useCallback(async (content: string) => {
         const newMessage: ChatMessage = {
@@ -51,9 +28,7 @@ export const useChat = ({
             timestamp: new Date()
         };
         await sendBackgroundMessage('addChatMessage', newMessage);
-        const messages = await sendBackgroundMessage('getChatMessages');
-        onMessagesChange(messages);
-    }, [onMessagesChange]);
+    }, []);
 
     const sendMessage = useCallback(async (message: string, options: ChatOptions): Promise<string> => {
         console.log('🚀 Sending to backend:', message.substring(0, 100) + '...');
@@ -94,13 +69,10 @@ export const useChat = ({
     }, []);
 
     const setIsThinking = useCallback((thinking: boolean) => {
-        onThinkingChange(thinking);
-    }, [onThinkingChange]);
+    }, []);
 
     return {
         chatInput,
-        chatMessages,
-        isThinking,
         handleInputChange,
         handleKeyPress,
         sendMessage,

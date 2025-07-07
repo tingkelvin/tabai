@@ -13,8 +13,6 @@ export interface ChatMessage {
 
 export interface ChatHookReturn {
     chatInput: string;
-    chatMessages: ChatMessage[];
-    isThinking: boolean;
     handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
     handleKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
     sendMessage: (message: string, options: ChatOptions) => Promise<string>;

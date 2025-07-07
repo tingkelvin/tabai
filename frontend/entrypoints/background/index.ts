@@ -5,6 +5,8 @@ import { ChatManager } from './managers/chatManager';
 import { isValidPage } from './utils/pageUtils';
 import { AppState } from '../content/types/AppState';
 import { ChatMessage } from '../content/types';
+import { WIDGET_CONFIG } from '../content/utils/constant';
+import { calculateInitialPositions } from '../content/utils/helper';
 
 const extensionStorage = storage.defineItem<boolean>('sync:extensionEnabled');
 
@@ -24,6 +26,42 @@ const notifyValidContentScripts = async (enabled: boolean) => {
 
   console.log(`📊 Processed ${validTabs.length}/${tabs.length} valid tabs`);
 };
+
+// Default state factory
+const createDefaultState = (): AppState => ({
+  // Chat state
+  chatMessages: [],
+  isThinking: false,
+
+  // Mode states
+  useSearch: false,
+  useAgent: false,
+
+  // File state
+  uploadedFiles: [],
+  fileContentAsString: '',
+
+  // Page state
+  pageState: null,
+
+  // Agent state
+  currentTask: '',
+
+  // UI state
+  isMinimized: false,
+  widgetSize: {
+    width: WIDGET_CONFIG.DEFAULT_WIDTH,
+    height: WIDGET_CONFIG.DEFAULT_HEIGHT,
+  },
+  iconPosition: {
+    top: 50, // Default safe position
+    left: 50
+  },
+
+  // Timestamps for state management
+  lastUpdated: Date.now(),
+  sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+});
 
 export default defineBackground(() => {
   console.log('✅ Background script loaded successfully!');
@@ -79,20 +117,43 @@ export default defineBackground(() => {
   });
 
   onMessage('toggleExtension', async ({ data: { enabled } }) => {
-
     console.log("🔄 Toggling extension:", enabled);
     await extensionStorage.setValue(enabled);
     await notifyValidContentScripts(enabled);
   });
 
-
-  onMessage('chat', async ({ data: { message, options } }) => {
-    return withAuth(async () => { return await ChatManager.sendMessage(message, options); });
-  });
-  let appStateStorage: AppState | null = null;
+  let appStateStorage: AppState = createDefaultState();
   onMessage('loadAppState', () => {
     console.log('Loading app state from background:', appStateStorage);
     return appStateStorage;
+  });
+
+  onMessage('chat', async ({ data: { message, options } }) => {
+    appStateStorage.isThinking = true
+    const tabs = await chrome.tabs.query({});
+    if (appStateStorage) {
+      for (const tab of tabs) {
+        try {
+          await sendMessage('updateAppState', appStateStorage, tab.id);
+          console.log(`✅ Sent to tab ${tab.id}: ${tab.url}`);
+        } catch (error) {
+          console.log(`⚠️ Failed tab ${tab.id}: ${tab.url?.substring(0, 50)}...`);
+        }
+      }
+    }
+    const result = await withAuth(async () => { return await ChatManager.sendMessage(message, options); });
+    appStateStorage.isThinking = false
+    if (appStateStorage) {
+      for (const tab of tabs) {
+        try {
+          await sendMessage('updateAppState', appStateStorage, tab.id);
+          console.log(`✅ Sent to tab ${tab.id}: ${tab.url}`);
+        } catch (error) {
+          console.log(`⚠️ Failed tab ${tab.id}: ${tab.url?.substring(0, 50)}...`);
+        }
+      }
+    }
+    return result
   });
 
   // Save app state
@@ -111,6 +172,19 @@ export default defineBackground(() => {
     }
   });
 
+  onMessage('onUpdateAppState', async ({ data: updates }) => {
+    if (!appStateStorage) {
+      console.warn('No existing state to update');
+      return;
+    }
+
+    appStateStorage = {
+      ...appStateStorage,
+      ...updates,
+      lastUpdated: Date.now(),
+    };
+  });
+
   // Optional: Load from chrome.storage on startup
   // chrome.storage.local.get(['appState']).then((result) => {
   //   if (result.appState) {
@@ -119,18 +193,29 @@ export default defineBackground(() => {
   // });
 
   // In background script
-  let chatMessages: ChatMessage[] = [];
 
-  onMessage('addChatMessage', (message) => {
-    chatMessages.push(message.data);
+  onMessage('addChatMessage', async (message) => {
+    appStateStorage?.chatMessages.push(message.data);
+    const tabs = await chrome.tabs.query({});
+    if (appStateStorage) {
+      for (const tab of tabs) {
+        try {
+          await sendMessage('updateAppState', appStateStorage, tab.id);
+          console.log(`✅ Sent to tab ${tab.id}: ${tab.url}`);
+        } catch (error) {
+          console.log(`⚠️ Failed tab ${tab.id}: ${tab.url?.substring(0, 50)}...`);
+        }
+      }
+    }
+
   });
 
   onMessage('getChatMessages', () => {
-    return chatMessages;
+    return appStateStorage?.chatMessages;
   });
 
   onMessage('clearChatMessages', () => {
-    chatMessages = [];
+    if (appStateStorage?.chatMessages) appStateStorage.chatMessages = [];
   });
 
 })

@@ -208,6 +208,7 @@ export const useAppState = (initialState?: Partial<AppState>) => {
 
     useEffect(() => {
         onMessage('updateAppState', (message) => {
+            console.log('update', message.data)
             setState(message.data); // Direct AppState object
         });
     }, []);

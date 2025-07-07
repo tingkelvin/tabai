@@ -25,12 +25,11 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const [useAgent, setUseAgent] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null)
-  const { state, updateChatState, loadState } = useAppState();
+  const { state } = useAppState();
+  const { chatMessages, isThinking } = state;
 
   // Agent state management
   const taskRef = useRef<string>("")
-  const lastPageStateTimestamp = useRef<number | null>(null);
-  const isInitialMount = useRef(true);
   const isSendingManually = useRef(false);
 
   const [widgetSize, setWidgetSize] = useState({
@@ -59,27 +58,14 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const chatInputRef = useRef<HTMLTextAreaElement>(null)
 
   // Chat hook now receives state and updaters
-  const chatHook = customChatHook ? customChatHook() : useChat({
-    chatMessages: state.chatMessages,
-    isThinking: state.isThinking,
-    onMessagesChange: (messagesOrUpdater) => {
-      const newMessages = typeof messagesOrUpdater === 'function'
-        ? messagesOrUpdater(chatMessages) // Use chatMessages instead of state.chatMessages
-        : messagesOrUpdater;
-      updateChatState({ chatMessages: newMessages });
-    },
-    onThinkingChange: (thinking) => updateChatState({ isThinking: thinking })
-  });
+  const chatHook = customChatHook ? customChatHook() : useChat();
 
   const {
     chatInput,
-    chatMessages,
-    isThinking,
     handleInputChange,
     addAssistantMessage,
     addUserMessage,
     sendMessage,
-    setIsThinking,
     handleKeyPress: baseHandleKeyPress
   } = chatHook
 
@@ -147,8 +133,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       };
       const message = PromptBuilder.buildMessage(promptConfig);
 
-      // 4. Send message
-      setIsThinking(true);
       const reply = await sendMessage(message, { useSearch });
 
       // 5. Process response
@@ -173,7 +157,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       console.error('❌ Orchestration error:', error);
       addAssistantMessage(PROMPT_TEMPLATES.ERROR_GENERIC);
     } finally {
-      setIsThinking(false);
       isSendingManually.current = false;
     }
   }, [
@@ -186,7 +169,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     addUserMessage,
     addAssistantMessage,
     sendMessage,
-    setIsThinking,
     withMutationPaused,
     processAgentResponse,
   ]);
@@ -315,7 +297,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
           iconPosition={iconPosition}
           chatMessages={chatMessages}
           isMinimized={isMinimized}
-          isThinking={isThinking}
+          isThinking={state.isThinking}
           onNotificationClick={handleToggle}
         />
         {isMinimized ? (

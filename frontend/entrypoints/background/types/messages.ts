@@ -38,6 +38,7 @@ export interface ProtocolMap {
   loadAppState: () => AppState | null;
   saveAppState: (state: AppState) => void;
   updateAppState: (state: AppState) => void;
+  onUpdateAppState: (state: AppState) => void;
 
   // ProtocolMap additions
   addChatMessage: (message: ChatMessage) => void;
