@@ -3,9 +3,6 @@ import AuthManager from './managers/authManager';
 import { withAuth } from './middleware/authMiddleware';
 import { ChatManager } from './managers/chatManager';
 import { isValidPage } from './utils/pageUtils';
-import { AppState } from '../content/types/AppState';
-import { ChatMessage } from '../content/types';
-import { WIDGET_CONFIG } from '../content/utils/constant';
 
 import stateManager from './managers/stateManager';
 import { PromptBuilder } from './utils/prompMessages';
@@ -112,7 +109,6 @@ export default defineBackground(() => {
 
       // Clear thinking state
       await stateManager.setThinking(false);
-
       console.log('✅ Chat completed successfully');
       return result;
 

@@ -16,7 +16,7 @@ import { usePage } from '../hooks/usePage'
 import { useFile } from '../hooks/useFile'
 import { getFileIcon, PlusIcon } from './Icons'
 import { useAgentChat } from '../hooks/useAgent'
-import { AgentResponse, PROMPT_TEMPLATES, PromptBuilder, PromptConfig } from '../utils/prompMessages'
+import { PROMPT_TEMPLATES } from '../utils/prompMessages'
 import { useAppState } from '../hooks/useAppState'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
@@ -24,11 +24,10 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null)
-  const { state, updateModeState, updatePageState } = useAppState();
+  const { state, updateModeState, updatePageState, updateFileState } = useAppState();
   const { chatMessages, isThinking, useSearch, useAgent, task } = state;
 
   // Agent state management
-  const taskRef = useRef<string>("")
   const isSendingManually = useRef(false);
 
   const [widgetSize, setWidgetSize] = useState({
@@ -85,7 +84,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   })
 
   // Agent hook
-  const { processAgentResponse } = useAgentChat(chatHook, {
+  const { processAgentReply } = useAgentChat(chatHook, {
     pageState,
   });
   // Complex orchestrated send message
@@ -99,14 +98,14 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       const reply = await sendMessage(message);
       // 5. Process response
       if (useAgent) {
+        setIsMinimized(true)
         // Parse agent response
-        const agentResponse: AgentResponse | null = PromptBuilder.parseAgentResponse(reply);
-        if (!agentResponse) {
+        if (!reply) {
           addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
         } else {
-          console.log('🤖 Processing agent response:', agentResponse);
+          console.log('🤖 Processing agent response:', reply);
           withMutationPaused(() => {
-            processAgentResponse(agentResponse);
+            processAgentReply(reply);
           });
         }
       } else {
@@ -130,27 +129,25 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     addAssistantMessage,
     sendMessage,
     withMutationPaused,
-    processAgentResponse,
+    processAgentReply,
   ]);
 
   useEffect(() => {
     const handlePageStateChange = async () => {
-      console.log('state', state)
-      if (pageState) {
-        updatePageState({ pageState })
-        if (useAgent && task) {
-          const reply = await sendMessage(task);
-          const agentResponse: AgentResponse | null = PromptBuilder.parseAgentResponse(reply);
-          if (!agentResponse) {
-            addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
-          } else {
-            console.log('🤖 Processing agent response:', agentResponse);
-            withMutationPaused(() => {
-              processAgentResponse(agentResponse);
-            });
-          }
-        }
-      }
+      // if (pageState) {
+      //   updatePageState({ pageState })
+      //   if (useAgent && task) {
+      //     const reply = await sendMessage(task);
+      //     if (!reply) {
+      //       addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
+      //     } else {
+      //       console.log('🤖 Processing agent response:', reply);
+      //       withMutationPaused(() => {
+      //         processAgentReply(reply);
+      //       });
+      //     }
+      //   }
+      // }
     };
 
     handlePageStateChange();
@@ -163,27 +160,8 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
       const input = chatInput.trim();
       baseHandleKeyPress(e)
-
-      // Additional validation for agent mode
-      if (useAgent) {
-        const validation = PromptBuilder.validateTask(input);
-        if (!validation.valid) {
-          addAssistantMessage(validation.error || PROMPT_TEMPLATES.INVALID_TASK);
-          return;
-        }
-      }
-
       // Use orchestrated send message
       handleSendMessage(input);
-
-      // Reset textarea height
-      setTimeout(() => {
-        const target = e.target as HTMLTextAreaElement;
-        if (target) {
-          target.style.height = '44px';
-          target.style.overflowY = 'hidden';
-        }
-      }, 0);
     }
   }, [chatInput, useAgent, addAssistantMessage, handleSendMessage]);
 
@@ -206,6 +184,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     try {
       await handleFileUpload(file);
       event.target.value = ''; // Clear input
+      updateFileState({ fileContentAsString })
     } catch (error) {
       console.error('File upload failed:', error);
     }

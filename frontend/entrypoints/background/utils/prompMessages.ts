@@ -1,7 +1,7 @@
 // utils/promptMessages.ts
 import {
     AppState
-} from "@/entrypoints/content/types/AppState";
+} from "@/common/types/AppState";
 
 export interface AgentAction {
     id: number;
@@ -36,7 +36,7 @@ export const PromptBuilder = {
 
         // Add page state and instructions for agent mode
         if (useAgent) {
-            message += `<page_state>${appState.pageState}</page_state>`;
+            message += `<page_state>${appState.pageStateAsString}</page_state>`;
             message += PromptBuilder.getAgentInstructions();
         }
 
@@ -49,7 +49,7 @@ export const PromptBuilder = {
     buildContinuationMessage: (task: string, fileContent: string, appState: AppState): string => {
         let message = `<task>Page updated. Continue with task: ${task}</task>`;
         message += `<context>${fileContent}</context>`;
-        message += `<page_state>${appState.pageState}</page_state>`;
+        message += `<page_state>${appState.pageStateAsString}</page_state>`;
         message += PromptBuilder.getAgentInstructions();
 
         return message;

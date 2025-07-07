@@ -1,46 +1,9 @@
 import { sendMessage } from '../types/messages';
-import { AppState } from '../../content/types/AppState';
-import { WIDGET_CONFIG } from '../../content/utils/constant';
+import { AppState, defaultAppState } from '@/common/types/AppState';
 import { isValidPage } from '../utils/pageUtils';
 
-const createDefaultState = (): AppState => ({
-    // Chat state
-    chatMessages: [],
-    isThinking: false,
-
-    // Mode states
-    useSearch: false,
-    useAgent: false,
-
-    // File state
-    uploadedFiles: [],
-    fileContentAsString: '',
-
-    // Page state
-    pageState: '',
-
-    // Agent state
-    task: '',
-
-    // UI state
-    isMinimized: false,
-    widgetSize: {
-        width: WIDGET_CONFIG.DEFAULT_WIDTH,
-        height: WIDGET_CONFIG.DEFAULT_HEIGHT,
-    },
-    iconPosition: {
-        top: 50,
-        left: 50
-    },
-
-    // Timestamps for state management
-    lastUpdated: Date.now(),
-    sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-});
-
 export const stateManager = {
-    state: createDefaultState(),
-    listeners: new Set<(state: AppState) => void>(),
+    state: defaultAppState,
 
     // Get current state
     getState: (): AppState => ({ ...stateManager.state }),
@@ -89,9 +52,6 @@ export const stateManager = {
 
         // Broadcast to all valid tabs
         await stateManager.broadcastToTabs();
-
-        // Notify local listeners
-        stateManager.listeners.forEach(listener => listener(stateManager.state));
     },
 
     // Set complete state (for loading from storage)
@@ -102,7 +62,6 @@ export const stateManager = {
         };
 
         await stateManager.broadcastToTabs();
-        stateManager.listeners.forEach(listener => listener(stateManager.state));
     },
 
     // Specific state updaters with type safety
@@ -173,17 +132,7 @@ export const stateManager = {
     // Reset to default state
     resetState: async (): Promise<void> => {
         console.log('🔄 Resetting state to default');
-        await stateManager.setState(createDefaultState());
-    },
-
-    // Add state change listener
-    addListener: (listener: (state: AppState) => void): void => {
-        stateManager.listeners.add(listener);
-    },
-
-    // Remove state change listener
-    removeListener: (listener: (state: AppState) => void): void => {
-        stateManager.listeners.delete(listener);
+        await stateManager.setState(defaultAppState);
     },
 
     // Export state as JSON
@@ -213,7 +162,6 @@ export const stateManager = {
     // Get state statistics
     getStateStats: () => ({
         messageCount: stateManager.state.chatMessages.length,
-        fileCount: stateManager.state.uploadedFiles.length,
         isThinking: stateManager.state.isThinking,
         lastUpdated: new Date(stateManager.state.lastUpdated).toLocaleString(),
         sessionId: stateManager.state.sessionId,

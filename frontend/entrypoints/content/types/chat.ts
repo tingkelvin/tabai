@@ -9,13 +9,11 @@ export interface ChatMessage {
     timestamp: Date;
 }
 
-
-
 export interface ChatHookReturn {
     chatInput: string;
     handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
     handleKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-    sendMessage: (message: string, options: ChatOptions) => Promise<string>;
+    sendMessage: (message: string) => Promise<string>;
     addMessage: (message: Partial<ChatMessage>) => void;
     addMessages: (messages: Partial<ChatMessage>[]) => void;
     clearMessages: () => void;

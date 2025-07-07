@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { WIDGET_CONFIG } from '../utils/constant';
-import { AppState } from '../types/AppState';
-import { calculateInitialPositions } from '../utils/helper'
+import { AppState, defaultAppState } from '@/common/types/AppState';
 import { Position } from '../types';
 import { sendMessage, onMessage } from '@/entrypoints/background/types/messages';
 import { PageState } from '../types/page';
@@ -10,39 +8,6 @@ import { PageState } from '../types/page';
 const generateSessionId = (): string => {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
-
-// Default state factory
-const createDefaultState = (): AppState => ({
-    // Chat state
-    chatMessages: [],
-    isThinking: false,
-
-    // Mode states
-    useSearch: false,
-    useAgent: false,
-
-    // File state
-    uploadedFiles: [],
-    fileContentAsString: '',
-
-    // Page state
-    pageState: "",
-
-    // Agent state
-    task: '',
-
-    // UI state
-    isMinimized: false,
-    widgetSize: {
-        width: WIDGET_CONFIG.DEFAULT_WIDTH,
-        height: WIDGET_CONFIG.DEFAULT_HEIGHT,
-    },
-    iconPosition: calculateInitialPositions().iconPosition,
-
-    // Timestamps for state management
-    lastUpdated: Date.now(),
-    sessionId: generateSessionId(),
-});
 
 // State validation
 const validateState = (state: any): state is AppState => {
@@ -64,19 +29,19 @@ const loadState = async (): Promise<AppState> => {
         const stored = await sendMessage('loadAppState');
         console.log("load state", stored)
         if (!stored || !validateState(stored)) {
-            return createDefaultState();
+            return defaultAppState;
         }
         return stored;
     } catch (error) {
         console.error('Failed to load state:', error);
-        return createDefaultState();
+        return defaultAppState;
     }
 };
 
 
 // Save state to memory
 export const useAppState = (initialState?: Partial<AppState>) => {
-    const [state, setState] = useState<AppState>(() => createDefaultState());
+    const [state, setState] = useState<AppState>(() => defaultAppState);
     const lastSavedState = useRef<AppState | null>(null);
 
     useEffect(() => {
@@ -121,7 +86,7 @@ export const useAppState = (initialState?: Partial<AppState>) => {
         pageState: PageState;
     }) => {
         if (updates.pageState.domSnapshot?.root)
-            updateState({ pageState: updates.pageState.domSnapshot?.root.clickableElementsToString() });
+            updateState({ pageStateAsString: updates.pageState.domSnapshot?.root.clickableElementsToString() });
     }, [updateState]);
 
     // Specific state updaters
@@ -144,7 +109,6 @@ export const useAppState = (initialState?: Partial<AppState>) => {
     }, [updateState]);
 
     const updateFileState = useCallback((updates: {
-        uploadedFiles?: File[];
         fileContentAsString?: string;
     }) => {
         updateState(updates);
@@ -167,7 +131,7 @@ export const useAppState = (initialState?: Partial<AppState>) => {
 
     // Clear state
     const clearState = useCallback(() => {
-        const newState = createDefaultState();
+        const newState = defaultAppState;
         setState(newState);
         saveState(newState);
     }, []);

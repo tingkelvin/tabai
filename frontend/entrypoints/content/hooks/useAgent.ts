@@ -232,14 +232,41 @@ export const useAgentChat = (chatHook: any, agentConfig: UseAgentActionsConfig =
         }
     });
 
-    const processAgentResponse = useCallback(async (response: AgentResponse) => {
-        await agentActions.executeActions(response);
-        chatHook.addAssistantMessage(response.reasoning);
+    const processAgentReply = useCallback(async (reply: string) => {
+        const cleanReply = reply
+            .replace(/```json\s*/g, '')
+            .replace(/```\s*/g, '')
+            .trim();
+
+        const parsed = JSON.parse(cleanReply);
+
+        // Validate the structure
+        if (!parsed.actions || !Array.isArray(parsed.actions) || !parsed.reasoning) {
+            throw new Error('Invalid agent response structure');
+        }
+
+        // Validate each action
+        for (const action of parsed.actions) {
+            if (!action.type) {
+                throw new Error('Invalid action structure');
+            }
+
+            if (!['click', 'fill', 'select', 'scroll'].includes(action.type)) {
+                throw new Error(`Invalid action type: ${action.type}`);
+            }
+
+            if ((action.type === 'fill' || action.type === 'select') && !action.value) {
+                throw new Error(`Action type ${action.type} requires a value`);
+            }
+        }
+
+        await agentActions.executeActions(parsed);
+        chatHook.addAssistantMessage(parsed.reasoning);
 
     }, [agentActions]);
 
     return {
         ...agentActions,
-        processAgentResponse
+        processAgentReply
     };
 };

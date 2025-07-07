@@ -1,4 +1,3 @@
-import { PageState } from "./page";
 import { Position } from "./widget";
 
 export interface AppState {
