@@ -20,15 +20,11 @@ import { PROMPT_TEMPLATES } from '../utils/prompMessages'
 import { useAppState } from '../hooks/useAppState'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
-  // Mode states
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null)
+  const isSendingMessage = useRef<boolean>(false);
   const { state, updateModeState, updatePageState, updateFileState } = useAppState();
   const { chatMessages, isThinking, useSearch, useAgent, task } = state;
-
-  // Agent state management
-  const isSendingManually = useRef(false);
 
   const [widgetSize, setWidgetSize] = useState({
     width: WIDGET_CONFIG.DEFAULT_WIDTH,
@@ -36,11 +32,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   })
 
   // Page hooks
-  const {
-    pageState,
-    getElementAtCoordinate,
-    withMutationPaused
-  } = usePage()
+  const { pageState, getElementAtCoordinate, updateState, isScanning } = usePage()
 
   // File hooks
   const {
@@ -90,33 +82,32 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   // Complex orchestrated send message
   const handleSendMessage = useCallback(async (message: string) => {
     console.log('🎬 Starting orchestrated message flow');
-    isSendingManually.current = true;
 
     addUserMessage(message)
-
     try {
-      const reply = await sendMessage(message);
       // 5. Process response
       if (useAgent) {
+        console.log("using agent")
         setIsMinimized(true)
+        updateState()
+        isSendingMessage.current = true
+        const reply = await sendMessage(message);
+        isSendingMessage.current = false
         // Parse agent response
         if (!reply) {
           addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
         } else {
           console.log('🤖 Processing agent response:', reply);
-          withMutationPaused(() => {
-            processAgentReply(reply);
-          });
+          processAgentReply(reply);
         }
       } else {
+        const reply = await sendMessage(message);
         // Regular chat mode
         addAssistantMessage(reply);
       }
     } catch (error) {
       console.error('❌ Orchestration error:', error);
       addAssistantMessage(PROMPT_TEMPLATES.ERROR_GENERIC);
-    } finally {
-      isSendingManually.current = false;
     }
   }, [
     chatInput,
@@ -128,26 +119,24 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     addUserMessage,
     addAssistantMessage,
     sendMessage,
-    withMutationPaused,
+
     processAgentReply,
+    updateState
   ]);
 
   useEffect(() => {
     const handlePageStateChange = async () => {
-      // if (pageState) {
-      //   updatePageState({ pageState })
-      //   if (useAgent && task) {
-      //     const reply = await sendMessage(task);
-      //     if (!reply) {
-      //       addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
-      //     } else {
-      //       console.log('🤖 Processing agent response:', reply);
-      //       withMutationPaused(() => {
-      //         processAgentReply(reply);
-      //       });
-      //     }
-      //   }
-      // }
+      if (pageState) {
+        if (useAgent && task && !isSendingMessage.current) {
+          const reply = await sendMessage(task);
+          if (!reply) {
+            addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
+          } else {
+            console.log('🤖 Processing agent response:', reply);
+            processAgentReply(reply);
+          }
+        }
+      }
     };
 
     handlePageStateChange();
