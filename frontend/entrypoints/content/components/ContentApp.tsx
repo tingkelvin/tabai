@@ -23,7 +23,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const fileInputRef = useRef<HTMLInputElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null)
   const isSendingMessage = useRef<boolean>(false);
-  const { state, updateModeState, updatePageState, updateFileState } = useAppState();
+  const { state, updateModeState, updateFileState, isInitialized } = useAppState();
   const { chatMessages, isThinking, useSearch, useAgent, task } = state;
 
   const [widgetSize, setWidgetSize] = useState({
@@ -89,7 +89,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       if (useAgent) {
         console.log("using agent")
         setIsMinimized(true)
-        updateState()
         isSendingMessage.current = true
         const reply = await sendMessage(message);
         isSendingMessage.current = false
@@ -125,7 +124,9 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   ]);
 
   useEffect(() => {
+    console.log("useEffect", isInitialized)
     const handlePageStateChange = async () => {
+      console.log("handlePageState", task, useAgent)
       if (pageState) {
         if (useAgent && task && !isSendingMessage.current) {
           const reply = await sendMessage(task);
@@ -138,9 +139,9 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         }
       }
     };
-
-    handlePageStateChange();
-  }, [pageState])
+    if (isInitialized)
+      handlePageStateChange();
+  }, [isInitialized])
 
   // Custom key press handler
   const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {

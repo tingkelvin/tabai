@@ -87,16 +87,15 @@ export default defineBackground(() => {
 
   // Chat handler - now with proper state management
   onMessage('chat', async ({ data: { message } }) => {
-    console.log('💬 Starting chat process');
-    const state = stateManager.getState()
-
-    const messageToSend: string = PromptBuilder.buildMessage(message, state)
-    console.log("state in prompt", state)
+    console.log('💬 Starting chat process:', message);
+    const state = await stateManager.getState()
     const { useSearch, useAgent } = state
 
     if (useAgent) {
       await stateManager.setTask(message);
     }
+
+    const messageToSend: string = PromptBuilder.buildMessage(message, state)
 
     try {
       // Set thinking state
@@ -139,11 +138,6 @@ export default defineBackground(() => {
   onMessage('addChatMessage', async (message) => {
     console.log('➕ Adding chat message');
     await stateManager.addChatMessage(message.data);
-  });
-
-  onMessage('getChatMessages', () => {
-    console.log('📤 Getting chat messages');
-    return stateManager.getState().chatMessages;
   });
 
   onMessage('clearChatMessages', async () => {

@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { PageState, PageConfig } from '../types/page';
 import { removeHighlights, getClickableElementsFromDomTree, locateElement } from '../services/DomTreeService';
 import { highlightElement } from '../utils/domUtils';
+import { onMessage } from '@/entrypoints/background/types/messages';
 
 interface UsePageReturn {
     // State
@@ -18,6 +19,27 @@ interface UsePageReturn {
     updateState: () => void;
     waitForPageStable: (options?: { timeout?: number; stabilityDelay?: number }) => Promise<boolean>;
 }
+
+// Helper function to deep compare page states
+const hasPageStateChanged = (oldState: PageState | null, newState: PageState): boolean => {
+    if (!oldState) return true;
+
+    // Check basic properties
+    if (oldState.url !== newState.url || oldState.title !== newState.title) {
+        return true;
+    }
+
+    // Check DOM snapshot changes
+    if (!oldState.domSnapshot || !newState.domSnapshot) {
+        return oldState.domSnapshot !== newState.domSnapshot;
+    }
+
+    // Compare DOM tree structure (you might want to implement a more sophisticated comparison)
+    const oldDomString = oldState.domSnapshot.root.clickableElementsToString();
+    const newDomString = newState.domSnapshot.root.clickableElementsToString();
+
+    return oldDomString !== newDomString;
+};
 
 export const usePage = (config?: PageConfig): UsePageReturn => {
     const [pageState, setPageState] = useState<PageState | null>(null);
@@ -47,7 +69,7 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
             // Get clickable elements from DOM tree
             const { root, selectorMap } = await getClickableElementsFromDomTree();
 
-            // Update page state
+            // Create new page state
             const newPageState: PageState = {
                 url: getCurrentUrl(),
                 title: getCurrentTitle(),
@@ -56,7 +78,13 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
                 screenshot: null
             };
 
-            setPageState(newPageState);
+            // Only update state if there are actual changes
+            if (hasPageStateChanged(pageState, newPageState)) {
+                console.log('[usePage] Page state changes detected, updating state');
+                setPageState(newPageState);
+            } else {
+                console.log('[usePage] No changes detected, skipping state update');
+            }
 
         } catch (error) {
             console.error('Error updating page state:', error);
@@ -64,7 +92,7 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
             isUpdatingRef.current = false;
             setIsScanning(false);
         }
-    }, []);
+    }, [pageState]); // Add pageState as dependency since we're comparing against it
 
     const getCurrentUrl = useCallback((): string => {
         return window.location.href;
@@ -136,7 +164,7 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
                     mutationCount += significantMutations.length;
                     lastMutationTime = Date.now();
 
-                    console.log(`[usePage] DOM changes detected (${significantMutations.length} mutations, ${mutationCount} total) - resetting stability timer`);
+                    // console.log(`[usePage] DOM changes detected (${significantMutations.length} mutations, ${mutationCount} total) - resetting stability timer`);
 
                     // Clear existing stability timeout
                     if (stabilityTimeoutRef.current) {
@@ -223,6 +251,27 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
             }
         };
     }, [updateState]);
+
+    // Option 2: Create a separate function that gets fresh state
+    const getPageStateString = useCallback(async (): Promise<string> => {
+        try {
+            // Force update first
+            await updateState();
+
+            // Get fresh DOM tree data directly (don't rely on React state)
+            const { root } = await getClickableElementsFromDomTree();
+            const result = root.clickableElementsToString();
+
+            return result;
+        } catch (error) {
+            console.error('Error getting page state string:', error);
+            return "";
+        }
+    }, [updateState]);
+
+    useEffect(() => {
+        onMessage('getPageStateAsString', getPageStateString);
+    }, []);
 
     return {
         // State

@@ -19,12 +19,12 @@ export const PromptBuilder = {
      * Build a complete prompt message based on configuration
      */
     buildMessage: (userMessage: string | "", appState: AppState): string => {
-        const { task, fileContentAsString, useAgent } = appState
+        const { fileContentAsString, useAgent } = appState
         let message = '';
 
         // Add main content (task or user message)
-        if (appState.useAgent && task) {
-            message += `<task>${task}</task>`;
+        if (appState.useAgent && userMessage) {
+            message += `<task>${userMessage}</task>`;
         } else if (userMessage) {
             message += `<user_message>${userMessage}</user_message>`;
         }

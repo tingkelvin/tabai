@@ -40,10 +40,14 @@ export interface ProtocolMap {
   updateAppState: (state: AppState) => void;
   onUpdateAppState: (state: AppState) => void;
 
-  // ProtocolMap additions
+  // Chat
   addChatMessage: (message: ChatMessage) => void;
-  getChatMessages: () => ChatMessage[];
   clearChatMessages: () => void;
+
+  // Page
+  getPageStateAsString: () => string;
+
+
 }
 
 // Create the messaging functions

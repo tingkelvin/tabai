@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { AppState, defaultAppState } from '@/common/types/AppState';
 import { Position } from '../types';
 import { sendMessage, onMessage } from '@/entrypoints/background/types/messages';
-import { PageState } from '../types/page';
 
 // Load state from memory
 const loadState = async (): Promise<AppState> => {
@@ -15,12 +14,7 @@ const loadState = async (): Promise<AppState> => {
             return defaultAppState;
         }
 
-        console.log('✅ [AppState] Successfully loaded state:', {
-            sessionId: stored.sessionId,
-            lastUpdated: new Date(stored.lastUpdated).toLocaleString(),
-            chatMessages: stored.chatMessages?.length || 0,
-            isMinimized: stored.isMinimized
-        });
+        console.log('✅ [AppState] Successfully loaded state:', stored);
         return stored;
     } catch (error) {
         console.error('❌ [AppState] Failed to load state:', error);
@@ -29,9 +23,11 @@ const loadState = async (): Promise<AppState> => {
 };
 
 // Save state to memory
-export const useAppState = (initialState?: Partial<AppState>) => {
+export const useAppState = () => {
     const [state, setState] = useState<AppState>(() => defaultAppState);
     const lastSavedState = useRef<AppState | null>(null);
+    const [isInitialized, setIsInitialized] = useState(false);
+
 
     useEffect(() => {
         const initializeState = async () => {
@@ -42,8 +38,10 @@ export const useAppState = (initialState?: Partial<AppState>) => {
                 setState(loadedState);
                 console.log('🎯 [AppState] State initialization complete');
             }
+            setIsInitialized(true);
         };
         initializeState();
+
     }, []);
 
     const saveState = (state: AppState): void => {
@@ -57,8 +55,7 @@ export const useAppState = (initialState?: Partial<AppState>) => {
         console.log('💾 [AppState] Saving state to background:', {
             sessionId: state.sessionId,
             timestamp: new Date().toLocaleString(),
-            chatMessages: state.chatMessages?.length || 0,
-            hasPageState: !!state.pageStateAsString
+            chatMessages: state.chatMessages?.length || 0
         });
         sendMessage('saveAppState', { ...state, lastUpdated: Date.now() });
     };
@@ -78,24 +75,6 @@ export const useAppState = (initialState?: Partial<AppState>) => {
             return newState;
         });
     }, [saveState]);
-
-    // Specific state updaters
-    const updatePageState = useCallback((updates: {
-        pageState: PageState;
-    }) => {
-        console.log('🌐 [AppState] Updating page state:', {
-            hasRoot: !!updates.pageState.domSnapshot?.root,
-            url: updates.pageState.url || 'unknown'
-        });
-
-        if (updates.pageState.domSnapshot?.root) {
-            const elementsString = updates.pageState.domSnapshot?.root.clickableElementsToString();
-            console.log('📋 [AppState] Generated clickable elements string:', {
-                length: elementsString?.length || 0
-            });
-            updateState({ pageStateAsString: elementsString });
-        }
-    }, [updateState]);
 
     // Specific state updaters
     const updateChatState = useCallback((updates: {
@@ -153,12 +132,9 @@ export const useAppState = (initialState?: Partial<AppState>) => {
 
     const updateAgentState = useCallback((updates: {
         task?: string;
-        pageState?: any;
     }) => {
         console.log('🤖 [AppState] Updating agent state:', {
             hasTask: !!updates.task,
-            taskLength: updates.task?.length || 0,
-            hasPageState: !!updates.pageState
         });
         updateState(updates);
     }, [updateState]);
@@ -175,11 +151,6 @@ export const useAppState = (initialState?: Partial<AppState>) => {
     useEffect(() => {
         console.log('👂 [AppState] Setting up message listener for state updates');
         onMessage('updateAppState', (message) => {
-            console.log('📨 [AppState] Received state update from background:', {
-                sessionId: message.data.sessionId,
-                timestamp: new Date().toLocaleString(),
-                messageKeys: Object.keys(message.data)
-            });
             setState(message.data); // Direct AppState object
         });
     }, []);
@@ -187,25 +158,19 @@ export const useAppState = (initialState?: Partial<AppState>) => {
     // Cleanup on unmount
     useEffect(() => {
         return () => {
-            console.log('🧽 [AppState] Component unmounting, performing cleanup');
             if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
-                console.log('💾 [AppState] Saving final state before unmount');
                 saveState(state);
             }
         };
     }, [state]);
 
     const stateAge = Date.now() - state.lastUpdated;
-    console.log('📈 [AppState] Current state age:', {
-        ageMs: stateAge,
-        ageSeconds: Math.round(stateAge / 1000),
-        isLoaded: state.sessionId !== ''
-    });
 
     return {
         // Current state
         state,
+        isInitialized,
 
         // State updaters
         updateState,
@@ -215,7 +180,6 @@ export const useAppState = (initialState?: Partial<AppState>) => {
         updateUIState,
         updateAgentState,
         loadState,
-        updatePageState,
 
         // State management
         clearState,
