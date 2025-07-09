@@ -33,7 +33,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   })
 
   // Page hooks
-  const { pageState, getElementAtCoordinate, updatePageState, isScanning } = usePage()
+  const { pageState, getElementAtCoordinate, updatePageState, getPageStateString } = usePage()
 
   // File hooks
   const {
@@ -100,6 +100,8 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       if (useAgent) {
         console.log("using agent")
         setIsMinimized(true)
+        const pageStateAsString = getPageStateString();
+        setPageStateAsString(pageStateAsString)
         isSendingMessage.current = true
         const reply = await sendMessage(message);
         isSendingMessage.current = false
