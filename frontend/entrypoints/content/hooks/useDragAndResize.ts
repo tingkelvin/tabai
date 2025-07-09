@@ -362,6 +362,7 @@ export const useDragAndResize = (
         isResizing: isResizing.current,
         isMinimized,
         setIsMinimized,
+        setIconPosition,
         currentPosition,
         iconPosition,
         widgetPosition,

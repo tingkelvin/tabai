@@ -1,5 +1,5 @@
 // hooks/useAgentActions.ts
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { PageState } from '../types/page';
 
 import { removeHighlights, getClickableElementsFromDomTree, locateElement } from '../services/DomTreeService';
@@ -30,9 +30,13 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
     } = config;
 
     const isExecutingRef = useRef(false);
+    const currentActionIndexRef = useRef(0);
+    const actionsQueueRef = useRef<AgentAction[]>([]);
+    const setIconPositionRef = useRef<any>(null);
+    const keyListenerRef = useRef<((event: KeyboardEvent) => void) | null>(null);
 
     // Execute a single action
-    const executeAction = useCallback(async (action: AgentAction): Promise<boolean> => {
+    const executeAction = useCallback(async (action: AgentAction, setIconPosition: any): Promise<boolean> => {
         const { id, type, value } = action;
         console.log(action)
 
@@ -44,8 +48,6 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
                 return false;
             }
 
-
-
             const element: Element | null = await locateElement(elementDomNode)
 
             if (!element) {
@@ -53,34 +55,63 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
                 return false;
             }
 
+            const rect = element.getBoundingClientRect();
+            const top = Math.round(rect.top);
+            const left = Math.round(rect.left);
+            setIconPosition({ top, left });
+
             if (type == 'fill' || type == 'select')
                 highlightElement(id, element, `${type} with '${value}'`)
             else
                 highlightElement(id, element, 'click')
 
-            if (!element) {
-                console.warn(`Element with id ${id} not found`);
-                return false;
-            }
-
             switch (type) {
                 case 'click':
                     console.log(`🤖 Clicking element ${id}`);
-                    // element.click();
+
+                    // Ensure element is HTMLElement for click functionality
+                    if (element instanceof HTMLElement) {
+                        try {
+                            // Method 1: Standard click
+                            element.click();
+                        } catch (clickError) {
+                            console.warn('Standard click failed, trying alternative methods:', clickError);
+
+                            try {
+                                // Method 2: Dispatch click event
+                                const clickEvent = new MouseEvent('click', {
+                                    bubbles: true,
+                                    cancelable: true,
+                                    view: window
+                                });
+                                element.dispatchEvent(clickEvent);
+                            } catch (eventError) {
+                                console.warn('Event dispatch failed, trying focus method:', eventError);
+
+                                // Method 3: Focus and trigger
+                                element.focus();
+                                element.click();
+                            }
+                        }
+                    } else {
+                        console.warn(`Element ${id} is not an HTMLElement, cannot click`);
+                        return false;
+                    }
                     break;
+
 
                 case 'fill':
                     if (value !== undefined) {
                         console.log(`🤖 Filling element ${id} with: ${value}`);
-                        // if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-                        //     element.value = value;
-                        //     // Trigger input event for React compatibility
-                        //     element.dispatchEvent(new Event('input', { bubbles: true }));
-                        //     element.dispatchEvent(new Event('change', { bubbles: true }));
-                        // } else {
-                        //     console.warn(`Element ${id} is not an input field`);
-                        //     return false;
-                        // }
+                        if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+                            element.value = value;
+                            // Trigger input event for React compatibility
+                            element.dispatchEvent(new Event('input', { bubbles: true }));
+                            element.dispatchEvent(new Event('change', { bubbles: true }));
+                        } else {
+                            console.warn(`Element ${id} is not an input field`);
+                            return false;
+                        }
                     } else {
                         console.warn(`No value provided for fill action on element ${id}`);
                         return false;
@@ -90,13 +121,13 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
                 case 'select':
                     if (value !== undefined) {
                         console.log(`🤖 Selecting ${value} in element ${id}`);
-                        // if (element instanceof HTMLSelectElement) {
-                        //     element.value = value;
-                        //     element.dispatchEvent(new Event('change', { bubbles: true }));
-                        // } else {
-                        //     console.warn(`Element ${id} is not a select element`);
-                        //     return false;
-                        // }
+                        if (element instanceof HTMLSelectElement) {
+                            element.value = value;
+                            element.dispatchEvent(new Event('change', { bubbles: true }));
+                        } else {
+                            console.warn(`Element ${id} is not a select element`);
+                            return false;
+                        }
                     } else {
                         console.warn(`No value provided for select action on element ${id}`);
                         return false;
@@ -120,8 +151,123 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         }
     }, [pageState, onActionExecuted, onError]);
 
-    // Execute multiple actions from JSON string
-    const executeActions = useCallback(async (agentResponse: AgentResponse): Promise<{
+    // Show current action (highlight but don't execute)
+    const showCurrentAction = useCallback(async () => {
+        const currentIndex = currentActionIndexRef.current;
+        const actions = actionsQueueRef.current;
+        const setIconPosition = setIconPositionRef.current;
+
+        if (currentIndex >= actions.length || !setIconPosition) {
+            console.log('🤖 All actions completed');
+            // Clean up
+            if (keyListenerRef.current) {
+                document.removeEventListener('keydown', keyListenerRef.current);
+                keyListenerRef.current = null;
+            }
+            isExecutingRef.current = false;
+            return;
+        }
+
+        const action = actions[currentIndex];
+        const { id, type, value } = action;
+
+        try {
+            // Get the element from pageState or DOM
+            const elementDomNode: ElementDomNode | undefined = pageState?.domSnapshot?.selectorMap.get(id);
+            if (!elementDomNode) {
+                console.warn(`Element with id ${id} not found in page`);
+                return;
+            }
+
+            const element: Element | null = await locateElement(elementDomNode);
+
+            if (!element) {
+                console.warn(`Cannot locate element with id ${id} in page`);
+                return;
+            }
+
+            const rect = element.getBoundingClientRect();
+            const top = Math.round(rect.top);
+            const left = Math.round(rect.left);
+            setIconPosition({ top, left });
+
+            // Highlight the element but don't execute
+            if (type === 'fill' || type === 'select') {
+                highlightElement(id, element, `${type} with '${value}'`);
+            } else {
+                highlightElement(id, element, 'click');
+            }
+
+            console.log(`🤖 Ready to execute action ${currentIndex + 1}/${actions.length}: ${type} on element ${id}${value ? ` with value "${value}"` : ''}`);
+            console.log('🤖 Press Tab to execute this action');
+
+        } catch (error) {
+            console.error(`Failed to show action ${currentIndex + 1}:`, error);
+        }
+    }, [pageState]);
+
+    // Execute current action and move to next
+    const executeCurrentActionAndMoveNext = useCallback(async () => {
+        const currentIndex = currentActionIndexRef.current;
+        const actions = actionsQueueRef.current;
+        const setIconPosition = setIconPositionRef.current;
+
+        if (currentIndex >= actions.length || !setIconPosition) {
+            console.log('🤖 All actions completed');
+            // Clean up
+            if (keyListenerRef.current) {
+                document.removeEventListener('keydown', keyListenerRef.current);
+                keyListenerRef.current = null;
+            }
+            isExecutingRef.current = false;
+            return;
+        }
+
+        const action = actions[currentIndex];
+        console.log(`🤖 Executing action ${currentIndex + 1}/${actions.length}:`, action);
+
+        // Execute the current action
+        await executeAction(action, setIconPosition);
+
+        // Move to next action
+        currentActionIndexRef.current = currentIndex + 1;
+
+        // Check if there are more actions
+        if (currentActionIndexRef.current < actions.length) {
+            // Show the next action but don't execute it
+            await showCurrentAction();
+        } else {
+            console.log('🤖 All actions completed');
+            // Clean up
+            if (keyListenerRef.current) {
+                document.removeEventListener('keydown', keyListenerRef.current);
+                keyListenerRef.current = null;
+            }
+            isExecutingRef.current = false;
+        }
+    }, [executeAction, showCurrentAction]);
+
+    // Setup keyboard listener
+    const setupKeyboardListener = useCallback(() => {
+        // Remove existing listener if any
+        if (keyListenerRef.current) {
+            document.removeEventListener('keydown', keyListenerRef.current);
+        }
+
+        // Create new listener
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Tab') {
+                event.preventDefault(); // Prevent default tab behavior
+                executeCurrentActionAndMoveNext();
+            }
+        };
+
+        keyListenerRef.current = handleKeyDown;
+        document.addEventListener('keydown', handleKeyDown);
+    }, [executeCurrentActionAndMoveNext]);
+
+    // Execute multiple actions sequentially with Tab navigation
+    const executeActions = useCallback(async (agentResponse: AgentResponse, setIconPosition: any): Promise<{
         success: boolean;
         executedCount: number;
         totalCount: number;
@@ -133,38 +279,34 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         }
 
         isExecutingRef.current = true;
-        let executedCount = 0;
-        let totalCount = 0;
         let reasoning = '';
 
         try {
             const { actions, reasoning: parsedReasoning } = agentResponse;
 
             reasoning = parsedReasoning;
-            totalCount = actions.length;
+
+            // Setup the action queue
+            actionsQueueRef.current = actions;
+            currentActionIndexRef.current = 0;
+            setIconPositionRef.current = setIconPosition;
 
             console.log('🤖 Agent reasoning:', reasoning);
-            console.log(`🤖 Executing ${totalCount} actions`);
+            console.log(`🤖 Starting sequential execution of ${actions.length} actions`);
 
-            for (const action of actions) {
-                const success = await executeAction(action);
-                if (success) {
-                    executedCount++;
-                }
+            // Setup keyboard listener
+            setupKeyboardListener();
 
-                // Add delay between actions for stability
-                if (actionDelay > 0) {
-                    await new Promise(resolve => setTimeout(resolve, actionDelay));
-                }
+            // Show the first action (but don't execute it)
+            if (actions.length > 0) {
+                await showCurrentAction();
             }
 
-            const allSuccess = executedCount === totalCount;
-            console.log(`🤖 Completed: ${executedCount}/${totalCount} actions executed`);
-
+            // Return initial state
             return {
-                success: allSuccess,
-                executedCount,
-                totalCount,
+                success: true,
+                executedCount: 0, // No actions executed yet
+                totalCount: actions.length,
                 reasoning
             };
 
@@ -173,19 +315,36 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
             console.error(errorMsg);
             onError?.(errorMsg);
 
+            // Clean up on error
+            if (keyListenerRef.current) {
+                document.removeEventListener('keydown', keyListenerRef.current);
+                keyListenerRef.current = null;
+            }
+            isExecutingRef.current = false;
+
             return {
                 success: false,
-                executedCount,
-                totalCount,
+                executedCount: 0,
+                totalCount: 0,
                 reasoning
             };
-        } finally {
-            isExecutingRef.current = false;
         }
-    }, [executeAction, actionDelay, onError]);
+    }, [setupKeyboardListener, onError, executeCurrentActionAndMoveNext, showCurrentAction]);
 
     // Check if actions are currently executing
     const isExecuting = useCallback(() => isExecutingRef.current, []);
+
+    // Get current action info
+    const getCurrentActionInfo = useCallback(() => ({
+        currentIndex: currentActionIndexRef.current,
+        totalActions: actionsQueueRef.current.length,
+        currentAction: actionsQueueRef.current[currentActionIndexRef.current] || null
+    }), []);
+
+    // Move to next action (kept for backward compatibility)
+    const moveToNextAction = useCallback(async () => {
+        await executeCurrentActionAndMoveNext();
+    }, [executeCurrentActionAndMoveNext]);
 
     // Validate if an action can be executed
     const validateAction = useCallback((action: AgentAction): boolean => {
@@ -214,16 +373,35 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         }
     }, []);
 
+    // Cleanup function
+    const cleanup = useCallback(() => {
+        if (keyListenerRef.current) {
+            document.removeEventListener('keydown', keyListenerRef.current);
+            keyListenerRef.current = null;
+        }
+        isExecutingRef.current = false;
+        currentActionIndexRef.current = 0;
+        actionsQueueRef.current = [];
+    }, []);
+
+    // Effect for cleanup on unmount
+    useEffect(() => {
+        return cleanup;
+    }, [cleanup]);
+
     return {
         executeAction,
         executeActions,
         validateAction,
-        isExecuting
+        isExecuting,
+        getCurrentActionInfo,
+        moveToNextAction,
+        cleanup
     };
 };
 
 // Optional: Higher-level hook that combines chat and agent actions
-export const useAgentChat = (chatHook: any, agentConfig: UseAgentActionsConfig = {}) => {
+export const useAgentChat = (chatHook: any, setIconPosition: any, agentConfig: UseAgentActionsConfig = {}) => {
     const agentActions = useAgentActions({
         ...agentConfig,
         onError: (error) => {
@@ -260,7 +438,7 @@ export const useAgentChat = (chatHook: any, agentConfig: UseAgentActionsConfig =
             }
         }
 
-        await agentActions.executeActions(parsed);
+        await agentActions.executeActions(parsed, setIconPosition);
         chatHook.addAssistantMessage(parsed.reasoning);
 
     }, [agentActions]);

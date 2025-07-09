@@ -121,7 +121,7 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
         timeout?: number;
         stabilityDelay?: number
     }): Promise<boolean> => {
-        const { timeout = 10000, stabilityDelay = 1000 } = options || {};
+        const { timeout = 5000, stabilityDelay = 1000 } = options || {};
 
         console.log(`[usePage] Starting page stability check - timeout: ${timeout}ms, stabilityDelay: ${stabilityDelay}ms`);
 

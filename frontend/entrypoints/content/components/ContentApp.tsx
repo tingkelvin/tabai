@@ -66,6 +66,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     startResize,
     isMinimized,
     setIsMinimized,
+    setIconPosition,
     isDragging,
     isResizing,
     currentSize,
@@ -76,7 +77,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   })
 
   // Agent hook
-  const { processAgentReply } = useAgentChat(chatHook, {
+  const { processAgentReply } = useAgentChat(chatHook, setIconPosition, {
     pageState,
   });
   // Complex orchestrated send message
