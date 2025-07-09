@@ -105,11 +105,13 @@ export default defineBackground(() => {
   onMessage('chat', async ({ data: { message } }) => {
     console.log('💬 Starting chat process:', message);
     const state = await stateManager.getState()
-    const { useSearch, useAgent } = state
+    const { useSearch, useAgent, actionsExecuted } = state
 
     if (useAgent) {
       await stateManager.setTask(message);
     }
+
+
 
     const messageToSend: string = PromptBuilder.buildMessage(message, state)
 

@@ -16,7 +16,7 @@ import { usePage } from '../hooks/usePage'
 import { useFile } from '../hooks/useFile'
 import { getFileIcon, PlusIcon } from './Icons'
 import { useAgentChat } from '../hooks/useAgent'
-import { PROMPT_TEMPLATES } from '../utils/prompMessages'
+import { AgentAction, PROMPT_TEMPLATES } from '../utils/prompMessages'
 import { useAppState } from '../hooks/useAppState'
 import { Position } from '../types/widget'
 
@@ -25,7 +25,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const widgetRef = useRef<HTMLDivElement>(null)
   const isSendingMessage = useRef<boolean>(false);
   const { state, updateModeState, updateFileState, isInitialized } = useAppState();
-  const { chatMessages, isThinking, useSearch, useAgent, task } = state;
+  const { chatMessages, isThinking, useSearch, useAgent, task, actionsExecuted } = state;
 
   const [widgetSize, setWidgetSize] = useState({
     width: WIDGET_CONFIG.DEFAULT_WIDTH,
@@ -84,8 +84,9 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       console.log(pageState?.domSnapshot?.root.clickableElementsToString())
       setIconPosition(position)
     },
-    onActionExecuted: async () => {
+    onActionExecuted: async (action: AgentAction) => {
       updatePageState()
+      actionsExecuted.push(action)
       console.log(pageState?.domSnapshot?.root.clickableElementsToString())
     },
   });

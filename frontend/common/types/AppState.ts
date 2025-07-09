@@ -1,3 +1,5 @@
+import { AgentAction } from "@/entrypoints/content/hooks/useAgent";
+
 export interface AppState {
     // Chat state
     chatMessages: any[];
@@ -15,6 +17,7 @@ export interface AppState {
 
     // Agent state
     task: string;
+    actionsExecuted: AgentAction[];
 
     // UI state
     isMinimized: boolean;
@@ -41,6 +44,7 @@ export const defaultAppState: AppState = {
 
     // Agent state
     task: "",
+    actionsExecuted: [],
 
     // UI state
     isMinimized: true,

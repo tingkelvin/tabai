@@ -18,7 +18,7 @@ export interface AgentAction {
 
 export interface UseAgentActionsConfig {
     pageState?: PageState | null;
-    onActionExecuted?: () => Promise<void>;
+    onActionExecuted?: (action: AgentAction) => Promise<void>;
     setIconPosition?: (position: Position) => void;
     onError?: (error: string) => void;
     actionDelay?: number; // Delay between actions in ms
@@ -37,7 +37,6 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
     const currentActionIndexRef = useRef(0);
     const actionsQueueRef = useRef<AgentAction[]>([]);
     const keyListenerRef = useRef<((event: KeyboardEvent) => void) | null>(null);
-    const actionsExecuted = useRef<AgentAction[]>([]);
 
     // Execute a single action
     const executeAction = useCallback(async (action: AgentAction): Promise<boolean> => {
@@ -141,8 +140,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
                     console.warn(`Unknown action type: ${type}`);
                     return false;
             }
-
-            actionsExecuted.current.push(action);
+            onActionExecuted?.(action);
 
             return true;
 
@@ -389,10 +387,6 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
     useEffect(() => {
         return cleanup;
     }, [cleanup]);
-
-    useEffect(() => {
-        onMessage('getActionsExeacuted', () => actionsExecuted.current);
-    }, [])
 
     return {
         executeAction,
