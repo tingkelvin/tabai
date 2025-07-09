@@ -18,6 +18,7 @@ import { getFileIcon, PlusIcon } from './Icons'
 import { useAgentChat } from '../hooks/useAgent'
 import { PROMPT_TEMPLATES } from '../utils/prompMessages'
 import { useAppState } from '../hooks/useAppState'
+import { Position } from '../types/widget'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -32,7 +33,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   })
 
   // Page hooks
-  const { pageState, getElementAtCoordinate, updateState, isScanning } = usePage()
+  const { pageState, getElementAtCoordinate, updatePageState, isScanning } = usePage()
 
   // File hooks
   const {
@@ -77,8 +78,16 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   })
 
   // Agent hook
-  const { processAgentReply } = useAgentChat(chatHook, setIconPosition, {
+  const { processAgentReply } = useAgentChat(chatHook, {
     pageState,
+    setIconPosition: (position: Position) => {
+      console.log(pageState?.domSnapshot?.root.clickableElementsToString())
+      setIconPosition(position)
+    },
+    onActionExecuted: async () => {
+      updatePageState()
+      console.log(pageState?.domSnapshot?.root.clickableElementsToString())
+    },
   });
   // Complex orchestrated send message
   const handleSendMessage = useCallback(async (message: string) => {
@@ -121,7 +130,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     sendMessage,
 
     processAgentReply,
-    updateState
+    updatePageState
   ]);
 
   useEffect(() => {
@@ -129,6 +138,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     const handlePageStateChange = async () => {
       console.log("handlePageState", task, useAgent)
       if (pageState) {
+        updatePageState()
         if (useAgent && task && !isSendingMessage.current) {
           const reply = await sendMessage(task);
           if (!reply) {

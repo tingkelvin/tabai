@@ -61,6 +61,22 @@ export default defineBackground(() => {
       console.log(`Invalid: ${invalidTabs.length}`, invalidTabs.map(t => t.url));
 
       return { valid: validTabs, invalid: invalidTabs };
+    },
+    async page() {
+      console.log('🧪 Testing on get page state');
+      const tabs = await chrome.tabs.query({});
+      const validTabs = tabs.filter(tab => isValidPage(tab.url));
+
+      console.log(`Found ${validTabs.length} valid tabs out of ${tabs.length} total`);
+
+      for (const tab of validTabs) {
+        try {
+          const pageStateAsString = await sendMessage('getPageStateAsString', undefined, tab.id);
+          console.log("pageStateAsString", pageStateAsString)
+        } catch (error) {
+          console.log(`❌ ${tab.id}: No content script`);
+        }
+      }
     }
   };
   // Expose to global scope for console access

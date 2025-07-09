@@ -7,6 +7,7 @@ import { ApiResponse, ChatResponse } from './api';
 import { ToggleExtensionRequest, navigateToRequest, chatRequest } from './requests';
 import { AppState } from '@/common/types/AppState';
 import { ChatMessage } from '@/entrypoints/content/types';
+import { AgentAction } from '@/entrypoints/content/hooks/useAgent';
 // Define your protocol map with all message types and their data/return types
 export interface ProtocolMap {
   // Auth messages
@@ -47,7 +48,8 @@ export interface ProtocolMap {
   // Page
   getPageStateAsString: () => string;
 
-
+  // Agent
+  getActionsExeacuted: () => AgentAction[];
 }
 
 // Create the messaging functions

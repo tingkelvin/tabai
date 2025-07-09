@@ -7,6 +7,8 @@ import { removeHighlights, getClickableElementsFromDomTree, locateElement } from
 import { highlightElement } from '../utils/domUtils';
 import { ElementDomNode } from '../types/dom/DomNode';
 import { AgentResponse } from '../utils/prompMessages';
+import { Position } from '../types';
+import { onMessage } from '@/entrypoints/background/types/messages';
 
 export interface AgentAction {
     id: number;
@@ -16,7 +18,8 @@ export interface AgentAction {
 
 export interface UseAgentActionsConfig {
     pageState?: PageState | null;
-    onActionExecuted?: (action: AgentAction) => void;
+    onActionExecuted?: () => Promise<void>;
+    setIconPosition?: (position: Position) => void;
     onError?: (error: string) => void;
     actionDelay?: number; // Delay between actions in ms
 }
@@ -25,6 +28,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
     const {
         pageState,
         onActionExecuted,
+        setIconPosition,
         onError,
         actionDelay = 100
     } = config;
@@ -32,18 +36,17 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
     const isExecutingRef = useRef(false);
     const currentActionIndexRef = useRef(0);
     const actionsQueueRef = useRef<AgentAction[]>([]);
-    const setIconPositionRef = useRef<any>(null);
     const keyListenerRef = useRef<((event: KeyboardEvent) => void) | null>(null);
+    const actionsExecuted = useRef<AgentAction[]>([]);
 
     // Execute a single action
-    const executeAction = useCallback(async (action: AgentAction, setIconPosition: any): Promise<boolean> => {
+    const executeAction = useCallback(async (action: AgentAction): Promise<boolean> => {
         const { id, type, value } = action;
-        console.log(action)
-
         try {
             // Get the element from pageState or DOM
             const elementDomNode: ElementDomNode | undefined = pageState?.domSnapshot?.selectorMap.get(id);
             if (!elementDomNode) {
+                console.log(pageState?.domSnapshot?.selectorMap)
                 console.warn(`Element with id ${id} not found in page`);
                 return false;
             }
@@ -58,7 +61,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
             const rect = element.getBoundingClientRect();
             const top = Math.round(rect.top);
             const left = Math.round(rect.left);
-            setIconPosition({ top, left });
+            setIconPosition?.({ top, left });
 
             if (type == 'fill' || type == 'select')
                 highlightElement(id, element, `${type} with '${value}'`)
@@ -139,8 +142,8 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
                     return false;
             }
 
-            // Callback for successful action
-            onActionExecuted?.(action);
+            actionsExecuted.current.push(action);
+
             return true;
 
         } catch (error) {
@@ -149,15 +152,14 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
             onError?.(errorMsg);
             return false;
         }
-    }, [pageState, onActionExecuted, onError]);
+    }, [pageState, onActionExecuted, setIconPosition, onError]);
 
     // Show current action (highlight but don't execute)
     const showCurrentAction = useCallback(async () => {
         const currentIndex = currentActionIndexRef.current;
         const actions = actionsQueueRef.current;
-        const setIconPosition = setIconPositionRef.current;
 
-        if (currentIndex >= actions.length || !setIconPosition) {
+        if (currentIndex >= actions.length) {
             console.log('🤖 All actions completed');
             // Clean up
             if (keyListenerRef.current) {
@@ -189,7 +191,9 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
             const rect = element.getBoundingClientRect();
             const top = Math.round(rect.top);
             const left = Math.round(rect.left);
-            setIconPosition({ top, left });
+            setIconPosition?.({ top, left });
+
+            removeHighlights();
 
             // Highlight the element but don't execute
             if (type === 'fill' || type === 'select') {
@@ -210,9 +214,8 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
     const executeCurrentActionAndMoveNext = useCallback(async () => {
         const currentIndex = currentActionIndexRef.current;
         const actions = actionsQueueRef.current;
-        const setIconPosition = setIconPositionRef.current;
 
-        if (currentIndex >= actions.length || !setIconPosition) {
+        if (currentIndex >= actions.length) {
             console.log('🤖 All actions completed');
             // Clean up
             if (keyListenerRef.current) {
@@ -227,8 +230,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         console.log(`🤖 Executing action ${currentIndex + 1}/${actions.length}:`, action);
 
         // Execute the current action
-        await executeAction(action, setIconPosition);
-
+        await executeAction(action);
         // Move to next action
         currentActionIndexRef.current = currentIndex + 1;
 
@@ -267,7 +269,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
     }, [executeCurrentActionAndMoveNext]);
 
     // Execute multiple actions sequentially with Tab navigation
-    const executeActions = useCallback(async (agentResponse: AgentResponse, setIconPosition: any): Promise<{
+    const executeActions = useCallback(async (agentResponse: AgentResponse): Promise<{
         success: boolean;
         executedCount: number;
         totalCount: number;
@@ -289,7 +291,6 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
             // Setup the action queue
             actionsQueueRef.current = actions;
             currentActionIndexRef.current = 0;
-            setIconPositionRef.current = setIconPosition;
 
             console.log('🤖 Agent reasoning:', reasoning);
             console.log(`🤖 Starting sequential execution of ${actions.length} actions`);
@@ -389,6 +390,10 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         return cleanup;
     }, [cleanup]);
 
+    useEffect(() => {
+        onMessage('getActionsExeacuted', () => actionsExecuted.current);
+    }, [])
+
     return {
         executeAction,
         executeActions,
@@ -401,7 +406,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
 };
 
 // Optional: Higher-level hook that combines chat and agent actions
-export const useAgentChat = (chatHook: any, setIconPosition: any, agentConfig: UseAgentActionsConfig = {}) => {
+export const useAgentChat = (chatHook: any, agentConfig: UseAgentActionsConfig = {}) => {
     const agentActions = useAgentActions({
         ...agentConfig,
         onError: (error) => {
@@ -438,7 +443,7 @@ export const useAgentChat = (chatHook: any, setIconPosition: any, agentConfig: U
             }
         }
 
-        await agentActions.executeActions(parsed, setIconPosition);
+        await agentActions.executeActions(parsed);
         chatHook.addAssistantMessage(parsed.reasoning);
 
     }, [agentActions]);

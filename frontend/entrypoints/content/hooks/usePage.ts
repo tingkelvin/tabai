@@ -3,6 +3,7 @@ import { PageState, PageConfig } from '../types/page';
 import { removeHighlights, getClickableElementsFromDomTree, locateElement } from '../services/DomTreeService';
 import { highlightElement } from '../utils/domUtils';
 import { onMessage } from '@/entrypoints/background/types/messages';
+import { getClickableElements, getClickableElementsHashes, hashDomElement } from '../services/DomService';
 
 interface UsePageReturn {
     // State
@@ -16,30 +17,9 @@ interface UsePageReturn {
     getElementAtCoordinate: (x: number, y: number) => Promise<void>;
 
     // Actions
-    updateState: () => void;
+    updatePageState: () => void;
     waitForPageStable: (options?: { timeout?: number; stabilityDelay?: number }) => Promise<boolean>;
 }
-
-// Helper function to deep compare page states
-const hasPageStateChanged = (oldState: PageState | null, newState: PageState): boolean => {
-    if (!oldState) return true;
-
-    // Check basic properties
-    if (oldState.url !== newState.url || oldState.title !== newState.title) {
-        return true;
-    }
-
-    // Check DOM snapshot changes
-    if (!oldState.domSnapshot || !newState.domSnapshot) {
-        return oldState.domSnapshot !== newState.domSnapshot;
-    }
-
-    // Compare DOM tree structure (you might want to implement a more sophisticated comparison)
-    const oldDomString = oldState.domSnapshot.root.clickableElementsToString();
-    const newDomString = newState.domSnapshot.root.clickableElementsToString();
-
-    return oldDomString !== newDomString;
-};
 
 export const usePage = (config?: PageConfig): UsePageReturn => {
     const [pageState, setPageState] = useState<PageState | null>(null);
@@ -53,8 +33,10 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
     const lastUpdateRef = useRef<number>(0);
     const mutationObserverRef = useRef<MutationObserver | null>(null);
     const stabilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const cachedStateClickableElementsHashes = useRef<Set<string>>(null);
 
-    const updateState = useCallback(async () => {
+
+    const updatePageState = useCallback(async () => {
         if (isUpdatingRef.current) {
             return;
         }
@@ -78,9 +60,27 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
                 screenshot: null
             };
 
+            const updatedStateClickableElements = getClickableElements(root);
+
+            let pageHasChanged = false;
+
+            if (cachedStateClickableElementsHashes.current) {
+                for (const domElement of updatedStateClickableElements) {
+                    const hash = await hashDomElement(domElement);
+                    domElement.isNew = !cachedStateClickableElementsHashes.current.has(hash);
+                    if (domElement.isNew) {
+                        pageHasChanged = true
+                    }
+                }
+            } else {
+                setPageState(newPageState);
+            }
+            cachedStateClickableElementsHashes.current = await getClickableElementsHashes(root)
+
             // Only update state if there are actual changes
-            if (hasPageStateChanged(pageState, newPageState)) {
+            if (pageHasChanged) {
                 console.log('[usePage] Page state changes detected, updating state');
+                console.log(pageState?.domSnapshot?.selectorMap)
                 setPageState(newPageState);
             } else {
                 console.log('[usePage] No changes detected, skipping state update');
@@ -121,7 +121,7 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
         timeout?: number;
         stabilityDelay?: number
     }): Promise<boolean> => {
-        const { timeout = 5000, stabilityDelay = 1000 } = options || {};
+        const { timeout = 1000, stabilityDelay = 1000 } = options || {};
 
         console.log(`[usePage] Starting page stability check - timeout: ${timeout}ms, stabilityDelay: ${stabilityDelay}ms`);
 
@@ -235,7 +235,7 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
                 return;
             }
             hasInitialScanRef.current = true;
-            await updateState();
+            await updatePageState();
         }, 500);
 
         return () => {
@@ -250,13 +250,13 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
                 mutationObserverRef.current.disconnect();
             }
         };
-    }, [updateState]);
+    }, [updatePageState]);
 
     // Option 2: Create a separate function that gets fresh state
     const getPageStateString = useCallback(async (): Promise<string> => {
         try {
             // Force update first
-            await updateState();
+            await updatePageState();
 
             // Get fresh DOM tree data directly (don't rely on React state)
             const { root } = await getClickableElementsFromDomTree();
@@ -267,7 +267,7 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
             console.error('Error getting page state string:', error);
             return "";
         }
-    }, [updateState]);
+    }, [updatePageState]);
 
     useEffect(() => {
         onMessage('getPageStateAsString', getPageStateString);
@@ -280,7 +280,7 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
         isWaitingForStability,
 
         // Actions
-        updateState,
+        updatePageState,
         waitForPageStable,
 
         // Getters
