@@ -103,7 +103,6 @@ export default defineBackground(() => {
 
   // Chat handler - now with proper state management
   onMessage('chat', async ({ data: { message } }) => {
-    await stateManager.setThinking(true);
     console.log('💬 Starting chat process:', message);
     const state = await stateManager.getState()
     const { useSearch, useAgent, actionsExecuted } = state
@@ -112,10 +111,14 @@ export default defineBackground(() => {
       await stateManager.setTask(message);
     }
 
+
+
     const messageToSend: string = PromptBuilder.buildMessage(message, state)
 
     try {
       // Set thinking state
+      await stateManager.setThinking(true);
+
       // Process the chat
       const result = await withAuth(async () => {
         return await ChatManager.sendMessage(messageToSend, { useSearch });

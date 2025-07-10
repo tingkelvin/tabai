@@ -149,11 +149,10 @@ export const useAppState = () => {
     }, []);
 
     useEffect(() => {
+        console.log('👂 [AppState] Setting up message listener for state updates');
         onMessage('updateAppState', (message) => {
             setState(message.data); // Direct AppState object
         });
-
-        onMessage('getAppState', () => { return state })
     }, []);
 
     // Cleanup on unmount

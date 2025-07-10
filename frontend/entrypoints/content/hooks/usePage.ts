@@ -19,7 +19,6 @@ interface UsePageReturn {
     // Actions
     updatePageState: () => void;
     waitForPageStable: (options?: { timeout?: number; stabilityDelay?: number }) => Promise<boolean>;
-    getPageStateString: () => Promise<string>;
 }
 
 export const usePage = (config?: PageConfig): UsePageReturn => {
@@ -270,6 +269,10 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
         }
     }, [updatePageState]);
 
+    useEffect(() => {
+        onMessage('getPageStateAsString', getPageStateString);
+    }, []);
+
     return {
         // State
         pageState,
@@ -284,6 +287,5 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
         getCurrentUrl,
         getCurrentTitle,
         getElementAtCoordinate,
-        getPageStateString
     };
 };
