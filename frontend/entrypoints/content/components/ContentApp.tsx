@@ -86,6 +86,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
   const { getElementAtCoordinate, updateAndGetPageState } = usePage({
     onPageChanged: async (newPageState) => {
+      if (!isInitialized) return; // Don't update if not initialized
       const pageStateAsString = newPageState.domSnapshot?.root.clickableElementsToString() || ""
       await updateState({ pageStateAsString })
       if (newPageState.domSnapshot?.selectorMap)
