@@ -32,15 +32,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     height: WIDGET_CONFIG.DEFAULT_HEIGHT,
   })
 
-  // Page hooks
-  const { getElementAtCoordinate, updateAndGetPageState } = usePage({
-    onPageChanged: async (newPageState) => {
-      const pageStateAsString = newPageState.domSnapshot?.root.clickableElementsToString() || ""
-      updateState({ pageStateAsString })
-      // Handle the page change here
-    }
-  });
-
   // File hooks
   const {
     uploadedFiles,
@@ -84,13 +75,23 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   })
 
   // And update your agent hook to handle undefined pageState
-  const { processAgentReply } = useAgentChat(chatHook, {
+  const { processAgentReply, setSelectorMap } = useAgentChat(chatHook, {
     setIconPosition: (position: Position) => {
       setIconPosition(position)
     },
     onActionExecuted: async (action: AgentAction) => {
       actionsExecuted.push(action)
     },
+  });
+
+  const { getElementAtCoordinate, updateAndGetPageState } = usePage({
+    onPageChanged: async (newPageState) => {
+      const pageStateAsString = newPageState.domSnapshot?.root.clickableElementsToString() || ""
+      await updateState({ pageStateAsString })
+      if (newPageState.domSnapshot?.selectorMap)
+        setSelectorMap(newPageState.domSnapshot?.selectorMap)
+      // Handle the page change here
+    }
   });
   // Complex orchestrated send message
   const handleSendMessage = useCallback(async (message: string) => {
@@ -106,13 +107,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         const { pageState, isNew } = await updateAndGetPageState()
         // await new Promise(resolve => setTimeout(resolve, 1000));
 
-        if (!pageState) {
-          console.error("Empty page state")
-          return
-        }
-
-        console.log("------------------", pageState)
-
         isSendingMessage.current = true
         const reply = await sendMessage(message);
         isSendingMessage.current = false
@@ -121,7 +115,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
           addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
         } else {
           console.log('🤖 Processing agent response:', reply);
-          processAgentReply(reply, pageState);
+          processAgentReply(reply);
         }
       } else {
         const reply = await sendMessage(message);
@@ -146,7 +140,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   ]);
 
   useEffect(() => {
-    console.log("useEffect", isInitialized)
     const handlePageStateChange = async () => {
       console.log("handlePageState", task, useAgent)
       if (useAgent && task && !isSendingMessage.current) {
@@ -161,7 +154,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
             console.error("Empty page state")
             return
           }
-          processAgentReply(reply, pageState);
+          processAgentReply(reply);
         }
       }
 

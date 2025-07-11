@@ -118,14 +118,11 @@ export interface PageState {
     timestamp: number;
 }
 
-// Default configuration
-export const DEFAULT_PAGE_CONFIG: PageConfig = {
-    viewportExpansion: 0,
-    allowedUrls: [],
-    deniedUrls: [],
-    includeDynamicAttributes: true,
-    homePageUrl: 'https://www.google.com',
-    displayHighlights: true,
-    timeout: 10000,
+export const defaultPageState: PageState = {
+    url: '',
+    title: '',
+    screenshot: null,
+    domSnapshot: null,
+    timestamp: 0
 };
 

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { PageState } from '../types/page';
+import { PageState, defaultPageState } from '../types/page';
 import { removeHighlights, getClickableElementsFromDomTree, locateElement } from '../services/DomTreeService';
 import { highlightElement } from '../utils/domUtils';
 import { onMessage } from '@/entrypoints/background/types/messages';
@@ -14,7 +14,7 @@ interface UsePageReturn {
     getElementAtCoordinate: (x: number, y: number) => Promise<void>;
 
     // Actions
-    updateAndGetPageState: () => Promise<{ pageState: PageState | null, isNew: boolean }>;
+    updateAndGetPageState: () => Promise<{ pageState: PageState, isNew: boolean }>;
     waitForPageStable: (options?: { timeout?: number; stabilityDelay?: number }) => Promise<boolean>;
 }
 
@@ -23,7 +23,7 @@ interface UsePageConfig {
 }
 
 export const usePage = (config?: UsePageConfig): UsePageReturn => {
-    const pageStateRef = useRef<PageState | null>(null);
+    const pageStateRef = useRef<PageState>(defaultPageState);
     const [isWaitingForStability, setIsWaitingForStability] = useState(false);
 
     // Refs for tracking page stability and debouncing
@@ -35,7 +35,7 @@ export const usePage = (config?: UsePageConfig): UsePageReturn => {
     const stabilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const cachedStateClickableElementsHashes = useRef<Set<string>>(null);
 
-    const updateAndGetPageState = useCallback(async (): Promise<{ pageState: PageState | null, isNew: boolean }> => {
+    const updateAndGetPageState = useCallback(async (): Promise<{ pageState: PageState, isNew: boolean }> => {
         isUpdatingRef.current = true;
         removeHighlights();
         lastUpdateRef.current = Date.now();
@@ -227,51 +227,6 @@ export const usePage = (config?: UsePageConfig): UsePageReturn => {
                 }
             };
         });
-    }, []);
-
-    // Perform initial scan and setup monitoring
-    useEffect(() => {
-        const timer = setTimeout(async () => {
-            if (hasInitialScanRef.current) {
-                return;
-            }
-            hasInitialScanRef.current = true;
-            await updateAndGetPageState();
-        }, 500);
-
-        return () => {
-            clearTimeout(timer);
-            if (updateTimeoutRef.current) {
-                clearTimeout(updateTimeoutRef.current);
-            }
-            if (stabilityTimeoutRef.current) {
-                clearTimeout(stabilityTimeoutRef.current);
-            }
-            if (mutationObserverRef.current) {
-                mutationObserverRef.current.disconnect();
-            }
-        };
-    }, [updateAndGetPageState]);
-
-    // Option 2: Create a separate function that gets fresh state
-    const getPageStateString = useCallback(async (): Promise<string> => {
-        try {
-            // Force update first
-            await updateAndGetPageState();
-
-            // Get fresh DOM tree data directly (don't rely on React state)
-            const { root } = await getClickableElementsFromDomTree();
-            const result = root.clickableElementsToString();
-
-            return result;
-        } catch (error) {
-            console.error('Error getting page state string:', error);
-            return "";
-        }
-    }, [updateAndGetPageState]);
-
-    useEffect(() => {
-        onMessage('getPageStateAsString', getPageStateString);
     }, []);
 
     return {

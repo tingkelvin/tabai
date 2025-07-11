@@ -1,14 +1,10 @@
 // hooks/useAgentActions.ts
 import { useCallback, useRef, useEffect } from 'react';
-import { PageState } from '../types/page';
-
-import { removeHighlights, getClickableElementsFromDomTree, locateElement } from '../services/DomTreeService';
-
+import { removeHighlights, locateElement } from '../services/DomTreeService';
 import { highlightElement } from '../utils/domUtils';
 import { ElementDomNode } from '../types/dom/DomNode';
 import { AgentResponse } from '../utils/prompMessages';
 import { Position } from '../types';
-import { onMessage } from '@/entrypoints/background/types/messages';
 
 export interface AgentAction {
     id: number;
@@ -20,7 +16,7 @@ export interface UseAgentActionsConfig {
     onActionExecuted?: (action: AgentAction) => Promise<void>;
     setIconPosition?: (position: Position) => void;
     onError?: (error: string) => void;
-    actionDelay?: number; // Delay between actions in ms
+    actionDelay?: number;
 }
 
 export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
@@ -35,24 +31,29 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
     const currentActionIndexRef = useRef(0);
     const actionsQueueRef = useRef<AgentAction[]>([]);
     const keyListenerRef = useRef<((event: KeyboardEvent) => void) | null>(null);
-    const pageStateRef = useRef<PageState | null>(null);
+    const selectorMapRef = useRef<Map<number, ElementDomNode> | null>(null);
 
     // Execute a single action
-    const executeAction = useCallback(async (action: AgentAction, pageState: PageState): Promise<boolean> => {
+    const executeAction = useCallback(async (action: AgentAction): Promise<boolean> => {
         const { id, type, value } = action;
+
+        if (!selectorMapRef.current) {
+            console.error('No selector map available');
+            return false;
+        }
+
         try {
-            // Use the passed pageState instead of getCurrentPageState()
-            const elementDomNode: ElementDomNode | undefined = pageState?.domSnapshot?.selectorMap.get(id);
+            const elementDomNode: ElementDomNode | undefined = selectorMapRef.current.get(id);
             if (!elementDomNode) {
-                console.log(pageState?.domSnapshot?.selectorMap)
-                console.warn(`Element with id ${id} not found in page`);
+                console.log('Available selector map keys:', Array.from(selectorMapRef.current.keys()));
+                console.warn(`Element with id ${id} not found in selector map`);
                 return false;
             }
 
-            const element: Element | null = await locateElement(elementDomNode)
+            const element: Element | null = await locateElement(elementDomNode);
 
             if (!element) {
-                console.warn(`Cannot locate element with id ${id} in page`);
+                console.warn(`Cannot locate element with id ${id} in DOM`);
                 return false;
             }
 
@@ -61,25 +62,22 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
             const left = Math.round(rect.left);
             setIconPosition?.({ top, left });
 
-            if (type == 'fill' || type == 'select')
-                highlightElement(id, element, `${type} with '${value}'`)
-            else
-                highlightElement(id, element, 'click')
+            // Highlight element with action info
+            if (type === 'fill' || type === 'select') {
+                highlightElement(id, element, `${type} with '${value}'`);
+            } else {
+                highlightElement(id, element, 'click');
+            }
 
             switch (type) {
                 case 'click':
                     console.log(`🤖 Clicking element ${id}`);
-
-                    // Ensure element is HTMLElement for click functionality
                     if (element instanceof HTMLElement) {
                         try {
-                            // Method 1: Standard click
                             element.click();
                         } catch (clickError) {
                             console.warn('Standard click failed, trying alternative methods:', clickError);
-
                             try {
-                                // Method 2: Dispatch click event
                                 const clickEvent = new MouseEvent('click', {
                                     bubbles: true,
                                     cancelable: true,
@@ -88,8 +86,6 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
                                 element.dispatchEvent(clickEvent);
                             } catch (eventError) {
                                 console.warn('Event dispatch failed, trying focus method:', eventError);
-
-                                // Method 3: Focus and trigger
                                 element.focus();
                                 element.click();
                             }
@@ -105,7 +101,6 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
                         console.log(`🤖 Filling element ${id} with: ${value}`);
                         if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
                             element.value = value;
-                            // Trigger input event for React compatibility
                             element.dispatchEvent(new Event('input', { bubbles: true }));
                             element.dispatchEvent(new Event('change', { bubbles: true }));
                         } else {
@@ -138,8 +133,8 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
                     console.warn(`Unknown action type: ${type}`);
                     return false;
             }
-            onActionExecuted?.(action);
 
+            onActionExecuted?.(action);
             return true;
 
         } catch (error) {
@@ -151,36 +146,35 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
     }, [onActionExecuted, setIconPosition, onError]);
 
     // Show current action (highlight but don't execute)
-    const showCurrentAction = useCallback(async (pageState: PageState) => {
+    const showCurrentAction = useCallback(async () => {
         const currentIndex = currentActionIndexRef.current;
         const actions = actionsQueueRef.current;
 
         if (currentIndex >= actions.length) {
             console.log('🤖 All actions completed');
-            // Clean up
-            if (keyListenerRef.current) {
-                document.removeEventListener('keydown', keyListenerRef.current);
-                keyListenerRef.current = null;
-            }
-            isExecutingRef.current = false;
+            cleanup();
             return;
         }
 
         const action = actions[currentIndex];
         const { id, type, value } = action;
 
+        if (!selectorMapRef.current) {
+            console.error('No selector map available');
+            return;
+        }
+
         try {
-            // Use passed pageState instead of getCurrentPageState()
-            const elementDomNode: ElementDomNode | undefined = pageState?.domSnapshot?.selectorMap.get(id);
+            const elementDomNode: ElementDomNode | undefined = selectorMapRef.current.get(id);
             if (!elementDomNode) {
-                console.warn(`Element with id ${id} not found in page`);
+                console.warn(`Element with id ${id} not found in selector map`);
                 return;
             }
 
             const element: Element | null = await locateElement(elementDomNode);
 
             if (!element) {
-                console.warn(`Cannot locate element with id ${id} in page`);
+                console.warn(`Cannot locate element with id ${id} in DOM`);
                 return;
             }
 
@@ -191,7 +185,6 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
 
             removeHighlights();
 
-            // Highlight the element but don't execute
             if (type === 'fill' || type === 'select') {
                 highlightElement(id, element, `${type} with '${value}'`);
             } else {
@@ -207,41 +200,31 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
     }, [setIconPosition]);
 
     // Execute current action and move to next
-    const executeCurrentActionAndMoveNext = useCallback(async (pageState: PageState) => {
+    const executeCurrentActionAndMoveNext = useCallback(async () => {
         const currentIndex = currentActionIndexRef.current;
         const actions = actionsQueueRef.current;
 
         if (currentIndex >= actions.length) {
             console.log('🤖 All actions completed');
-            // Clean up
-            if (keyListenerRef.current) {
-                document.removeEventListener('keydown', keyListenerRef.current);
-                keyListenerRef.current = null;
-            }
-            isExecutingRef.current = false;
+            cleanup();
             return;
         }
 
         const action = actions[currentIndex];
         console.log(`🤖 Executing action ${currentIndex + 1}/${actions.length}:`, action);
 
-        // Execute the current action with pageState
-        await executeAction(action, pageState);
+        // Execute the current action
+        await executeAction(action);
+
         // Move to next action
         currentActionIndexRef.current = currentIndex + 1;
 
         // Check if there are more actions
         if (currentActionIndexRef.current < actions.length) {
-            // Show the next action but don't execute it
-            await showCurrentAction(pageState);
+            await showCurrentAction();
         } else {
             console.log('🤖 All actions completed');
-            // Clean up
-            if (keyListenerRef.current) {
-                document.removeEventListener('keydown', keyListenerRef.current);
-                keyListenerRef.current = null;
-            }
-            isExecutingRef.current = false;
+            cleanup();
         }
     }, [executeAction, showCurrentAction]);
 
@@ -254,9 +237,9 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
 
         // Create new listener
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Tab' && pageStateRef.current) {
-                event.preventDefault(); // Prevent default tab behavior
-                executeCurrentActionAndMoveNext(pageStateRef.current);
+            if (event.key === 'Tab') {
+                event.preventDefault();
+                executeCurrentActionAndMoveNext();
             }
         };
 
@@ -264,8 +247,18 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         document.addEventListener('keydown', handleKeyDown);
     }, [executeCurrentActionAndMoveNext]);
 
+    // Set the selector map for use by all actions
+    const setSelectorMap = useCallback((selectorMap: Map<number, ElementDomNode>) => {
+        if (!selectorMap || selectorMap.size === 0) {
+            console.warn('Setting empty or invalid selector map');
+        }
+
+        selectorMapRef.current = selectorMap;
+        console.log(`🤖 Selector map updated with ${selectorMap?.size || 0} elements`);
+    }, []);
+
     // Execute multiple actions sequentially with Tab navigation
-    const executeActions = useCallback(async (agentResponse: AgentResponse, pageState: PageState): Promise<{
+    const executeActions = useCallback(async (agentResponse: AgentResponse): Promise<{
         success: boolean;
         executedCount: number;
         totalCount: number;
@@ -276,10 +269,12 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
             return { success: false, executedCount: 0, totalCount: 0 };
         }
 
-        isExecutingRef.current = true;
+        if (!selectorMapRef.current || selectorMapRef.current.size === 0) {
+            console.error('No selector map available. Call setSelectorMap() first.');
+            return { success: false, executedCount: 0, totalCount: 0 };
+        }
 
-        // Store pageState in ref for keyboard listener
-        pageStateRef.current = pageState;
+        isExecutingRef.current = true;
 
         let reasoning = '';
 
@@ -294,19 +289,19 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
 
             console.log('🤖 Agent reasoning:', reasoning);
             console.log(`🤖 Starting sequential execution of ${actions.length} actions`);
+            console.log(`🤖 Using selector map with ${selectorMapRef.current.size} elements`);
 
             // Setup keyboard listener
             setupKeyboardListener();
 
             // Show the first action (but don't execute it)
             if (actions.length > 0) {
-                await showCurrentAction(pageState);
+                await showCurrentAction();
             }
 
-            // Return initial state
             return {
                 success: true,
-                executedCount: 0, // No actions executed yet
+                executedCount: 0,
                 totalCount: actions.length,
                 reasoning
             };
@@ -315,13 +310,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
             const errorMsg = `Failed to parse or execute agent actions: ${error}`;
             console.error(errorMsg);
             onError?.(errorMsg);
-
-            // Clean up on error
-            if (keyListenerRef.current) {
-                document.removeEventListener('keydown', keyListenerRef.current);
-                keyListenerRef.current = null;
-            }
-            isExecutingRef.current = false;
+            cleanup();
 
             return {
                 success: false,
@@ -331,6 +320,18 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
             };
         }
     }, [setupKeyboardListener, onError, showCurrentAction]);
+
+    // Cleanup function
+    const cleanup = useCallback(() => {
+        if (keyListenerRef.current) {
+            document.removeEventListener('keydown', keyListenerRef.current);
+            keyListenerRef.current = null;
+        }
+        isExecutingRef.current = false;
+        currentActionIndexRef.current = 0;
+        actionsQueueRef.current = [];
+        selectorMapRef.current = null;
+    }, []);
 
     // Check if actions are currently executing
     const isExecuting = useCallback(() => isExecutingRef.current, []);
@@ -344,17 +345,15 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
 
     // Move to next action (kept for backward compatibility)
     const moveToNextAction = useCallback(async () => {
-        if (pageStateRef.current) {
-            await executeCurrentActionAndMoveNext(pageStateRef.current);
-        }
+        await executeCurrentActionAndMoveNext();
     }, [executeCurrentActionAndMoveNext]);
 
     // Validate if an action can be executed
-    const validateAction = useCallback((action: AgentAction, pageState: PageState): boolean => {
+    const validateAction = useCallback((action: AgentAction, selectorMap: Map<number, ElementDomNode>): boolean => {
         const { id, type, value } = action;
 
-        // Check if element exists in pageState
-        const elementDomNode = pageState?.domSnapshot?.selectorMap.get(id);
+        // Check if element exists in selector map
+        const elementDomNode = selectorMap.get(id);
         if (!elementDomNode) {
             return false;
         }
@@ -376,24 +375,13 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         }
     }, []);
 
-    // Cleanup function
-    const cleanup = useCallback(() => {
-        if (keyListenerRef.current) {
-            document.removeEventListener('keydown', keyListenerRef.current);
-            keyListenerRef.current = null;
-        }
-        isExecutingRef.current = false;
-        currentActionIndexRef.current = 0;
-        actionsQueueRef.current = [];
-        pageStateRef.current = null;
-    }, []);
-
     // Effect for cleanup on unmount
     useEffect(() => {
         return cleanup;
     }, [cleanup]);
 
     return {
+        setSelectorMap,
         executeAction,
         executeActions,
         validateAction,
@@ -404,7 +392,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
     };
 };
 
-// Optional: Higher-level hook that combines chat and agent actions
+// Higher-level hook that combines chat and agent actions
 export const useAgentChat = (chatHook: any, agentConfig: UseAgentActionsConfig = {}) => {
     const agentActions = useAgentActions({
         ...agentConfig,
@@ -414,7 +402,8 @@ export const useAgentChat = (chatHook: any, agentConfig: UseAgentActionsConfig =
         }
     });
 
-    const processAgentReply = useCallback(async (reply: string, pageState: PageState) => {
+    const processAgentReply = useCallback(async (reply: string) => {
+        // Set the selector map first
         const cleanReply = reply
             .replace(/```json\s*/g, '')
             .replace(/```\s*/g, '')
@@ -442,7 +431,7 @@ export const useAgentChat = (chatHook: any, agentConfig: UseAgentActionsConfig =
             }
         }
 
-        await agentActions.executeActions(parsed, pageState);
+        await agentActions.executeActions(parsed);
         chatHook.addAssistantMessage(parsed.reasoning);
 
     }, [agentActions]);

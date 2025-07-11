@@ -9,21 +9,9 @@ export const stateManager = {
     // Get current state
     getState: async (tabId?: number): Promise<AppState> => {
         try {
-            // If tabId is provided, get state from that specific tab
-            // if (tabId) {
-            //     stateManager.state.pageStateAsString = await sendMessage('getPageStateAsString', undefined, tabId) || "";
-            // } else {
-            //     // Get from active tab if no tabId specified
-            //     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-            //     const activeTabId = tabs[0]?.id;
-            //     if (activeTabId) {
-            //         stateManager.state.pageStateAsString = await sendMessage('getPageStateAsString', undefined, activeTabId) || "";
-            //     }
-            // }
             return stateManager.state;
         } catch (error) {
             console.error('Error getting page state:', error);
-            stateManager.state.pageStateAsString = "";
             return stateManager.state;
         }
     },
