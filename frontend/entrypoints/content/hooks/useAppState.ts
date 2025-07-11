@@ -1,6 +1,7 @@
+// useAppState.ts
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { AppState, defaultAppState } from '@/common/types/AppState';
-import { Position } from '../types';
 import { sendMessage, onMessage } from '@/entrypoints/background/types/messages';
 
 // Load state from memory
@@ -67,17 +68,23 @@ export const useAppState = () => {
     };
 
     const saveTimeoutRef = useRef<NodeJS.Timeout>(null);
+
     // Update state with automatic saving
     const updateState = useCallback(async (updates: Partial<AppState>) => {
-        const newState = {
-            ...state, // Get current state
-            ...updates,
-            lastUpdated: Date.now(),
-        };
+        let newState: AppState;
 
-        setState(newState);
-        await saveState(newState); // Now properly awaited
-    }, [state]);
+        setState(prevState => {
+            console.log("current state before", prevState);
+            newState = {
+                ...prevState,
+                ...updates,
+                lastUpdated: Date.now(),
+            };
+            return newState;
+        });
+
+        await saveState(newState!);
+    }, []);
 
     // Clear state
     const clearState = useCallback(() => {

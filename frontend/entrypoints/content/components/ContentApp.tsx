@@ -23,7 +23,6 @@ import { Position } from '../types/widget'
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null)
-  const isSendingMessage = useRef<boolean>(false);
   const { state, isInitialized, updateState } = useAppState();
   const { chatMessages, isThinking, useSearch, useAgent, task, actionsExecuted } = state;
 
@@ -95,32 +94,21 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   });
   // Complex orchestrated send message
   const handleSendMessage = useCallback(async (message: string) => {
-    console.log('🎬 Starting orchestrated message flow');
-
-    addUserMessage(message)
     try {
       // 5. Process response
       if (useAgent) {
-
-        console.log("using agent")
         setIsMinimized(true)
-        const { pageState, isNew } = await updateAndGetPageState()
+        await updateAndGetPageState()
         // await new Promise(resolve => setTimeout(resolve, 1000));
-
-        isSendingMessage.current = true
         const reply = await sendMessage(message);
-        isSendingMessage.current = false
         // Parse agent response
         if (!reply) {
           addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
         } else {
-          console.log('🤖 Processing agent response:', reply);
           processAgentReply(reply);
         }
       } else {
-        const reply = await sendMessage(message);
-        // Regular chat mode
-        addAssistantMessage(reply);
+        await sendMessage(message);
       }
     } catch (error) {
       console.error('❌ Orchestration error:', error);
@@ -141,19 +129,12 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
   useEffect(() => {
     const handlePageStateChange = async () => {
-      console.log("handlePageState", task, useAgent)
-      if (useAgent && task && !isSendingMessage.current) {
-        const { pageState, isNew } = await updateAndGetPageState()
+      if (useAgent && task) {
+        await updateAndGetPageState()
         const reply = await sendMessage(task);
         if (!reply) {
           addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
         } else {
-          console.log('🤖 Processing agent response:', reply);
-
-          if (!pageState) {
-            console.error("Empty page state")
-            return
-          }
           processAgentReply(reply);
         }
       }
@@ -178,12 +159,10 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   // Toggle handlers
   const toggleWebSearch = useCallback(() => {
     updateState({ useSearch: !useSearch });
-    console.log('Web search toggled:', !useSearch);
   }, [useSearch]);
 
   const toggleAgent = useCallback(() => {
     updateState({ useAgent: !useAgent });
-    console.log('Agent toggled:', !useAgent);
   }, [useAgent]);
 
   // File upload handler
