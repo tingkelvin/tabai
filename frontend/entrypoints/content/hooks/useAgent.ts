@@ -330,7 +330,6 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         isExecutingRef.current = false;
         currentActionIndexRef.current = 0;
         actionsQueueRef.current = [];
-        selectorMapRef.current = null;
     }, []);
 
     // Check if actions are currently executing

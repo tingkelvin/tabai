@@ -75,7 +75,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   })
 
   // And update your agent hook to handle undefined pageState
-  const { processAgentReply, setSelectorMap } = useAgentChat(chatHook, {
+  const { processAgentReply, setSelectorMap, isExecuting, cleanup } = useAgentChat(chatHook, {
     setIconPosition: (position: Position) => {
       setIconPosition(position)
     },
@@ -101,9 +101,9 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     try {
       // 5. Process response
       if (useAgent) {
-
-        console.log("using agent")
         setIsMinimized(true)
+
+        if (isExecuting()) cleanup()
         await updateAndGetPageState()
         // await new Promise(resolve => setTimeout(resolve, 1000));
 
