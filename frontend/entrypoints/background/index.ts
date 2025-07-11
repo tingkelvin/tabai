@@ -6,6 +6,7 @@ import { isValidPage } from './utils/pageUtils';
 
 import stateManager from './managers/stateManager';
 import { PromptBuilder } from './utils/prompMessages';
+import { MESSAGE_TYPES } from '../content/utils/constant';
 
 const extensionStorage = storage.defineItem<boolean>('sync:extensionEnabled');
 
@@ -104,6 +105,17 @@ export default defineBackground(() => {
   // Chat handler - now with proper state management
   onMessage('chat', async ({ data: { message } }) => {
     console.log('💬 Starting chat process:', message);
+
+    // Add user message to chat and set thinking to true simultaneously
+    await stateManager.updateState({
+      isThinking: true,
+      chatMessages: [...stateManager.state.chatMessages, {
+        id: `msg-${Date.now()}`,
+        type: MESSAGE_TYPES.USER,
+        content: message,
+        timestamp: Date.now()
+      }]
+    });
     const state = await stateManager.getState()
     const { useSearch, useAgent, actionsExecuted } = state
 
@@ -111,29 +123,29 @@ export default defineBackground(() => {
       await stateManager.setTask(message);
     }
 
-
-
     const messageToSend: string = PromptBuilder.buildMessage(message, state)
 
     try {
-      // Set thinking state
-      await stateManager.setThinking(true);
-
       // Process the chat
       const result = await withAuth(async () => {
         return await ChatManager.sendMessage(messageToSend, { useSearch });
       });
 
-      // Clear thinking state
-      await stateManager.setThinking(false);
+      await stateManager.addChatMessage({
+        id: `msg-${Date.now()}`,
+        type: MESSAGE_TYPES.ASSISTANT,
+        content: (await result).data?.reply.trim(),
+        timestamp: Date.now()
+      });
+
       console.log('✅ Chat completed successfully');
       return result;
 
     } catch (error) {
-      // Make sure to clear thinking state on error
-      await stateManager.setThinking(false);
       console.error('❌ Chat failed:', error);
       throw error;
+    } finally {
+      await stateManager.setThinking(false);
     }
   });
 

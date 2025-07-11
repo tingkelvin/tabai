@@ -98,14 +98,13 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const handleSendMessage = useCallback(async (message: string) => {
     console.log('🎬 Starting orchestrated message flow');
 
-    addUserMessage(message)
     try {
       // 5. Process response
       if (useAgent) {
 
         console.log("using agent")
         setIsMinimized(true)
-        const { pageState, isNew } = await updateAndGetPageState()
+        await updateAndGetPageState()
         // await new Promise(resolve => setTimeout(resolve, 1000));
 
         isSendingMessage.current = true
@@ -119,9 +118,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
           processAgentReply(reply);
         }
       } else {
-        const reply = await sendMessage(message);
-        // Regular chat mode
-        addAssistantMessage(reply);
+        await sendMessage(message);
       }
     } catch (error) {
       console.error('❌ Orchestration error:', error);
