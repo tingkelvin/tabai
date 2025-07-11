@@ -24,7 +24,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const fileInputRef = useRef<HTMLInputElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null)
   const isSendingMessage = useRef<boolean>(false);
-  const { state, updateModeState, updateFileState, isInitialized } = useAppState();
+  const { state, isInitialized, updateState } = useAppState();
   const { chatMessages, isThinking, useSearch, useAgent, task, actionsExecuted } = state;
 
   const [widgetSize, setWidgetSize] = useState({
@@ -33,7 +33,13 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   })
 
   // Page hooks
-  const { pageState, getElementAtCoordinate, updatePageState, isScanning } = usePage()
+  const { getElementAtCoordinate, updateAndGetPageState } = usePage({
+    onPageChanged: async (newPageState) => {
+      const pageStateAsString = newPageState.domSnapshot?.root.clickableElementsToString() || ""
+      updateState({ pageStateAsString })
+      // Handle the page change here
+    }
+  });
 
   // File hooks
   const {
@@ -77,17 +83,13 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     onSizeChange: setWidgetSize
   })
 
-  // Agent hook
+  // And update your agent hook to handle undefined pageState
   const { processAgentReply } = useAgentChat(chatHook, {
-    pageState,
     setIconPosition: (position: Position) => {
-      console.log(pageState?.domSnapshot?.root.clickableElementsToString())
       setIconPosition(position)
     },
     onActionExecuted: async (action: AgentAction) => {
-      updatePageState()
       actionsExecuted.push(action)
-      console.log(pageState?.domSnapshot?.root.clickableElementsToString())
     },
   });
   // Complex orchestrated send message
@@ -98,8 +100,19 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     try {
       // 5. Process response
       if (useAgent) {
+
         console.log("using agent")
         setIsMinimized(true)
+        const { pageState, isNew } = await updateAndGetPageState()
+        // await new Promise(resolve => setTimeout(resolve, 1000));
+
+        if (!pageState) {
+          console.error("Empty page state")
+          return
+        }
+
+        console.log("------------------", pageState)
+
         isSendingMessage.current = true
         const reply = await sendMessage(message);
         isSendingMessage.current = false
@@ -108,7 +121,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
           addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
         } else {
           console.log('🤖 Processing agent response:', reply);
-          processAgentReply(reply);
+          processAgentReply(reply, pageState);
         }
       } else {
         const reply = await sendMessage(message);
@@ -123,33 +136,35 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     chatInput,
     useAgent,
     useSearch,
-    pageState,
     isMinimized,
     setIsMinimized,
     addUserMessage,
     addAssistantMessage,
     sendMessage,
-
     processAgentReply,
-    updatePageState
+    updateAndGetPageState
   ]);
 
   useEffect(() => {
     console.log("useEffect", isInitialized)
     const handlePageStateChange = async () => {
       console.log("handlePageState", task, useAgent)
-      if (pageState) {
-        updatePageState()
-        if (useAgent && task && !isSendingMessage.current) {
-          const reply = await sendMessage(task);
-          if (!reply) {
-            addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
-          } else {
-            console.log('🤖 Processing agent response:', reply);
-            processAgentReply(reply);
+      if (useAgent && task && !isSendingMessage.current) {
+        const { pageState, isNew } = await updateAndGetPageState()
+        const reply = await sendMessage(task);
+        if (!reply) {
+          addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
+        } else {
+          console.log('🤖 Processing agent response:', reply);
+
+          if (!pageState) {
+            console.error("Empty page state")
+            return
           }
+          processAgentReply(reply, pageState);
         }
       }
+
     };
     if (isInitialized)
       handlePageStateChange();
@@ -169,12 +184,12 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
   // Toggle handlers
   const toggleWebSearch = useCallback(() => {
-    updateModeState({ useSearch: !useSearch });
+    updateState({ useSearch: !useSearch });
     console.log('Web search toggled:', !useSearch);
   }, [useSearch]);
 
   const toggleAgent = useCallback(() => {
-    updateModeState({ useAgent: !useAgent });
+    updateState({ useAgent: !useAgent });
     console.log('Agent toggled:', !useAgent);
   }, [useAgent]);
 
@@ -186,7 +201,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     try {
       await handleFileUpload(file);
       event.target.value = ''; // Clear input
-      updateFileState({ fileContentAsString })
+      updateState({ fileContentAsString })
     } catch (error) {
       console.error('File upload failed:', error);
     }

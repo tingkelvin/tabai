@@ -17,7 +17,6 @@ export interface AgentAction {
 }
 
 export interface UseAgentActionsConfig {
-    pageState?: PageState | null;
     onActionExecuted?: (action: AgentAction) => Promise<void>;
     setIconPosition?: (position: Position) => void;
     onError?: (error: string) => void;
@@ -26,7 +25,6 @@ export interface UseAgentActionsConfig {
 
 export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
     const {
-        pageState,
         onActionExecuted,
         setIconPosition,
         onError,
@@ -37,12 +35,13 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
     const currentActionIndexRef = useRef(0);
     const actionsQueueRef = useRef<AgentAction[]>([]);
     const keyListenerRef = useRef<((event: KeyboardEvent) => void) | null>(null);
+    const pageStateRef = useRef<PageState | null>(null);
 
     // Execute a single action
-    const executeAction = useCallback(async (action: AgentAction): Promise<boolean> => {
+    const executeAction = useCallback(async (action: AgentAction, pageState: PageState): Promise<boolean> => {
         const { id, type, value } = action;
         try {
-            // Get the element from pageState or DOM
+            // Use the passed pageState instead of getCurrentPageState()
             const elementDomNode: ElementDomNode | undefined = pageState?.domSnapshot?.selectorMap.get(id);
             if (!elementDomNode) {
                 console.log(pageState?.domSnapshot?.selectorMap)
@@ -101,7 +100,6 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
                     }
                     break;
 
-
                 case 'fill':
                     if (value !== undefined) {
                         console.log(`🤖 Filling element ${id} with: ${value}`);
@@ -150,10 +148,10 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
             onError?.(errorMsg);
             return false;
         }
-    }, [pageState, onActionExecuted, setIconPosition, onError]);
+    }, [onActionExecuted, setIconPosition, onError]);
 
     // Show current action (highlight but don't execute)
-    const showCurrentAction = useCallback(async () => {
+    const showCurrentAction = useCallback(async (pageState: PageState) => {
         const currentIndex = currentActionIndexRef.current;
         const actions = actionsQueueRef.current;
 
@@ -172,7 +170,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         const { id, type, value } = action;
 
         try {
-            // Get the element from pageState or DOM
+            // Use passed pageState instead of getCurrentPageState()
             const elementDomNode: ElementDomNode | undefined = pageState?.domSnapshot?.selectorMap.get(id);
             if (!elementDomNode) {
                 console.warn(`Element with id ${id} not found in page`);
@@ -206,10 +204,10 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         } catch (error) {
             console.error(`Failed to show action ${currentIndex + 1}:`, error);
         }
-    }, [pageState]);
+    }, [setIconPosition]);
 
     // Execute current action and move to next
-    const executeCurrentActionAndMoveNext = useCallback(async () => {
+    const executeCurrentActionAndMoveNext = useCallback(async (pageState: PageState) => {
         const currentIndex = currentActionIndexRef.current;
         const actions = actionsQueueRef.current;
 
@@ -227,15 +225,15 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         const action = actions[currentIndex];
         console.log(`🤖 Executing action ${currentIndex + 1}/${actions.length}:`, action);
 
-        // Execute the current action
-        await executeAction(action);
+        // Execute the current action with pageState
+        await executeAction(action, pageState);
         // Move to next action
         currentActionIndexRef.current = currentIndex + 1;
 
         // Check if there are more actions
         if (currentActionIndexRef.current < actions.length) {
             // Show the next action but don't execute it
-            await showCurrentAction();
+            await showCurrentAction(pageState);
         } else {
             console.log('🤖 All actions completed');
             // Clean up
@@ -256,9 +254,9 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
 
         // Create new listener
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Tab') {
+            if (event.key === 'Tab' && pageStateRef.current) {
                 event.preventDefault(); // Prevent default tab behavior
-                executeCurrentActionAndMoveNext();
+                executeCurrentActionAndMoveNext(pageStateRef.current);
             }
         };
 
@@ -267,7 +265,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
     }, [executeCurrentActionAndMoveNext]);
 
     // Execute multiple actions sequentially with Tab navigation
-    const executeActions = useCallback(async (agentResponse: AgentResponse): Promise<{
+    const executeActions = useCallback(async (agentResponse: AgentResponse, pageState: PageState): Promise<{
         success: boolean;
         executedCount: number;
         totalCount: number;
@@ -279,6 +277,10 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         }
 
         isExecutingRef.current = true;
+
+        // Store pageState in ref for keyboard listener
+        pageStateRef.current = pageState;
+
         let reasoning = '';
 
         try {
@@ -298,7 +300,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
 
             // Show the first action (but don't execute it)
             if (actions.length > 0) {
-                await showCurrentAction();
+                await showCurrentAction(pageState);
             }
 
             // Return initial state
@@ -328,7 +330,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
                 reasoning
             };
         }
-    }, [setupKeyboardListener, onError, executeCurrentActionAndMoveNext, showCurrentAction]);
+    }, [setupKeyboardListener, onError, showCurrentAction]);
 
     // Check if actions are currently executing
     const isExecuting = useCallback(() => isExecutingRef.current, []);
@@ -342,16 +344,18 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
 
     // Move to next action (kept for backward compatibility)
     const moveToNextAction = useCallback(async () => {
-        await executeCurrentActionAndMoveNext();
+        if (pageStateRef.current) {
+            await executeCurrentActionAndMoveNext(pageStateRef.current);
+        }
     }, [executeCurrentActionAndMoveNext]);
 
     // Validate if an action can be executed
-    const validateAction = useCallback((action: AgentAction): boolean => {
+    const validateAction = useCallback((action: AgentAction, pageState: PageState): boolean => {
         const { id, type, value } = action;
 
-        // Check if element exists
-        const element = document.querySelector(`[data-element-id="${id}"]`);
-        if (!element) {
+        // Check if element exists in pageState
+        const elementDomNode = pageState?.domSnapshot?.selectorMap.get(id);
+        if (!elementDomNode) {
             return false;
         }
 
@@ -361,11 +365,11 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
                 return true; // Any element can be clicked
 
             case 'fill':
-                return (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) &&
-                    value !== undefined;
+                return value !== undefined &&
+                    (elementDomNode.tagName === 'INPUT' || elementDomNode.tagName === 'TEXTAREA');
 
             case 'select':
-                return element instanceof HTMLSelectElement && value !== undefined;
+                return elementDomNode.tagName === 'SELECT' && value !== undefined;
 
             default:
                 return false;
@@ -381,6 +385,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         isExecutingRef.current = false;
         currentActionIndexRef.current = 0;
         actionsQueueRef.current = [];
+        pageStateRef.current = null;
     }, []);
 
     // Effect for cleanup on unmount
@@ -409,7 +414,7 @@ export const useAgentChat = (chatHook: any, agentConfig: UseAgentActionsConfig =
         }
     });
 
-    const processAgentReply = useCallback(async (reply: string) => {
+    const processAgentReply = useCallback(async (reply: string, pageState: PageState) => {
         const cleanReply = reply
             .replace(/```json\s*/g, '')
             .replace(/```\s*/g, '')
@@ -437,7 +442,7 @@ export const useAgentChat = (chatHook: any, agentConfig: UseAgentActionsConfig =
             }
         }
 
-        await agentActions.executeActions(parsed);
+        await agentActions.executeActions(parsed, pageState);
         chatHook.addAssistantMessage(parsed.reasoning);
 
     }, [agentActions]);

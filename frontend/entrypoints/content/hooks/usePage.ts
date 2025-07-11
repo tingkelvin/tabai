@@ -1,14 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { PageState, PageConfig } from '../types/page';
+import { PageState } from '../types/page';
 import { removeHighlights, getClickableElementsFromDomTree, locateElement } from '../services/DomTreeService';
 import { highlightElement } from '../utils/domUtils';
 import { onMessage } from '@/entrypoints/background/types/messages';
 import { getClickableElements, getClickableElementsHashes, hashDomElement } from '../services/DomService';
 
 interface UsePageReturn {
-    // State
-    pageState: PageState | null;
-    isScanning: boolean;
     isWaitingForStability: boolean;
 
     // Getters
@@ -17,13 +14,16 @@ interface UsePageReturn {
     getElementAtCoordinate: (x: number, y: number) => Promise<void>;
 
     // Actions
-    updatePageState: () => void;
+    updateAndGetPageState: () => Promise<{ pageState: PageState | null, isNew: boolean }>;
     waitForPageStable: (options?: { timeout?: number; stabilityDelay?: number }) => Promise<boolean>;
 }
 
-export const usePage = (config?: PageConfig): UsePageReturn => {
-    const [pageState, setPageState] = useState<PageState | null>(null);
-    const [isScanning, setIsScanning] = useState(false);
+interface UsePageConfig {
+    onPageChanged?: (pageState: PageState) => Promise<void>;
+}
+
+export const usePage = (config?: UsePageConfig): UsePageReturn => {
+    const pageStateRef = useRef<PageState | null>(null);
     const [isWaitingForStability, setIsWaitingForStability] = useState(false);
 
     // Refs for tracking page stability and debouncing
@@ -35,14 +35,8 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
     const stabilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const cachedStateClickableElementsHashes = useRef<Set<string>>(null);
 
-
-    const updatePageState = useCallback(async () => {
-        if (isUpdatingRef.current) {
-            return;
-        }
-
+    const updateAndGetPageState = useCallback(async (): Promise<{ pageState: PageState | null, isNew: boolean }> => {
         isUpdatingRef.current = true;
-        setIsScanning(true);
         removeHighlights();
         lastUpdateRef.current = Date.now();
         await waitForPageStable();
@@ -73,15 +67,22 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
                     }
                 }
             } else {
-                setPageState(newPageState);
+                // First time scanning - always consider it changed
+                pageHasChanged = true;
             }
+
             cachedStateClickableElementsHashes.current = await getClickableElementsHashes(root)
 
             // Only update state if there are actual changes
             if (pageHasChanged) {
                 console.log('[usePage] Page state changes detected, updating state');
-                console.log(pageState?.domSnapshot?.selectorMap)
-                setPageState(newPageState);
+
+                pageStateRef.current = newPageState
+                // Call the onPageChanged callback if provided
+                if (config?.onPageChanged) {
+                    await config.onPageChanged(newPageState);
+                }
+                return { pageState: newPageState, isNew: true };
             } else {
                 console.log('[usePage] No changes detected, skipping state update');
             }
@@ -90,9 +91,9 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
             console.error('Error updating page state:', error);
         } finally {
             isUpdatingRef.current = false;
-            setIsScanning(false);
+            return { pageState: pageStateRef.current, isNew: false };
         }
-    }, [pageState]); // Add pageState as dependency since we're comparing against it
+    }, [config?.onPageChanged]); // Remove pageState dependency to avoid stale closures
 
     const getCurrentUrl = useCallback((): string => {
         return window.location.href;
@@ -103,9 +104,9 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
     }, []);
 
     const getElementAtCoordinate = useCallback(async (x: number, y: number) => {
-        if (!pageState?.domSnapshot?.selectorMap) return;
+        if (!pageStateRef.current?.domSnapshot?.selectorMap) return;
 
-        for (const [highlightIndex, node] of pageState.domSnapshot.selectorMap.entries()) {
+        for (const [highlightIndex, node] of pageStateRef.current.domSnapshot.selectorMap.entries()) {
             const element = await locateElement(node);
             if (element) {
                 const rect = element.getBoundingClientRect();
@@ -115,7 +116,7 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
                 }
             }
         }
-    }, [pageState]);
+    }, [pageStateRef]);
 
     const waitForPageStable = useCallback(async (options?: {
         timeout?: number;
@@ -235,7 +236,7 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
                 return;
             }
             hasInitialScanRef.current = true;
-            await updatePageState();
+            await updateAndGetPageState();
         }, 500);
 
         return () => {
@@ -250,13 +251,13 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
                 mutationObserverRef.current.disconnect();
             }
         };
-    }, [updatePageState]);
+    }, [updateAndGetPageState]);
 
     // Option 2: Create a separate function that gets fresh state
     const getPageStateString = useCallback(async (): Promise<string> => {
         try {
             // Force update first
-            await updatePageState();
+            await updateAndGetPageState();
 
             // Get fresh DOM tree data directly (don't rely on React state)
             const { root } = await getClickableElementsFromDomTree();
@@ -267,20 +268,18 @@ export const usePage = (config?: PageConfig): UsePageReturn => {
             console.error('Error getting page state string:', error);
             return "";
         }
-    }, [updatePageState]);
+    }, [updateAndGetPageState]);
 
     useEffect(() => {
         onMessage('getPageStateAsString', getPageStateString);
     }, []);
 
     return {
-        // State
-        pageState,
-        isScanning,
+
         isWaitingForStability,
 
-        // Actions
-        updatePageState,
+        // updateAndGetPageState
+        updateAndGetPageState,
         waitForPageStable,
 
         // Getters

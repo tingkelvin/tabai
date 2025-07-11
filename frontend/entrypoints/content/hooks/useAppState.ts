@@ -44,7 +44,7 @@ export const useAppState = () => {
 
     }, []);
 
-    const saveState = (state: AppState): void => {
+    const saveState = async (state: AppState): Promise<void> => {
         // Skip if state hasn't meaningfully changed
         if (JSON.stringify(state) === JSON.stringify(lastSavedState.current)) {
             console.log('⏭️  [AppState] State unchanged, skipping save');
@@ -57,87 +57,27 @@ export const useAppState = () => {
             timestamp: new Date().toLocaleString(),
             chatMessages: state.chatMessages?.length || 0
         });
-        sendMessage('saveAppState', { ...state, lastUpdated: Date.now() });
+
+        try {
+            await sendMessage('saveAppState', { ...state, lastUpdated: Date.now() });
+            console.log('✅ [AppState] State saved successfully');
+        } catch (error) {
+            console.error('❌ [AppState] Failed to save state:', error);
+        }
     };
 
     const saveTimeoutRef = useRef<NodeJS.Timeout>(null);
     // Update state with automatic saving
-    const updateState = useCallback((updates: Partial<AppState>) => {
-        console.log('🔄 [AppState] Updating state with:', Object.keys(updates));
-        setState(prevState => {
-            const newState = {
-                ...prevState,
-                ...updates,
-                lastUpdated: Date.now(),
-            };
+    const updateState = useCallback(async (updates: Partial<AppState>) => {
+        const newState = {
+            ...state, // Get current state
+            ...updates,
+            lastUpdated: Date.now(),
+        };
 
-            saveState(newState);
-            return newState;
-        });
-    }, [saveState]);
-
-    // Specific state updaters
-    const updateChatState = useCallback((updates: {
-        chatMessages?: any[];
-        isThinking?: boolean;
-    }) => {
-        console.log('💬 [AppState] Updating chat state:', {
-            newMessagesCount: updates.chatMessages?.length || 0,
-            isThinking: updates.isThinking,
-            timestamp: new Date().toLocaleString()
-        });
-
-        if (updates.chatMessages) {
-            console.log('📊 [AppState] Chat messages details:', {
-                total: updates.chatMessages.length,
-                lastMessageType: updates.chatMessages[updates.chatMessages.length - 1]?.type || 'unknown'
-            });
-        }
-        updateState(updates);
-    }, [updateState]);
-
-    const updateModeState = useCallback((updates: {
-        useSearch?: boolean;
-        useAgent?: boolean;
-    }) => {
-        console.log('⚙️  [AppState] Updating mode state:', {
-            useSearch: updates.useSearch,
-            useAgent: updates.useAgent
-        });
-        updateState(updates);
-    }, [updateState]);
-
-    const updateFileState = useCallback((updates: {
-        fileContentAsString?: string;
-    }) => {
-        console.log('📄 [AppState] Updating file state:', {
-            hasContent: !!updates.fileContentAsString,
-            contentLength: updates.fileContentAsString?.length || 0
-        });
-        updateState(updates);
-    }, [updateState]);
-
-    const updateUIState = useCallback((updates: {
-        isMinimized?: boolean;
-        widgetSize?: { width: number; height: number };
-        iconPosition?: Position;
-    }) => {
-        console.log('🎨 [AppState] Updating UI state:', {
-            isMinimized: updates.isMinimized,
-            widgetSize: updates.widgetSize,
-            iconPosition: updates.iconPosition
-        });
-        updateState(updates);
-    }, [updateState]);
-
-    const updateAgentState = useCallback((updates: {
-        task?: string;
-    }) => {
-        console.log('🤖 [AppState] Updating agent state:', {
-            hasTask: !!updates.task,
-        });
-        updateState(updates);
-    }, [updateState]);
+        setState(newState);
+        await saveState(newState); // Now properly awaited
+    }, [state]);
 
     // Clear state
     const clearState = useCallback(() => {
@@ -174,11 +114,6 @@ export const useAppState = () => {
 
         // State updaters
         updateState,
-        updateChatState,
-        updateModeState,
-        updateFileState,
-        updateUIState,
-        updateAgentState,
         loadState,
 
         // State management
