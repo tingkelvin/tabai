@@ -44,7 +44,10 @@ export const stateManager = {
         console.log("updaing:", updates)
         const previousState = { ...stateManager.state };
 
-        if (updates.useAgent === false) updates.task = ""
+        if (updates.useAgent === false) {
+            updates.task = ""
+            updates.actionsExecuted = []
+        }
 
         stateManager.state = {
             ...stateManager.state,

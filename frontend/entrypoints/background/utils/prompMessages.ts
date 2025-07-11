@@ -19,11 +19,11 @@ export const PromptBuilder = {
      * Build a complete prompt message based on configuration
      */
     buildMessage: (userMessage: string | "", appState: AppState): string => {
-        const { fileContentAsString, useAgent } = appState
+        const { fileContentAsString, useAgent, actionsExecuted } = appState
         let message = '';
 
         // Add main content (task or user message)
-        if (appState.useAgent && userMessage) {
+        if (useAgent && userMessage) {
             message += `<task>${userMessage}</task>`;
         } else if (userMessage) {
             message += `<user_message>${userMessage}</user_message>`;
@@ -37,6 +37,8 @@ export const PromptBuilder = {
         // Add page state and instructions for agent mode
         if (useAgent) {
             message += `<page_state>${appState.pageStateAsString}</page_state>`;
+            if (actionsExecuted)
+                message += `<action_executed>${JSON.stringify(actionsExecuted)}</action_executed>`;
             message += PromptBuilder.getAgentInstructions();
         }
 
@@ -66,9 +68,10 @@ Actions available:
 - "click" - you can only click buttons, links, or interactive elements
 - "fill" - you can only fill text into input elements like <input>
 - "select" - you can only choose from dropdown/select elements like <select>
-- "scroll" - you can scroll if you do not have enough info
+- "scroll" - you can scroll if you do not find an obvious way
+- "done" - if you finish the task
 
-Return only JSON with actions and reasoning, do not include any other text:
+Do not include any other text, Strictly, return only JSON with actions and reasoning, :
 {
   "actions": [
     {"id": 0, "type": "fill", "value": "your_suggested_input"},

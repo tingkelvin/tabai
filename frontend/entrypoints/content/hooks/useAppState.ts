@@ -60,7 +60,7 @@ export const useAppState = () => {
         });
 
         try {
-            await sendMessage('saveAppState', { ...state, lastUpdated: Date.now() });
+            await sendMessage('onUpdateAppState', { ...state, lastUpdated: Date.now() });
             console.log('✅ [AppState] State saved successfully');
         } catch (error) {
             console.error('❌ [AppState] Failed to save state:', error);

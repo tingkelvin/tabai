@@ -80,8 +80,27 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       setIconPosition(position)
     },
     onActionExecuted: async (action: AgentAction) => {
-      actionsExecuted.push(action)
+      // actionsExecuted.push(action)
+      updateState({ actionsExecuted })
     },
+    onFinish: async () => {
+      console.log("on finish")
+
+      const { pageState, isNew } = await updateAndGetPageState()
+      const reply = await sendMessage(task);
+      if (!reply) {
+        addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
+      } else {
+        console.log('🤖 Processing agent response:', reply);
+
+        if (!pageState) {
+          console.error("Empty page state")
+          return
+        }
+        processAgentReply(reply);
+      }
+
+    }
   });
 
   const { getElementAtCoordinate, updateAndGetPageState } = usePage({

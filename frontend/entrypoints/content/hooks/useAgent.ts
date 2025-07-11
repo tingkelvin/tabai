@@ -16,6 +16,7 @@ export interface UseAgentActionsConfig {
     onActionExecuted?: (action: AgentAction) => Promise<void>;
     setIconPosition?: (position: Position) => void;
     onError?: (error: string) => void;
+    onFinish?: () => Promise<void>;
     actionDelay?: number;
 }
 
@@ -24,6 +25,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         onActionExecuted,
         setIconPosition,
         onError,
+        onFinish,
         actionDelay = 100
     } = config;
 
@@ -103,8 +105,14 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
                             element.value = value;
                             element.dispatchEvent(new Event('input', { bubbles: true }));
                             element.dispatchEvent(new Event('change', { bubbles: true }));
+                        } else if (element instanceof HTMLElement && (element.isContentEditable || element.getAttribute('contenteditable') === 'true')) {
+                            // Handle contenteditable elements
+                            element.textContent = value;
+                            // or element.innerHTML = value; if you need HTML formatting
+                            element.dispatchEvent(new Event('input', { bubbles: true }));
+                            element.dispatchEvent(new Event('change', { bubbles: true }));
                         } else {
-                            console.warn(`Element ${id} is not an input field`);
+                            console.warn(`Element ${id} is not an input field or contenteditable`);
                             return false;
                         }
                     } else {
@@ -153,6 +161,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         if (currentIndex >= actions.length) {
             console.log('🤖 All actions completed');
             cleanup();
+            onFinish?.();
             return;
         }
 
@@ -207,6 +216,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         if (currentIndex >= actions.length) {
             console.log('🤖 All actions completed');
             cleanup();
+            onFinish?.()
             return;
         }
 
@@ -225,6 +235,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
         } else {
             console.log('🤖 All actions completed');
             cleanup();
+            onFinish?.()
         }
     }, [executeAction, showCurrentAction]);
 

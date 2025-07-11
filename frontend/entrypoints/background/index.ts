@@ -117,7 +117,7 @@ export default defineBackground(() => {
       }]
     });
     const state = await stateManager.getState()
-    const { useSearch, useAgent, actionsExecuted } = state
+    const { useSearch, useAgent } = state
 
     if (useAgent) {
       await stateManager.setTask(message);
