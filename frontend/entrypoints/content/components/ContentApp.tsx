@@ -113,6 +113,156 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       // Handle the page change here
     }
   });
+
+  // Throttle function to limit how often updateAndGetPageState is called
+  const throttle = useCallback((func: Function, limit: number) => {
+    let inThrottle: boolean;
+    return function (this: any, ...args: any[]) {
+      if (!inThrottle) {
+        func.apply(this, args);
+        inThrottle = true;
+        setTimeout(() => inThrottle = false, limit);
+      }
+    }
+  }, []);
+
+  // Refs to track throttling state
+  const throttleRef = useRef<boolean>(false);
+  const lastCallRef = useRef<number>(0);
+
+  // Scroll tracking refs
+  const scrollCountRef = useRef<number>(0);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isScrollingRef = useRef<boolean>(false);
+  const scrollStartTimeRef = useRef<number>(0);
+
+  // Throttled version of updateAndGetPageState
+  const throttledUpdatePageState = useCallback(async () => {
+    const now = Date.now();
+    const timeSinceLastCall = now - lastCallRef.current;
+
+    if (timeSinceLastCall < 1000) { // 1 second throttle
+      console.log("Throttled - skipping update");
+      return;
+    }
+
+    if (throttleRef.current) {
+      console.log("Already processing - skipping update");
+      return;
+    }
+
+    console.log("Triggering page state update");
+    throttleRef.current = true;
+    lastCallRef.current = now;
+
+    try {
+      cleanup();
+      const { pageState, isNew } = await updateAndGetPageState();
+
+      if (!task) {
+        console.log("No task defined - skipping agent reply");
+        return;
+      }
+
+      const reply = await sendMessage(task);
+      if (!reply) {
+        addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
+      } else {
+        console.log('🤖 Processing agent response:', reply);
+
+        if (!pageState) {
+          console.error("Empty page state");
+          return;
+        }
+        processAgentReply(reply);
+      }
+    } catch (error) {
+      console.error('Error updating page state:', error);
+    } finally {
+      throttleRef.current = false;
+    }
+  }, [updateAndGetPageState, cleanup, task, sendMessage, addAssistantMessage, processAgentReply]);
+
+  // Event listeners for scroll and click
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!isInitialized || !useAgent || !task) return;
+
+      const now = Date.now();
+
+      // If not currently scrolling, start tracking
+      if (!isScrollingRef.current) {
+        isScrollingRef.current = true;
+        scrollStartTimeRef.current = now;
+        scrollCountRef.current = 0;
+        console.log("📜 Scroll session started");
+      }
+
+      // Increment scroll counter
+      scrollCountRef.current++;
+
+      // Clear existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+
+      // Set timeout to detect when scrolling stops
+      scrollTimeoutRef.current = setTimeout(() => {
+        const scrollDuration = now - scrollStartTimeRef.current;
+        const scrollCount = scrollCountRef.current;
+
+        console.log(`📊 Scroll session ended:`, {
+          duration: scrollDuration + 'ms',
+          events: scrollCount,
+          eventsPerSecond: (scrollCount / (scrollDuration / 1000)).toFixed(2)
+        });
+
+        // Trigger update based on scroll intensity
+        const shouldTriggerUpdate =
+          scrollDuration > 2000 || // Scrolled for more than 2 seconds
+          scrollCount > 10;        // More than 10 scroll events
+
+        if (shouldTriggerUpdate) {
+          console.log("🚀 Triggering update due to significant scroll activity");
+          throttledUpdatePageState();
+        } else {
+          console.log("⏭️ Skipping update - minimal scroll activity");
+        }
+
+        // Reset scroll tracking
+        isScrollingRef.current = false;
+        scrollCountRef.current = 0;
+        scrollTimeoutRef.current = null;
+      }, 100); // Wait 500ms after scroll stops
+    };
+
+    const handleClick = (event: MouseEvent) => {
+      if (isInitialized && useAgent && task) {
+        // Don't trigger on widget clicks to avoid interference
+        const widgetElement = widgetRef.current;
+        if (widgetElement && !widgetElement.contains(event.target as Node)) {
+          console.log("🖱️ Click detected - triggering update");
+          throttledUpdatePageState();
+        }
+      }
+    };
+
+    // Add event listeners
+    document.addEventListener('scroll', handleScroll, { passive: true });
+    document.addEventListener('click', handleClick, true); // Use capture phase
+
+    // Cleanup function
+    return () => {
+      document.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('click', handleClick, true);
+
+      // Clear any pending scroll timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [isInitialized, useAgent, task, throttledUpdatePageState]);
+
   // Complex orchestrated send message
   const handleSendMessage = useCallback(async (message: string) => {
     console.log('🎬 Starting orchestrated message flow');
