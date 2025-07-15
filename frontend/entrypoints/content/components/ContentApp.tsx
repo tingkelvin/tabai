@@ -159,6 +159,8 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       cleanup();
       const { pageState, isNew } = await updateAndGetPageState();
 
+      if (!isNew) return
+
       if (!task) {
         console.log("No task defined - skipping agent reply");
         return;

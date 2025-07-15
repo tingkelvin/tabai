@@ -33,7 +33,7 @@ export const usePage = (config?: UsePageConfig): UsePageReturn => {
     const lastUpdateRef = useRef<number>(0);
     const mutationObserverRef = useRef<MutationObserver | null>(null);
     const stabilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const cachedStateClickableElementsHashes = useRef<Set<string>>(null);
+    const cachePageStateAsString = useRef<string>("");
 
     const updateAndGetPageState = useCallback(async (): Promise<{ pageState: PageState, isNew: boolean }> => {
         isUpdatingRef.current = true;
@@ -54,46 +54,49 @@ export const usePage = (config?: UsePageConfig): UsePageReturn => {
                 screenshot: null
             };
 
-            const updatedStateClickableElements = getClickableElements(root);
+            const updatedStateAsString = root.clickableElementsToString();
 
             let pageHasChanged = false;
 
-            if (cachedStateClickableElementsHashes.current) {
-                for (const domElement of updatedStateClickableElements) {
-                    const hash = await hashDomElement(domElement);
-                    domElement.isNew = !cachedStateClickableElementsHashes.current.has(hash);
-                    if (domElement.isNew) {
-                        pageHasChanged = true
-                    }
-                }
-            } else {
-                // First time scanning - always consider it changed
+            // Check if this is the first run (no cached state)
+            if (!cachePageStateAsString.current) {
                 pageHasChanged = true;
+                console.log('[usePage] First page state capture - marking as new');
+            } else if (updatedStateAsString !== cachePageStateAsString.current) {
+                pageHasChanged = true;
+                console.log('[usePage] Page state changes detected');
             }
 
-            cachedStateClickableElementsHashes.current = await getClickableElementsHashes(root)
+            console.log('Previous state:', cachePageStateAsString.current);
+            console.log('Current state:', updatedStateAsString);
+
+            // Update the cached state
+            cachePageStateAsString.current = updatedStateAsString;
 
             // Only update state if there are actual changes
             if (pageHasChanged) {
-                console.log('[usePage] Page state changes detected, updating state');
+                console.log('[usePage] Updating page state');
 
-                pageStateRef.current = newPageState
+                pageStateRef.current = newPageState;
+
                 // Call the onPageChanged callback if provided
                 if (config?.onPageChanged) {
                     await config.onPageChanged(newPageState);
                 }
+
                 return { pageState: newPageState, isNew: true };
             } else {
                 console.log('[usePage] No changes detected, skipping state update');
+                return { pageState: pageStateRef.current, isNew: false };
             }
 
         } catch (error) {
             console.error('Error updating page state:', error);
+            return { pageState: pageStateRef.current, isNew: false };
         } finally {
             isUpdatingRef.current = false;
-            return { pageState: pageStateRef.current, isNew: false };
         }
-    }, [config?.onPageChanged]); // Remove pageState dependency to avoid stale closures
+    }, [config?.onPageChanged]);
 
     const getCurrentUrl = useCallback((): string => {
         return window.location.href;
