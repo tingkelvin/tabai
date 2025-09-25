@@ -32,7 +32,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   // Function to cancel current search
   const cancelCurrentSearch = useCallback(() => {
     if (currentSearchRef.current) {
-      console.log(`🚫 Cancelling previous search: "${currentSearchRef.current.searchTerm}"`);
       currentSearchRef.current.cancelled = true;
       
       // Clear any pending timeouts (legacy cleanup)
@@ -122,34 +121,27 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   // Configure search after login - simplified version
   const configSearchAfterLogin = useCallback(async () => {
     try {
-      console.log('🔧 Configuring search settings...');
-      
       // Configure Store Type (販售)
       const storeTypeDropdown = document.querySelector("div#div_storetype") as HTMLElement;
       if (storeTypeDropdown) {
-        console.log('✅ Found store type dropdown');
         storeTypeDropdown.setAttribute('_val', '0');
         storeTypeDropdown.textContent = '販售';
         storeTypeDropdown.setAttribute('data-value', '0');
         storeTypeDropdown.dispatchEvent(new Event('change', { bubbles: true }));
-        console.log('✅ Store type configured to 販售');
       }
       
       // Configure Server Selection (西格倫)
       const serverDropdown = document.querySelector("div#div_svr") as HTMLElement;
       if (serverDropdown) {
-        console.log('✅ Found server dropdown');
         serverDropdown.setAttribute('_val', '529');
         serverDropdown.textContent = '西格倫';
         serverDropdown.setAttribute('data-value', '529');
         serverDropdown.dispatchEvent(new Event('change', { bubbles: true }));
-        console.log('✅ Server configured to 西格倫');
       }
       
       addAssistantMessage("🔧 已配置搜索設定為販售和西格倫伺服器");
       
     } catch (error) {
-      console.error('Error configuring search after login:', error);
       addAssistantMessage("❌ 配置搜索設定時發生錯誤");
     }
   }, [addAssistantMessage]);
@@ -158,34 +150,21 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   // Check and click login button function
   const checkAndClickLoginButton = useCallback(async () => {
     try {
-      console.log('🔍 Checking for login button...');
-      
       // Use the working selector
       const buttonElement = document.querySelector("a[href='history'][id='a_searchBtn']") as HTMLElement;
       
       if (!buttonElement) {
-        console.log('❌ Login button not found');
         return { buttonFound: false, buttonText: '' };
       }
       
       const buttonText = buttonElement.textContent?.trim() || '';
-      console.log(`✅ Found login button!`);
-      console.log(`   Button text: '${buttonText}'`);
-      console.log(`   Button href: ${buttonElement.getAttribute('href')}`);
       
       // Click the button
-      console.log('🖱️ Clicking login button...');
-    
       buttonElement.click();
-      console.log('✅ Successfully clicked login button!');
-      
-      const currentUrl = window.location.href;
-      console.log(`   Current URL after click: ${currentUrl}`);
       
       return { buttonFound: true, buttonText };
       
     } catch (error) {
-      console.error(`❌ Error in checkAndClickLoginButton: ${error}`);
       return { buttonFound: false, buttonText: '' };
     }
   }, []);
@@ -200,21 +179,19 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         
         // If user needs to login, check and click login button
         if (elementText.includes('請先登入')) {
-          console.log('🔐 Found login prompt, checking for login button');
           try {
             const { buttonFound, buttonText } = await checkAndClickLoginButton();
             if (buttonFound) {
               addAssistantMessage(`🔐 檢測到登入提示，已自動點擊登入按鈕: "${buttonText}"`);
             } 
           } catch (error) {
-            console.error('Error clicking login button:', error);
+            // Error clicking login button
           }
           return; // Exit after clicking
         }
         
         // If user is logged in (logout button found), start search
         if (elementText.includes('登出')) {
-          console.log('🚪 Found logout button, user is logged in');
           if (!isAutoSearching) {
             addAssistantMessage("✅ 檢測到您已登入，開始配置搜索...");
             await configSearchAfterLogin();
@@ -231,7 +208,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const startMonitoring = useCallback(() => {
     if (isMonitoring) return;
     
-    console.log('🔍 Starting login monitoring...');
     setIsMonitoring(true);
     
     const interval = setInterval(checkLoginStatus, 1000);
@@ -241,7 +217,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const stopMonitoring = useCallback(() => {
     if (!isMonitoring) return;
     
-    console.log('⏹️ Stopping login monitoring...');
     setIsMonitoring(false);
     
     if (monitoringInterval) {
@@ -266,7 +241,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   // Search functionality - direct DOM manipulation
   const handleSearch = useCallback(async (searchTerm: string = "征伐隊戒指", notes: [string, string, string] = ['', '', ''], searchItemIndex?: number) => {
     try {
-      console.log(`🔍 Starting search for: ${searchTerm}`);
       const timestamp = new Date();
       setLastSearchTime(timestamp);
       
@@ -288,7 +262,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       // Find search input field
       const searchInput = document.querySelector("input#txb_KeyWord") as HTMLInputElement;
       if (!searchInput) {
-        console.log('❌ Search input not found');
         const errorLog = `❌ Search input not found at ${timestamp.toLocaleTimeString()}`;
         setSearchLogs(prev => [...prev, errorLog]);
         addAssistantMessage("❌ 找不到搜索輸入框");
@@ -296,53 +269,38 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         return false;
       }
       
-      console.log('✅ Found search input: input#txb_KeyWord');
-      
       // Set search term
-      console.log(`🔧 Setting search term: ${searchTerm}`);
       searchInput.value = searchTerm;
       
       // Trigger input events
       searchInput.dispatchEvent(new Event('input', { bubbles: true }));
       searchInput.dispatchEvent(new Event('change', { bubbles: true }));
       
-      console.log(`✅ Search term set: ${searchTerm}`);
-      
       // Find and click search button
       const searchButton = document.querySelector("a#a_searchBtn") as HTMLElement;
       if (!searchButton) {
-        console.log('❌ Search button not found');
         const errorLog = `❌ Search button not found at ${timestamp.toLocaleTimeString()}`;
         setSearchLogs(prev => [...prev, errorLog]);
         addAssistantMessage("❌ 找不到搜索按鈕");
         return false;
       }
       
-      console.log('✅ Found search button: a#a_searchBtn');
-      
       // Click search button
-      console.log('🔧 Clicking search button...');
       searchButton.click();
       
-      console.log('✅ Search executed');
       const successLog = `✅ Search executed successfully for "${searchTerm}" at ${timestamp.toLocaleTimeString()}`;
       setSearchLogs(prev => [...prev, successLog]);
       addAssistantMessage(`🔍 已搜索: ${searchTerm}`);
       
       // Wait for results to load, then parse them with pagination
-      console.log('⏳ Waiting for search results to load...');
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Check if search was cancelled during the wait
       if (!currentSearchRef.current || currentSearchRef.current.cancelled) {
-        console.log(`🚫 Search cancelled for: "${searchTerm}"`);
         return false;
       }
       
       // Use the passed notes directly
-      console.log(`🔍 Search details:`);
-      console.log(`   Original search term: "${searchTerm}"`);
-      console.log(`   Notes: [${notes.join(', ')}]`);
       
       // Construct the full search term with notes if available
       let fullSearchTerm = searchTerm;
@@ -351,16 +309,12 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         fullSearchTerm = `${searchTerm} ${activeNotes}`.trim();
       }
       
-      console.log(`   Full search term: "${fullSearchTerm}"`);
-      
       // Execute pagination and wait for completion
       const searchResult = await searchWithPagination(fullSearchTerm, notes, searchItemIndex);
       
-      console.log(`✅ Search completed for: "${searchTerm}"`);
       return searchResult;
       
     } catch (error) {
-      console.error('Error executing search:', error);
       const errorLog = `❌ Search error: ${error} at ${new Date().toLocaleTimeString()}`;
       setSearchLogs(prev => [...prev, errorLog]);
       addAssistantMessage("❌ 搜索時發生錯誤");
@@ -371,7 +325,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   // Parse search results function
   const parseSearchResults = useCallback(async (searchTerm: string = "征伐隊戒指", notes: [string, string, string] = ['', '', ''], searchItemIndex?: number) => {
     try {
-      console.log(`🔍 Parsing search results for: ${searchTerm}`);
       const timestamp = new Date();
       
       // Log the parsing attempt
@@ -382,31 +335,22 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       const resultTable = document.querySelector("table tbody#_tbody") as HTMLElement;
       
       if (!resultTable) {
-        console.log("❌ Result table not found");
         const errorLog = `❌ Result table not found at ${timestamp.toLocaleTimeString()}`;
         setSearchLogs(prev => [...prev, errorLog]);
         addAssistantMessage("❌ 找不到搜索結果表格");
         return false;
       }
       
-      console.log(`✅ Found result table: table tbody#_tbody`);
-      
       // Parse table rows
       try {
         const rows = resultTable.querySelectorAll("tr");
-        console.log(`📋 Found ${rows.length} result items`);
         
         if (rows.length === 0) {
-          console.log("⚠️ No result rows found");
           const warningLog = `⚠️ No result rows found at ${timestamp.toLocaleTimeString()}`;
           setSearchLogs(prev => [...prev, warningLog]);
           addAssistantMessage("⚠️ 沒有找到任何搜索結果");
           return false;
         }
-        
-        console.log(`\n${'='.repeat(80)}`);
-        console.log(`🏪 露天商店搜索結果 - 尋找: ${searchTerm}`);
-        console.log(`${'='.repeat(80)}`);
         
         // Parse each row, find first matching item
         let firstItemFound = false;
@@ -424,7 +368,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
             const buySellCell = row.querySelector("td.buySell") as HTMLElement;
             
             if (!shopNameCell || !itemNameCell || !slotCell || !priceCell || !quantityCell || !buySellCell) {
-              console.log(`⚠️ Missing cells in row ${i + 1}`);
               continue;
             }
             
@@ -446,8 +389,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
             const searchParts = searchTerm.split(' ').filter(part => part.trim());
             const baseName = searchParts[0]; // Get base name (e.g., "征伐隊戒指")
             const additionalTerms = searchParts.slice(1); // Get additional terms (e.g., ["STR+1"])
-            
-            console.log(`🔍 Checking item: "${itemName}" against search: "${searchTerm}"`);
    
             // First check if the item name contains the base name
             const hasBaseName = itemName.includes(baseName);
@@ -462,20 +403,8 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
               }
             }
             
-            console.log(`   Final match result: ${matchFound}`);
-            
             if (matchFound) {
               const resultTimestamp = new Date().toLocaleString();
-              
-              console.log(`\n📦 Found matching item in row ${i + 1}`);
-              console.log(`   🏪 Shop Name: ${shopName}`);
-              console.log(`   🎯 Item Name: ${itemName}`);
-              console.log(`   📍 Slot: ${slot}`);
-              console.log(`   💰 Price: ${price}`);
-              console.log(`   📊 Quantity: ${quantity}`);
-              console.log(`   🔄 Type: ${buySell}`);
-              console.log(`   🆔 SSI: ${ssi.length > 20 ? ssi.substring(0, 20) + '...' : ssi}`);
-              console.log(`   ⏰ Search Time: ${resultTimestamp}`);
               
               // Add to search results for specific item
               const newResult = {
@@ -512,26 +441,19 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
             }
             
           } catch (rowError) {
-            console.log(`⚠️ Error parsing row ${i + 1}: ${rowError}`);
             continue;
           }
         }
         
-        console.log(`\n${'='.repeat(80)}`);
-        if (firstItemFound) {
-          console.log(`✅ Displayed first matching '${searchTerm}' shop item`);
-        } else {
-          console.log(`⚠️ No matching '${searchTerm}' shop items found`);
+        if (!firstItemFound) {
           const noMatchLog = `⚠️ No matching items found for "${searchTerm}" at ${timestamp.toLocaleTimeString()}`;
           setSearchLogs(prev => [...prev, noMatchLog]);
           addAssistantMessage(`⚠️ 未找到匹配 "${searchTerm}" 的商店項目`);
         }
-        console.log(`${'='.repeat(80)}`);
         
         return firstItemFound;
         
       } catch (parseError) {
-        console.error('❌ Error parsing table:', parseError);
         const errorLog = `❌ Table parsing error: ${parseError} at ${timestamp.toLocaleTimeString()}`;
         setSearchLogs(prev => [...prev, errorLog]);
         addAssistantMessage("❌ 解析表格時發生錯誤");
@@ -539,7 +461,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       }
       
     } catch (error) {
-      console.error('❌ Error parsing search results:', error);
       const errorLog = `❌ Search result parsing error: ${error} at ${new Date().toLocaleTimeString()}`;
       setSearchLogs(prev => [...prev, errorLog]);
       addAssistantMessage("❌ 解析搜索結果時發生錯誤");
@@ -553,23 +474,17 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     let firstItemFound = false;
     const maxPages = 10; // Limit to prevent infinite loops
     
-    console.log(`🔍 Starting paginated search for: ${searchTerm}`);
-    
     while (currentPage <= maxPages && !firstItemFound) {
       // Check if search was cancelled
       if (!currentSearchRef.current || currentSearchRef.current.cancelled) {
-        console.log(`🚫 Search cancelled during pagination for: "${searchTerm}"`);
         return false;
       }
-      
-      console.log(`📄 Searching page ${currentPage}...`);
       
       // Parse current page results
       const itemFound = await parseSearchResults(searchTerm, notes, searchItemIndex);
       
       if (itemFound) {
         firstItemFound = true;
-        console.log(`✅ Found matching item on page ${currentPage}`);
         break;
       }
       
@@ -577,16 +492,12 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       try {
         // Check if search was cancelled before pagination
         if (!currentSearchRef.current || currentSearchRef.current.cancelled) {
-          console.log(`🚫 Search cancelled before pagination for: "${searchTerm}"`);
           return false;
         }
-        
-        console.log(`⏭️ No match on page ${currentPage}, looking for next page...`);
         
         // Find pagination element
         const pagination = document.querySelector("ul.pagination") as HTMLElement;
         if (!pagination) {
-          console.log("⚠️ No pagination found, search ended");
           break;
         }
         
@@ -597,7 +508,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         for (const link of nextPageLinks) {
           const onclick = link.getAttribute('onclick') || '';
           if (onclick.includes(`goPage(${currentPage + 1})`)) {
-            console.log(`⏭️ Clicking page ${currentPage + 1}...`);
             (link as HTMLElement).click();
             currentPage++;
             nextPageFound = true;
@@ -609,20 +519,16 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         }
         
         if (!nextPageFound) {
-          console.log("⚠️ No more pages available, search ended");
           break;
         }
         
       } catch (error) {
-        console.error(`❌ Error handling pagination: ${error}`);
         break;
       }
     }
     
     if (!firstItemFound) {
-      console.log(`⚠️ No matching items found across ${currentPage - 1} pages`);
       const noMatchLog = `⚠️ No matching items found for "${searchTerm}" across ${currentPage - 1} pages at ${new Date().toLocaleTimeString()}`;
-      // Note: setSearchLogs will be available in the component scope
       addAssistantMessage(`⚠️ 在 ${currentPage - 1} 頁中未找到匹配 "${searchTerm}" 的項目`);
     }
     
@@ -678,9 +584,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
 
   // Search item management functions
   const addSearchItem = useCallback(() => {
-    console.log('🔧 addSearchItem called with:', newSearchItem);
-    console.log('🔧 Current searchItems:', searchItems);
-    
     if (newSearchItem.name.trim()) {
       // Check for exact duplicate (same name AND same notes)
       const trimmedNotes = newSearchItem.notes.map(note => note.trim()) as [string, string, string];
@@ -696,7 +599,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
           results: [],
           lastSearchTime: null
         };
-        console.log('🔧 Adding new item:', newItem);
         
         setSearchItems(prev => [...prev, newItem]);
         setNewSearchItem({
@@ -708,16 +610,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         const timestamp = new Date().toLocaleTimeString();
         const logMessage = `✅ Added search item: "${newItem.name}" with notes [${newItem.notes.join(', ')}] at ${timestamp}`;
         setSearchLogs(prev => [...prev, logMessage]);
-        
-        console.log(`🔍 已添加搜索項目: "${newItem.name}" with notes:`, newItem.notes);
-      } else {
-        console.log('🔧 Add failed - exact duplicate found:', {
-          name: newSearchItem.name.trim(),
-          notes: trimmedNotes
-        });
       }
-    } else {
-      console.log('🔧 Add failed - name is empty');
     }
   }, [newSearchItem, searchItems]);
 
@@ -729,7 +622,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     const timestamp = new Date().toLocaleTimeString();
     const logMessage = `❌ Removed search item: "${removedItem.name}" at ${timestamp}`;
     setSearchLogs(prev => [...prev, logMessage]);
-    console.log(`🗑️ 已移除搜索項目: "${removedItem.name}"`);
   }, [searchItems]);
 
   const clearAllSearchItems = useCallback(() => {
@@ -740,7 +632,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     const timestamp = new Date().toLocaleTimeString();
     const logMessage = `🧹 Cleared all ${itemCount} search items at ${timestamp}`;
     setSearchLogs(prev => [...prev, logMessage]);
-    console.log(`🧹 已清除所有 ${itemCount} 個搜索項目`);
   }, [searchItems]);
 
 
@@ -766,7 +657,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const startAutoSearch = useCallback(() => {
     if (isAutoSearching) return;
     
-    console.log('🔄 Starting auto-search every 1 minute...');
     setIsAutoSearching(true);
     
     const timestamp = new Date().toLocaleTimeString();
@@ -777,7 +667,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     // Execute search immediately on start
     const executeSearch = async () => {
       if (searchItems.length > 0) {
-        console.log('🔄 Auto-search executing...');
         const autoSearchLog = `🔄 Auto-search cycle started at ${new Date().toLocaleTimeString()}`;
         setSearchLogs(prev => [...prev, autoSearchLog]);
         addAssistantMessage("🔄 執行自動搜索...");
@@ -788,7 +677,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
             await handleSearch(item.name, item.notes, i);
             await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds between searches
           } catch (error) {
-            console.error('Error in auto-search:', error);
             const errorLog = `❌ Auto-search error for "${item.name}": ${error} at ${new Date().toLocaleTimeString()}`;
             setSearchLogs(prev => [...prev, errorLog]);
           }
@@ -828,7 +716,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       return;
     }
     
-    console.log('🚀 Starting workflow...');
     addAssistantMessage("🚀 開始工作流程：自動搜索");
     
     // Start monitoring
@@ -877,25 +764,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                 height: '100%',
                 overflow: 'hidden'
               }}>
-                {/* Status Bar */}
-                <div style={{
-                  padding: '8px 12px',
-                  backgroundColor: '#f8f9fa',
-                  borderBottom: '1px solid #e0e0e0',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                      alignItems: 'center',
-                  fontSize: '12px',
-                  color: '#666'
-                }}>
-                  <div style={{ display: 'flex', gap: '16px' }}>
-                    <span>Monitoring: {isMonitoring ? '🟢 Active' : '🔴 Inactive'}</span>
-                    <span>Auto-search: {isAutoSearching ? '🟢 Running' : '🔴 Stopped'}</span>
-                </div>
-                  <div>
-                    Last: {lastSearchTime ? lastSearchTime.toLocaleTimeString() : 'Never'}
-              </div>
-      </div>
 
                 {/* Main Content Area */}
         <div style={{
