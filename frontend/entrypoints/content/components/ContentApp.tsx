@@ -37,9 +37,34 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const chatHook = customChatHook ? customChatHook() : useChat();
 
   const {
-    addAssistantMessage,
+    addAssistantMessage: originalAddAssistantMessage,
     sendMessage
   } = chatHook
+
+  // Override addAssistantMessage to also update local state
+  const addAssistantMessage = useCallback(async (content: string) => {
+    // Call the original function
+    await originalAddAssistantMessage(content);
+    
+    // Also update local state immediately
+    const newMessage = {
+      id: `msg-${Date.now()}`,
+      type: 'ASSISTANT' as const,
+      content: content.trim(),
+      timestamp: new Date()
+    };
+    
+    updateState({
+      chatMessages: [...(state.chatMessages || []), newMessage]
+    });
+    
+    // Scroll to bottom after adding message
+    setTimeout(() => {
+      if (chatMessagesRef.current) {
+        chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+      }
+    }, 100);
+  }, [originalAddAssistantMessage, updateState, state.chatMessages]);
 
   // UI hooks
   const {
@@ -87,130 +112,51 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     }
   });
 
-  const { getElementAtCoordinate, updateAndGetPageState } = usePage({
+  const { updateAndGetPageState } = usePage({
     onPageChanged: async (newPageState) => {
       if (!isInitialized) return; // Don't update if not initialized
       const pageStateAsString = newPageState.domSnapshot?.root.clickableElementsToString() || ""
       await updateState({ pageStateAsString })
       if (newPageState.domSnapshot?.selectorMap)
         setSelectorMap(newPageState.domSnapshot?.selectorMap)
-        console.log("pageStateAsString", newPageState)
-
       // Handle the page change here
     }
   });
 
-  // Throttle function to limit how often updateAndGetPageState is called
-  const throttle = useCallback((func: Function, limit: number) => {
-    let inThrottle: boolean;
-    return function (this: any, ...args: any[]) {
-      if (!inThrottle) {
-        func.apply(this, args);
-        inThrottle = true;
-        setTimeout(() => inThrottle = false, limit);
-      }
-    }
-  }, []);
-
-
-  // Manual login/logout state monitoring
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
-  const [loginStateChecked, setLoginStateChecked] = useState(false);
-  const [isConfiguringSearch, setIsConfiguringSearch] = useState(false);
-  const [searchConfigured, setSearchConfigured] = useState(false);
+  // Simple workflow state
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [monitoringInterval, setMonitoringInterval] = useState<NodeJS.Timeout | null>(null);
+  const [isAutoSearching, setIsAutoSearching] = useState(false);
+  const [autoSearchInterval, setAutoSearchInterval] = useState<NodeJS.Timeout | null>(null);
+  
+  // Ref to store startAutoSearch function
+  const startAutoSearchRef = useRef<(() => void) | null>(null);
 
-  // Configure search after login - use direct DOM manipulation for both store type and server
+  // Configure search after login - simplified version
   const configSearchAfterLogin = useCallback(async () => {
     try {
-      console.log('🔧 Configuring search after login using direct DOM manipulation...');
-      setIsConfiguringSearch(true);
+      console.log('🔧 Configuring search settings...');
       
       // Configure Store Type (販售)
-      const storeTypeDropdownSelectors = [
-        "div#div_storetype",
-        "div.default__option[id='div_storetype']",
-        "[id='div_storetype']"
-      ];
-      
-      let storeTypeDropdown = null;
-      for (const selector of storeTypeDropdownSelectors) {
-        try {
-          const element = document.querySelector(selector) as HTMLElement;
-          if (element && element.offsetParent !== null) {
-            storeTypeDropdown = element;
-            console.log(`✅ Found store type dropdown: ${selector}`);
-            break;
-          }
-        } catch (e) {
-          console.log(`Store type selector ${selector} failed:`, e);
-          continue;
-        }
-      }
-      
+      const storeTypeDropdown = document.querySelector("div#div_storetype") as HTMLElement;
       if (storeTypeDropdown) {
-        console.log('🔧 Setting store type to 販售 (value: 0)');
+        console.log('✅ Found store type dropdown');
         storeTypeDropdown.setAttribute('_val', '0');
-        
-        const displayElement = storeTypeDropdown.querySelector('.default__single-value') || 
-                             storeTypeDropdown.querySelector('.default__placeholder') ||
-                             storeTypeDropdown;
-        
-        if (displayElement) {
-          displayElement.textContent = '販售';
-          displayElement.setAttribute('data-value', '0');
-        }
-        
-        const changeEvent = new Event('change', { bubbles: true });
-        storeTypeDropdown.dispatchEvent(changeEvent);
-        
+        storeTypeDropdown.textContent = '販售';
+        storeTypeDropdown.setAttribute('data-value', '0');
+        storeTypeDropdown.dispatchEvent(new Event('change', { bubbles: true }));
         console.log('✅ Store type configured to 販售');
-      } else {
-        console.log('⚠️ Store type dropdown not found');
       }
       
       // Configure Server Selection (西格倫)
-      const serverDropdownSelectors = [
-        "div#div_svr",
-        "div.default__option[id='div_svr']",
-        "[id='div_svr']"
-      ];
-      
-      let serverDropdown = null;
-      for (const selector of serverDropdownSelectors) {
-        try {
-          const element = document.querySelector(selector) as HTMLElement;
-          if (element && element.offsetParent !== null) {
-            serverDropdown = element;
-            console.log(`✅ Found server dropdown: ${selector}`);
-            break;
-          }
-        } catch (e) {
-          console.log(`Server selector ${selector} failed:`, e);
-          continue;
-        }
-      }
-      
+      const serverDropdown = document.querySelector("div#div_svr") as HTMLElement;
       if (serverDropdown) {
-        console.log('🔧 Setting server to 西格倫 (value: 529)');
+        console.log('✅ Found server dropdown');
         serverDropdown.setAttribute('_val', '529');
-        
-        const displayElement = serverDropdown.querySelector('.default__single-value') || 
-                             serverDropdown.querySelector('.default__placeholder') ||
-                             serverDropdown;
-        
-        if (displayElement) {
-          displayElement.textContent = '西格倫';
-          displayElement.setAttribute('data-value', '529');
-        }
-        
-        const changeEvent = new Event('change', { bubbles: true });
-        serverDropdown.dispatchEvent(changeEvent);
-        
+        serverDropdown.textContent = '西格倫';
+        serverDropdown.setAttribute('data-value', '529');
+        serverDropdown.dispatchEvent(new Event('change', { bubbles: true }));
         console.log('✅ Server configured to 西格倫');
-      } else {
-        console.log('⚠️ Server dropdown not found');
       }
       
       addAssistantMessage("🔧 已配置搜索設定為販售和西格倫伺服器");
@@ -218,118 +164,53 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     } catch (error) {
       console.error('Error configuring search after login:', error);
       addAssistantMessage("❌ 配置搜索設定時發生錯誤");
-    } finally {
-      setIsConfiguringSearch(false);
     }
   }, [addAssistantMessage]);
 
+
+  // Simple monitoring function
   const checkLoginStatus = useCallback(async () => {
-    // Skip login check if search configuration is running
-    if (isConfiguringSearch) {
-      console.log("⏸️ Skipping login check - search configuration in progress");
-      return;
-    }
-    
-    console.log("checkLoginStatus - current state:", isLoggedIn);
     const { pageState } = await updateAndGetPageState();
     
     if (pageState.domSnapshot?.selectorMap) {
-      let foundLoginPrompt = false;
-      let foundLogoutButton = false;
-      
       for (const [highlightIndex, element] of pageState.domSnapshot.selectorMap.entries()) {
         const elementText = element.getAllTextTillNextClickableElement?.() || '';
         
-        // Check for login prompt
+        // If user needs to login, click login button
         if (elementText.includes('請先登入')) {
-          foundLoginPrompt = true;
-          console.log('🔐 Found login prompt');
-          
-          // Automatically click the login button
+          console.log('🔐 Found login prompt, clicking login button');
           try {
-            console.log('Clicking login button using agent...');
-            const clickAction = {
-              id: highlightIndex,
-              type: 'click' as const
-            };
-            
-            const success = await executeAction(clickAction);
-            if (!success) {
-              console.log('Could not click login button via agent');
-            }
+            const clickAction = { id: highlightIndex, type: 'click' as const };
+            await executeAction(clickAction);
+            addAssistantMessage("🔐 檢測到登入提示，已自動點擊登入按鈕");
           } catch (error) {
             console.error('Error clicking login button:', error);
           }
-          
-          // Break out of loop since we found and clicked the login button
-          break;
+          return; // Exit after clicking
         }
         
-        // Check for logout button
+        // If user is logged in (logout button found), start search
         if (elementText.includes('登出')) {
-          foundLogoutButton = true;
-          console.log('🚪 Found logout button');
+          console.log('🚪 Found logout button, user is logged in');
+          if (!isAutoSearching) {
+            addAssistantMessage("✅ 檢測到您已登入，開始配置搜索...");
+            await configSearchAfterLogin();
+            if (startAutoSearchRef.current) {
+              startAutoSearchRef.current();
+            }
+          }
+          return; // Exit after starting search
         }
-      }
-      
-      // Determine login status
-      let newLoginStatus: boolean;
-      if (foundLoginPrompt) {
-        newLoginStatus = false; // User needs to login
-      } else if (foundLogoutButton) {
-        newLoginStatus = true; // User is logged in
-      } else {
-        // Neither found - keep current state or assume logged out
-        newLoginStatus = isLoggedIn || false;
-      }
-      
-      // Handle state changes
-      if (isLoggedIn === null) {
-        // Initial state detection
-        setIsLoggedIn(newLoginStatus);
-        setLoginStateChecked(true);
-        console.log('🎯 Initial login status detected:', newLoginStatus);
-        
-        if (newLoginStatus) {
-          addAssistantMessage("✅ 您已經登入，我可以開始幫助您了！");
-          // Configure search after login
-          await configSearchAfterLogin();
-          setSearchConfigured(true);
-        } else {
-          addAssistantMessage("🔐 請先登入以繼續使用服務。");
-        }
-      } else if (isLoggedIn !== newLoginStatus) {
-        // State change detected
-        setIsLoggedIn(newLoginStatus);
-        console.log('🔄 Login status changed:', newLoginStatus);
-        
-        if (newLoginStatus) {
-          // User just logged in
-          addAssistantMessage("🎉 登入成功！我現在可以幫助您了。");
-          
-          // Configure search after login
-          await configSearchAfterLogin();
-          setSearchConfigured(true);
-        } else {
-          // User just logged out
-          addAssistantMessage("👋 您已登出，請重新登入以繼續使用。");
-          setSearchConfigured(false);
-        }
-      } else if (isLoggedIn === true && !searchConfigured) {
-        // User is logged in but search not configured yet - try to configure
-        console.log('🔄 User is logged in but search not configured - attempting configuration');
-        await configSearchAfterLogin();
-        setSearchConfigured(true);
       }
     }
-  }, [isLoggedIn, updateAndGetPageState, addAssistantMessage, isConfiguringSearch, searchConfigured, configSearchAfterLogin, executeAction]);
+  }, [updateAndGetPageState, executeAction, addAssistantMessage, configSearchAfterLogin, isAutoSearching]);
 
   const startMonitoring = useCallback(() => {
     if (isMonitoring) return;
     
     console.log('🔍 Starting login monitoring...');
     setIsMonitoring(true);
-    addAssistantMessage("🔍 開始監控登入狀態...");
+    addAssistantMessage("🔍 開始監控登入狀態");
     
     const interval = setInterval(checkLoginStatus, 1000);
     setMonitoringInterval(interval);
@@ -340,7 +221,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     
     console.log('⏹️ Stopping login monitoring...');
     setIsMonitoring(false);
-    addAssistantMessage("⏹️ 停止監控登入狀態");
+    addAssistantMessage("⏹️ 停止監控");
     
     if (monitoringInterval) {
       clearInterval(monitoringInterval);
@@ -348,14 +229,18 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     }
   }, [isMonitoring, monitoringInterval, addAssistantMessage]);
 
-  // Cleanup monitoring on unmount
+
+  // Cleanup monitoring and auto-search on unmount
   useEffect(() => {
     return () => {
       if (monitoringInterval) {
         clearInterval(monitoringInterval);
       }
+      if (autoSearchInterval) {
+        clearInterval(autoSearchInterval);
+      }
     };
-  }, [monitoringInterval]);
+  }, [monitoringInterval, autoSearchInterval]);
 
   // Search functionality - direct DOM manipulation
   const handleSearch = useCallback(async (searchTerm: string = "征伐隊戒指") => {
@@ -363,82 +248,38 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       console.log(`🔍 Starting search for: ${searchTerm}`);
       
       // Find search input field
-      const searchInputSelectors = [
-        "input#txb_KeyWord",
-        "input[placeholder='請輸入道具關鍵字']",
-        "input[type='text'][id='txb_KeyWord']"
-      ];
-      
-      let searchInput = null;
-      for (const selector of searchInputSelectors) {
-        try {
-          const element = document.querySelector(selector) as HTMLInputElement;
-          if (element && element.offsetParent !== null) {
-            searchInput = element;
-            console.log(`✅ Found search input: ${selector}`);
-            break;
-          }
-        } catch (e) {
-          console.log(`Search input selector ${selector} failed:`, e);
-          continue;
-        }
-      }
-      
+      const searchInput = document.querySelector("input#txb_KeyWord") as HTMLInputElement;
       if (!searchInput) {
         console.log('❌ Search input not found');
         addAssistantMessage("❌ 找不到搜索輸入框");
         return false;
       }
       
-      // Clear and fill search input
+      console.log('✅ Found search input: input#txb_KeyWord');
+      
+      // Set search term
       console.log(`🔧 Setting search term: ${searchTerm}`);
-      searchInput.value = '';
       searchInput.value = searchTerm;
       
       // Trigger input events
-      const inputEvent = new Event('input', { bubbles: true });
-      searchInput.dispatchEvent(inputEvent);
-      
-      const changeEvent = new Event('change', { bubbles: true });
-      searchInput.dispatchEvent(changeEvent);
+      searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+      searchInput.dispatchEvent(new Event('change', { bubbles: true }));
       
       console.log(`✅ Search term set: ${searchTerm}`);
       
       // Find and click search button
-      const searchButtonSelectors = [
-        "a#a_searchBtn",
-        "a[href='history']",
-        "a:contains('查詢')"
-      ];
-      
-      let searchButton = null;
-      for (const selector of searchButtonSelectors) {
-        try {
-          const element = document.querySelector(selector) as HTMLElement;
-          if (element && element.offsetParent !== null) {
-            searchButton = element;
-            console.log(`✅ Found search button: ${selector}`);
-            break;
-          }
-        } catch (e) {
-          console.log(`Search button selector ${selector} failed:`, e);
-          continue;
-        }
-      }
-      
+      const searchButton = document.querySelector("a#a_searchBtn") as HTMLElement;
       if (!searchButton) {
         console.log('❌ Search button not found');
         addAssistantMessage("❌ 找不到搜索按鈕");
         return false;
       }
       
+      console.log('✅ Found search button: a#a_searchBtn');
+      
       // Click search button
       console.log('🔧 Clicking search button...');
       searchButton.click();
-      
-      // Trigger click event
-      const clickEvent = new Event('click', { bubbles: true });
-      searchButton.dispatchEvent(clickEvent);
       
       console.log('✅ Search executed');
       addAssistantMessage(`🔍 已搜索: ${searchTerm}`);
@@ -451,8 +292,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       return false;
     }
   }, [addAssistantMessage]);
-
-
 
 
   // Search items management
@@ -479,52 +318,62 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     setSearchItems([]);
   }, []);
 
-  // Execute all searches sequentially
-  const executeAllSearches = useCallback(async () => {
-    if (searchItems.length === 0) return;
+  // Auto-search function that runs every 1 minute
+  const startAutoSearch = useCallback(() => {
+    if (isAutoSearching) return;
     
-    // Start monitoring before executing searches
-    if (!isMonitoring) {
-      startMonitoring();
-    }
+    console.log('🔄 Starting auto-search every 1 minute...');
+    setIsAutoSearching(true);
+    addAssistantMessage("🔄 開始自動搜索，每分鐘執行一次");
     
-    setIsSearching(true);
-    setCurrentSearchIndex(0);
-    setSearchResults([]);
-    
-    // Add initial message
-    addAssistantMessage(`🔍 Starting search for ${searchItems.length} items...`);
-    
-    for (let i = 0; i < searchItems.length; i++) {
-      const item = searchItems[i];
-      setCurrentSearchIndex(i);
-      
-      // Add search start message
-      addAssistantMessage(`🔍 Searching for: ${item} (${i + 1}/${searchItems.length})`);
-      
-      try {
-        // Execute the search
-        const success = await handleSearch(item);
+    const interval = setInterval(async () => {
+      if (searchItems.length > 0) {
+        console.log('🔄 Auto-search executing...');
+        addAssistantMessage("🔄 執行自動搜索...");
         
-        if (success) {
-          addAssistantMessage(`✅ Search completed for: ${item}`);
-          setSearchResults(prev => [...prev, item]);
-        } else {
-          addAssistantMessage(`❌ Search failed for: ${item}`);
+        for (const item of searchItems) {
+          try {
+            await handleSearch(item);
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds between searches
+          } catch (error) {
+            console.error('Error in auto-search:', error);
+          }
         }
-      } catch (error) {
-        addAssistantMessage(`❌ Error searching for: ${item}`);
       }
-      
-      // Wait between searches
-      await new Promise(resolve => setTimeout(resolve, 2000));
+    }, 60000); // 1 minute = 60000ms
+    
+    setAutoSearchInterval(interval);
+  }, [isAutoSearching, searchItems, handleSearch, addAssistantMessage]);
+
+  // Store the function in ref for use in checkLoginStatus
+  useEffect(() => {
+    startAutoSearchRef.current = startAutoSearch;
+  }, [startAutoSearch]);
+
+  // Simple workflow: start monitoring
+  const startWorkflow = useCallback(() => {
+    if (searchItems.length === 0) {
+      addAssistantMessage("❌ 請先添加搜索項目");
+      return;
     }
     
-    // Add completion message
-    addAssistantMessage(`🎉 All searches completed! Found ${searchResults.length} results.`);
+    if (isMonitoring) {
+      // If already monitoring, stop everything
+      stopMonitoring();
+      if (autoSearchInterval) {
+        clearInterval(autoSearchInterval);
+        setAutoSearchInterval(null);
+        setIsAutoSearching(false);
+      }
+      return;
+    }
     
-    setIsSearching(false);
-  }, [searchItems, handleSearch, searchResults, addAssistantMessage, isMonitoring, startMonitoring]);
+    console.log('🚀 Starting workflow...');
+    addAssistantMessage("🚀 開始工作流程：監控登入 → 自動搜索");
+    
+    // Start monitoring
+    startMonitoring();
+  }, [searchItems, isMonitoring, startMonitoring, stopMonitoring, autoSearchInterval, addAssistantMessage]);
 
 
   return (
@@ -600,72 +449,38 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                   </button>
                   
                   <button
-                    onClick={executeAllSearches}
-                    disabled={searchItems.length === 0 || isSearching}
+                    onClick={startWorkflow}
+                    disabled={searchItems.length === 0}
                     style={{
                       padding: '10px 20px',
-                      backgroundColor: isSearching ? '#6c757d' : '#28a745',
+                      backgroundColor: isMonitoring ? '#dc3545' : '#28a745',
                       color: 'white',
                       border: 'none',
                       borderRadius: '6px',
                       fontSize: '14px',
-                      cursor: isSearching ? 'not-allowed' : 'pointer',
+                      cursor: searchItems.length === 0 ? 'not-allowed' : 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px'
                     }}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                    </svg>
-                    {isSearching ? `Searching... (${currentSearchIndex + 1}/${searchItems.length})` : 'Run Searches'}
+                    {isMonitoring ? (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="6" y="4" width="4" height="16" />
+                          <rect x="14" y="4" width="4" height="16" />
+                        </svg>
+                        Stop Workflow
+                      </>
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                        </svg>
+                        Start Workflow
+                      </>
+                    )}
                   </button>
-                  
-                  {!isMonitoring ? (
-                    <button
-                      onClick={startMonitoring}
-                      style={{
-                        padding: '10px 20px',
-                        backgroundColor: '#007bff',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <polygon points="10,8 16,12 10,16 10,8" />
-                      </svg>
-                      Start Monitoring
-                    </button>
-                  ) : (
-                    <button
-                      onClick={stopMonitoring}
-                      style={{
-                        padding: '10px 20px',
-                        backgroundColor: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="6" y="4" width="4" height="16" />
-                        <rect x="14" y="4" width="4" height="16" />
-                      </svg>
-                      Stop Monitoring
-                    </button>
-                  )}
                 </div>
               </div>
             </div>

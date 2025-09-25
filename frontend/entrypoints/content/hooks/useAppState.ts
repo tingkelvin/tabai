@@ -74,7 +74,6 @@ export const useAppState = () => {
 
         flushSync(() => {
             setState(prevState => {
-                console.log("current state before", prevState);
                 newState = {
                     ...prevState,
                     ...updates,

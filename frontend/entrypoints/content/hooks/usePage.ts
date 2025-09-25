@@ -67,9 +67,6 @@ export const usePage = (config?: UsePageConfig): UsePageReturn => {
                 console.log('[usePage] Page state changes detected');
             }
 
-            console.log('Previous state:', cachePageStateAsString.current);
-            console.log('Current state:', updatedStateAsString);
-
             // Update the cached state
             cachePageStateAsString.current = updatedStateAsString;
 

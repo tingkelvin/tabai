@@ -11,6 +11,9 @@
   animation: notificationSlideIn 0.3s cubic-bezier(0.23, 1, 0.32, 1);
   cursor: pointer;
   transition: all 0.2s ease;
+  max-width: 240px;
+  min-width: 80px;
+  width: fit-content;
 }
 
 .message-notification:hover {
@@ -29,12 +32,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  overflow: hidden;
 }
 
 .notification-text {
   color: #1f2937;
   font-size: 13px;
   line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  display: block;
 }
 
 @keyframes notificationSlideIn {
