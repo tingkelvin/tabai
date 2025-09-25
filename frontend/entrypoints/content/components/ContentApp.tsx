@@ -258,7 +258,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   }, [monitoringInterval, autoSearchInterval]);
 
   // Search functionality - direct DOM manipulation
-  const handleSearch = useCallback(async (searchTerm: string = "征伐隊戒指", notes: [string, string, string] = ['', '', '']) => {
+  const handleSearch = useCallback(async (searchTerm: string = "征伐隊戒指", notes: [string, string, string] = ['', '', ''], searchItemIndex?: number) => {
     try {
       console.log(`🔍 Starting search for: ${searchTerm}`);
       const timestamp = new Date();
@@ -327,7 +327,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         
         console.log(`   Full search term: "${fullSearchTerm}"`);
         
-        await searchWithPagination(fullSearchTerm, notes);
+        await searchWithPagination(fullSearchTerm, notes, searchItemIndex);
       }, 2000);
       
       return true;
@@ -342,7 +342,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   }, [addAssistantMessage]);
 
   // Parse search results function
-  const parseSearchResults = useCallback(async (searchTerm: string = "征伐隊戒指", notes: [string, string, string] = ['', '', '']) => {
+  const parseSearchResults = useCallback(async (searchTerm: string = "征伐隊戒指", notes: [string, string, string] = ['', '', ''], searchItemIndex?: number) => {
     try {
       console.log(`🔍 Parsing search results for: ${searchTerm}`);
       const timestamp = new Date();
@@ -473,7 +473,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
               console.log(`   🆔 SSI: ${ssi.length > 20 ? ssi.substring(0, 20) + '...' : ssi}`);
               console.log(`   ⏰ Search Time: ${resultTimestamp}`);
               
-              // Add to search results
+              // Add to search results for specific item
               const newResult = {
                 itemName,
                 price,
@@ -485,7 +485,18 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                 timestamp: resultTimestamp
               };
               
-              setSearchResults(prev => [newResult, ...prev.slice(0, 9)]); // Keep last 10 results
+              // Update the specific search item's results
+              if (searchItemIndex !== undefined) {
+                setSearchItems(prev => prev.map((item, index) => 
+                  index === searchItemIndex 
+                    ? { 
+                        ...item, 
+                        results: [newResult], // Replace with new result
+                        lastSearchTime: timestamp
+                      }
+                    : item
+                ));
+              }
               
               // Log success
               const successLog = `✅ Found matching item: "${itemName}" at ${resultTimestamp}`;
@@ -533,7 +544,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   }, [addAssistantMessage]);
 
   // Search with pagination function
-  const searchWithPagination = useCallback(async (searchTerm: string, notes: [string, string, string]) => {
+  const searchWithPagination = useCallback(async (searchTerm: string, notes: [string, string, string], searchItemIndex?: number) => {
     let currentPage = 1;
     let firstItemFound = false;
     const maxPages = 10; // Limit to prevent infinite loops
@@ -544,7 +555,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       console.log(`📄 Searching page ${currentPage}...`);
       
       // Parse current page results
-      const itemFound = await parseSearchResults(searchTerm, notes);
+      const itemFound = await parseSearchResults(searchTerm, notes, searchItemIndex);
       
       if (itemFound) {
         firstItemFound = true;
@@ -602,12 +613,28 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     return firstItemFound;
   }, [parseSearchResults, addAssistantMessage]);
 
-  // Search items management - now with notes structure
+  // Search items management - now with notes structure and results
   const [searchItems, setSearchItems] = useState<Array<{
     name: string
     notes: [string, string, string]
+    results: Array<{
+      itemName: string
+      price: string
+      shopName: string
+      slot: string
+      quantity: string
+      buySell: string
+      ssi: string
+      timestamp: string
+    }>
+    lastSearchTime: Date | null
   }>>([
-    { name: '征伐隊戒指', notes: ['', '', ''] }
+    { 
+      name: '征伐隊戒指', 
+      notes: ['', '', ''], 
+      results: [],
+      lastSearchTime: null
+    }
   ])
   const [newSearchItem, setNewSearchItem] = useState({
     name: '',
@@ -618,17 +645,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const [searchLogs, setSearchLogs] = useState<string[]>([])
   const [lastSearchTime, setLastSearchTime] = useState<Date | null>(null)
   
-  // Search results state
-  const [searchResults, setSearchResults] = useState<Array<{
-    itemName: string
-    price: string
-    shopName: string
-    slot: string
-    quantity: string
-    buySell: string
-    ssi: string
-    timestamp: string
-  }>>([])
+  // Search results are now stored within each search item
   
 
   // Search item management functions
@@ -647,7 +664,9 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       if (!isExactDuplicate) {
         const newItem = {
           name: newSearchItem.name.trim(),
-          notes: trimmedNotes
+          notes: trimmedNotes,
+          results: [],
+          lastSearchTime: null
         };
         console.log('🔧 Adding new item:', newItem);
         
@@ -735,9 +754,10 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         setSearchLogs(prev => [...prev, autoSearchLog]);
         addAssistantMessage("🔄 執行自動搜索...");
         
-        for (const item of searchItems) {
+        for (let i = 0; i < searchItems.length; i++) {
+          const item = searchItems[i];
           try {
-            await handleSearch(item.name, item.notes);
+            await handleSearch(item.name, item.notes, i);
             await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds between searches
           } catch (error) {
             console.error('Error in auto-search:', error);
@@ -834,7 +854,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                   padding: '8px 12px',
                   backgroundColor: '#f8f9fa',
                   borderBottom: '1px solid #e0e0e0',
-                      display: 'flex',
+                  display: 'flex',
                   justifyContent: 'space-between',
                       alignItems: 'center',
                   fontSize: '12px',
@@ -856,13 +876,12 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                   overflow: 'hidden'
         }}>
                   {/* Search Items Section */}
-          <div style={{
-                    width: '50%', 
-                    borderRight: '1px solid #e0e0e0',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden'
-                  }}>
+           <div style={{
+                     width: '100%', 
+                     display: 'flex',
+                     flexDirection: 'column',
+                     overflow: 'hidden'
+                   }}>
             <div style={{
                       padding: '12px',
                       backgroundColor: '#e9ecef',
@@ -890,47 +909,30 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                       ) : (
                         <>
                           {searchItems.map((item, index) => (
-                            <div key={index} style={{
-              display: 'flex',
-              alignItems: 'center',
-                              padding: '6px',
-                              marginBottom: '4px',
-                              backgroundColor: '#f8f9fa',
-                              border: '1px solid #ddd',
-                              borderRadius: '4px',
-                              fontSize: '12px',
-                              gap: '4px'
-                            }}>
-                              {/* Name field */}
-                              <input
-                                type="text"
-                                value={item.name}
-                                onChange={(e) => {
-                                  const newItems = [...searchItems];
-                                  newItems[index] = { ...newItems[index], name: e.target.value };
-                                  setSearchItems(newItems);
-                                }}
-                                placeholder="名稱"
-                                style={{
-                                  width: '80px',
-                                  padding: '4px 6px',
-                                  border: '1px solid #ddd',
-                                  borderRadius: '3px',
-                                  fontSize: '12px',
-                                  backgroundColor: '#fff'
-                                }}
-                              />
-
-                              {/* Notes fields */}
-                              {item.notes.map((note, noteIndex) => (
+                            <div key={index} style={{ marginBottom: '8px' }}>
+                              {/* Item Configuration Row */}
+                              <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                                padding: '6px',
+                                backgroundColor: '#f8f9fa',
+                                border: '1px solid #ddd',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                gap: '4px'
+                              }}>
+                                {/* Name field */}
                                 <input
-                                  key={noteIndex}
                                   type="text"
-                                  value={note}
-                                  onChange={(e) => updateItemNote(index, noteIndex, e.target.value)}
-                                  placeholder={`字條${noteIndex + 1}`}
+                                  value={item.name}
+                                  onChange={(e) => {
+                                    const newItems = [...searchItems];
+                                    newItems[index] = { ...newItems[index], name: e.target.value };
+                                    setSearchItems(newItems);
+                                  }}
+                                  placeholder="名稱"
                                   style={{
-                                    width: '60px',
+                                    width: '80px',
                                     padding: '4px 6px',
                                     border: '1px solid #ddd',
                                     borderRadius: '3px',
@@ -938,43 +940,96 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                                     backgroundColor: '#fff'
                                   }}
                                 />
-                              ))}
+                                
+                                {/* Notes fields */}
+                                {item.notes.map((note, noteIndex) => (
+                                  <input
+                                    key={noteIndex}
+                                    type="text"
+                                    value={note}
+                                    onChange={(e) => updateItemNote(index, noteIndex, e.target.value)}
+                                    placeholder={`字條${noteIndex + 1}`}
+                                    style={{
+                                      width: '60px',
+                                      padding: '4px 6px',
+                                      border: '1px solid #ddd',
+                                      borderRadius: '3px',
+                                      fontSize: '12px',
+                                      backgroundColor: '#fff'
+                                    }}
+                                  />
+                                ))}
 
-                              {/* Remove button */}
-              <button
-                                onClick={() => removeSearchItem(index)}
-                style={{
-                                  padding: '4px 6px',
-                                  backgroundColor: '#dc3545',
-                                  color: 'white',
-                  border: 'none',
+                                {/* Remove button */}
+                  <button
+                                  onClick={() => removeSearchItem(index)}
+                    style={{
+                                    padding: '4px 6px',
+                                    backgroundColor: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#c82333';
+                                    e.currentTarget.style.transform = 'scale(1.05)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#dc3545';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                  }}
+                                  title="Remove item"
+                                >
+                                  <TrashIcon />
+                  </button>
+                </div>
+                              
+                              {/* Search Results for this item */}
+                              {item.results.length > 0 && (
+                                <div style={{
+                                  marginTop: '4px',
+                                  marginLeft: '20px',
+                                  padding: '8px',
+                                  backgroundColor: '#e8f5e8',
+                                  border: '1px solid #28a745',
                                   borderRadius: '4px',
-                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  transition: 'all 0.2s ease',
-                                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#c82333';
-                                  e.currentTarget.style.transform = 'scale(1.05)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#dc3545';
-                                  e.currentTarget.style.transform = 'scale(1)';
-                                }}
-                                title="Remove item"
-                              >
-                                <TrashIcon />
-              </button>
+                                  fontSize: '11px'
+                                }}>
+                                  <div style={{
+                                    fontWeight: 'bold',
+                                    marginBottom: '4px',
+                                    color: '#155724'
+                                  }}>
+                                    🎯 Latest Result ({item.lastSearchTime?.toLocaleTimeString()})
+              </div>
+                                  {item.results.slice(0, 1).map((result: any, resultIndex: number) => (
+                                    <div key={resultIndex} style={{
+                                      display: 'grid',
+                                      gridTemplateColumns: '1fr 1fr',
+                                      gap: '4px',
+                                      fontSize: '10px'
+                                    }}>
+                                      <div><strong>Item:</strong> {result.itemName}</div>
+                                      <div><strong>Price:</strong> {result.price}</div>
+                                      <div><strong>Shop:</strong> {result.shopName}</div>
+                                      <div><strong>Qty:</strong> {result.quantity}</div>
             </div>
+                                  ))}
+          </div>
+        )}
+      </div>
                           ))}
-                          
+
                           {/* Add new item box */}
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
                             padding: '6px',
                             marginBottom: '4px',
                             backgroundColor: '#f8f9fa',
@@ -990,7 +1045,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                               onChange={(e) => setNewSearchItem(prev => ({ ...prev, name: e.target.value }))}
                               placeholder="名稱"
                               onKeyPress={(e) => e.key === 'Enter' && addSearchItem()}
-                  style={{
+                style={{
                                 width: '80px',
                                 padding: '4px 6px',
                                 border: '1px solid #ddd',
@@ -1000,14 +1055,14 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                               }}
                             />
                             {newSearchItem.notes.map((note, noteIndex) => (
-                              <input
+                <input
                                 key={noteIndex}
-                                type="text"
+                  type="text"
                                 value={note}
                                 onChange={(e) => updateNewItemNote(noteIndex, e.target.value)}
                                 placeholder={`字條${noteIndex + 1}`}
                   onKeyPress={(e) => e.key === 'Enter' && addSearchItem()}
-                                style={{
+                  style={{
                                   width: '60px',
                                   padding: '4px 6px',
                                   border: '1px solid #ddd',
@@ -1056,114 +1111,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
               </div>
             </div>
 
-                  {/* Search Results Section */}
-              <div style={{ 
-                    width: '50%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{
-                      padding: '12px',
-                      backgroundColor: '#e9ecef',
-                      borderBottom: '1px solid #e0e0e0',
-                      fontSize: '14px',
-                      fontWeight: 'bold',
-                    display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}>
-                      <span>🎯 Search Results ({searchResults.length})</span>
-                    <button
-                        onClick={() => setSearchResults([])}
-                        disabled={searchResults.length === 0}
-                      style={{
-                        padding: '4px 8px',
-                          backgroundColor: searchResults.length === 0 ? '#6c757d' : '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                          borderRadius: '4px',
-                        fontSize: '12px',
-                          cursor: searchResults.length === 0 ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                        Clear
-                    </button>
-                  </div>
-                    
-                    <div style={{
-                      flex: 1,
-                      overflowY: 'auto',
-                      padding: '8px'
-                    }}>
-                      {searchResults.length === 0 ? (
-                        <div style={{
-                          textAlign: 'center',
-                          color: '#666',
-                          padding: '20px',
-                          fontSize: '14px'
-                        }}>
-                          No search results yet
-                  </div>
-                      ) : (
-                        searchResults.map((result, index) => (
-                          <div key={index} style={{
-                            padding: '12px',
-                            marginBottom: '8px',
-                            backgroundColor: '#f8f9fa',
-                            border: '1px solid #ddd',
-                            borderRadius: '6px',
-                            fontSize: '12px'
-                          }}>
-                            <div style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              marginBottom: '8px'
-                            }}>
-                              <span style={{
-                                fontWeight: 'bold',
-                                color: '#007bff',
-                                fontSize: '13px'
-                              }}>
-                                🎯 {result.itemName}
-                              </span>
-                              <span style={{
-                                fontSize: '11px',
-                                color: '#666'
-                              }}>
-                                {result.timestamp}
-                              </span>
-                            </div>
-                            
-                            <div style={{ marginBottom: '4px' }}>
-                              <span style={{ fontWeight: 'bold' }}>🏪 Shop:</span> {result.shopName}
-                            </div>
-                            <div style={{ marginBottom: '4px' }}>
-                              <span style={{ fontWeight: 'bold' }}>💰 Price:</span> {result.price}
-                            </div>
-                            <div style={{ marginBottom: '4px' }}>
-                              <span style={{ fontWeight: 'bold' }}>📊 Qty:</span> {result.quantity}
-                            </div>
-                            <div style={{ marginBottom: '4px' }}>
-                              <span style={{ fontWeight: 'bold' }}>📍 Slot:</span> {result.slot}
-                            </div>
-                            <div style={{ marginBottom: '4px' }}>
-                              <span style={{ fontWeight: 'bold' }}>🔄 Type:</span> {result.buySell}
-                            </div>
-                            <div style={{
-                              fontSize: '10px',
-                              color: '#888',
-                              wordBreak: 'break-all'
-                            }}>
-                              <span style={{ fontWeight: 'bold' }}>🆔 SSI:</span> {result.ssi}
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
               </div>
-            </div>
 
                 {/* Action Buttons */}
                 <div style={{
@@ -1212,7 +1160,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                     onClick={() => {
                       if (searchItems.length === 0) return;
                       const firstItem = searchItems[0];
-                      handleSearch(firstItem.name, firstItem.notes);
+                      handleSearch(firstItem.name, firstItem.notes, 0);
                     }}
                     disabled={searchItems.length === 0}
                 style={{
@@ -1239,7 +1187,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                     onClick={() => {
                       if (searchItems.length === 0) return;
                       const firstItem = searchItems[0];
-                      parseSearchResults(firstItem.name, firstItem.notes);
+                      parseSearchResults(firstItem.name, firstItem.notes, 0);
                     }}
                     disabled={searchItems.length === 0}
                     style={{
