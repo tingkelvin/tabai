@@ -829,7 +829,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     }
     
     console.log('🚀 Starting workflow...');
-    addAssistantMessage("🚀 開始工作流程：監控登入 → 自動搜索");
+    addAssistantMessage("🚀 開始工作流程：自動搜索");
     
     // Start monitoring
     setIsMinimized(true)

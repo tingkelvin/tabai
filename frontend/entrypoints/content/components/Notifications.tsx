@@ -58,8 +58,8 @@ const Notifications: React.FC<NotificationsProps> = ({
         const screenHeight = window.innerHeight
 
         // Approximate notification dimensions for bounds checking
-        const notificationWidth = isThinkingNotification ? 80 : 240
-        const notificationHeight = isThinkingNotification ? 40 : 60
+        const notificationWidth = isThinkingNotification ? 120 : 400
+        const notificationHeight = isThinkingNotification ? 50 : 80
 
         const spacing = 12
 
@@ -128,8 +128,8 @@ const Notifications: React.FC<NotificationsProps> = ({
         ) {
             // Truncate content for display but keep original for width calculation
             const displayContent =
-                lastMessage.content.length > 120
-                    ? `${lastMessage.content.substring(0, 120)}...`
+                lastMessage.content.length > 200
+                    ? `${lastMessage.content.substring(0, 200)}...`
                     : lastMessage.content
 
             setCurrentNotification({
