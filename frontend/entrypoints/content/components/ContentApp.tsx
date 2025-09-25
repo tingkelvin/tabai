@@ -244,11 +244,19 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const handleSearch = useCallback(async (searchTerm: string = "征伐隊戒指") => {
     try {
       console.log(`🔍 Starting search for: ${searchTerm}`);
+      const timestamp = new Date();
+      setLastSearchTime(timestamp);
+      
+      // Log the search attempt
+      const logMessage = `🔍 Searching for: "${searchTerm}" at ${timestamp.toLocaleTimeString()}`;
+      setSearchLogs(prev => [...prev, logMessage]);
       
       // Find search input field
       const searchInput = document.querySelector("input#txb_KeyWord") as HTMLInputElement;
       if (!searchInput) {
         console.log('❌ Search input not found');
+        const errorLog = `❌ Search input not found at ${timestamp.toLocaleTimeString()}`;
+        setSearchLogs(prev => [...prev, errorLog]);
         addAssistantMessage("❌ 找不到搜索輸入框");
         return false;
       }
@@ -269,6 +277,8 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       const searchButton = document.querySelector("a#a_searchBtn") as HTMLElement;
       if (!searchButton) {
         console.log('❌ Search button not found');
+        const errorLog = `❌ Search button not found at ${timestamp.toLocaleTimeString()}`;
+        setSearchLogs(prev => [...prev, errorLog]);
         addAssistantMessage("❌ 找不到搜索按鈕");
         return false;
       }
@@ -280,12 +290,16 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       searchButton.click();
       
       console.log('✅ Search executed');
+      const successLog = `✅ Search executed successfully for "${searchTerm}" at ${timestamp.toLocaleTimeString()}`;
+      setSearchLogs(prev => [...prev, successLog]);
       addAssistantMessage(`🔍 已搜索: ${searchTerm}`);
       
       return true;
       
     } catch (error) {
       console.error('Error executing search:', error);
+      const errorLog = `❌ Search error: ${error} at ${new Date().toLocaleTimeString()}`;
+      setSearchLogs(prev => [...prev, errorLog]);
       addAssistantMessage("❌ 搜索時發生錯誤");
       return false;
     }
@@ -296,22 +310,47 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const [searchItems, setSearchItems] = useState<string[]>(['征伐隊戒指'])
   const [newSearchItem, setNewSearchItem] = useState('')
   const [showSearchModal, setShowSearchModal] = useState(false)
+  
+  // Logging state
+  const [searchLogs, setSearchLogs] = useState<string[]>([])
+  const [lastSearchTime, setLastSearchTime] = useState<Date | null>(null)
 
   // Search item management functions
   const addSearchItem = useCallback(() => {
     if (newSearchItem.trim() && !searchItems.includes(newSearchItem.trim())) {
-      setSearchItems(prev => [...prev, newSearchItem.trim()]);
+      const newItem = newSearchItem.trim();
+      setSearchItems(prev => [...prev, newItem]);
       setNewSearchItem('');
+      
+      // Log the addition
+      const timestamp = new Date().toLocaleTimeString();
+      const logMessage = `✅ Added search item: "${newItem}" at ${timestamp}`;
+      setSearchLogs(prev => [...prev, logMessage]);
+      addAssistantMessage(`🔍 已添加搜索項目: "${newItem}"`);
     }
-  }, [newSearchItem, searchItems]);
+  }, [newSearchItem, searchItems, addAssistantMessage]);
 
   const removeSearchItem = useCallback((index: number) => {
+    const removedItem = searchItems[index];
     setSearchItems(prev => prev.filter((_, i) => i !== index));
-  }, []);
+    
+    // Log the removal
+    const timestamp = new Date().toLocaleTimeString();
+    const logMessage = `❌ Removed search item: "${removedItem}" at ${timestamp}`;
+    setSearchLogs(prev => [...prev, logMessage]);
+    addAssistantMessage(`🗑️ 已移除搜索項目: "${removedItem}"`);
+  }, [searchItems, addAssistantMessage]);
 
   const clearAllSearchItems = useCallback(() => {
+    const itemCount = searchItems.length;
     setSearchItems([]);
-  }, []);
+    
+    // Log the clearing
+    const timestamp = new Date().toLocaleTimeString();
+    const logMessage = `🧹 Cleared all ${itemCount} search items at ${timestamp}`;
+    setSearchLogs(prev => [...prev, logMessage]);
+    addAssistantMessage(`🧹 已清除所有 ${itemCount} 個搜索項目`);
+  }, [searchItems, addAssistantMessage]);
 
   // Auto-search function that runs every 1 minute
   const startAutoSearch = useCallback(() => {
@@ -319,11 +358,17 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     
     console.log('🔄 Starting auto-search every 1 minute...');
     setIsAutoSearching(true);
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const logMessage = `🔄 Auto-search started at ${timestamp}`;
+    setSearchLogs(prev => [...prev, logMessage]);
     addAssistantMessage("🔄 開始自動搜索，每分鐘執行一次");
     
     const interval = setInterval(async () => {
       if (searchItems.length > 0) {
         console.log('🔄 Auto-search executing...');
+        const autoSearchLog = `🔄 Auto-search cycle started at ${new Date().toLocaleTimeString()}`;
+        setSearchLogs(prev => [...prev, autoSearchLog]);
         addAssistantMessage("🔄 執行自動搜索...");
         
         for (const item of searchItems) {
@@ -332,6 +377,8 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
             await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds between searches
           } catch (error) {
             console.error('Error in auto-search:', error);
+            const errorLog = `❌ Auto-search error for "${item}": ${error} at ${new Date().toLocaleTimeString()}`;
+            setSearchLogs(prev => [...prev, errorLog]);
           }
         }
       }
@@ -406,47 +453,207 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
               title={title}
             />
             <div className='terminal-content'>
-              <div className='chat-section'>
-                <ChatHistory
-                  chatMessagesRef={chatMessagesRef}
-                  chatMessages={chatMessages}
-                  isThinking={isThinking}
-                />
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                height: '100%',
+                overflow: 'hidden'
+              }}>
+                {/* Status Bar */}
+                <div style={{
+                  padding: '8px 12px',
+                  backgroundColor: '#f8f9fa',
+                  borderBottom: '1px solid #e0e0e0',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '12px',
+                  color: '#666'
+                }}>
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <span>Monitoring: {isMonitoring ? '🟢 Active' : '🔴 Inactive'}</span>
+                    <span>Auto-search: {isAutoSearching ? '🟢 Running' : '🔴 Stopped'}</span>
+                  </div>
+                  <div>
+                    Last: {lastSearchTime ? lastSearchTime.toLocaleTimeString() : 'Never'}
+                  </div>
+                </div>
 
-                {/* Search Configuration Button */}
+                {/* Main Content Area */}
+                <div style={{ 
+                  flex: 1, 
+                  display: 'flex', 
+                  overflow: 'hidden'
+                }}>
+                  {/* Search Items Section */}
+                  <div style={{ 
+                    width: '50%', 
+                    borderRight: '1px solid #e0e0e0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      padding: '12px',
+                      backgroundColor: '#e9ecef',
+                      borderBottom: '1px solid #e0e0e0',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span>🔍 Search Items ({searchItems.length})</span>
+                      <button
+                        onClick={() => {
+                          setIsMinimized(true)
+                          setShowSearchModal(true)
+                        }}
+                        style={{
+                          padding: '4px 8px',
+                          backgroundColor: '#007bff',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Configure
+                      </button>
+                    </div>
+                    
+                    <div style={{
+                      flex: 1,
+                      overflowY: 'auto',
+                      padding: '8px'
+                    }}>
+                      {searchItems.length === 0 ? (
+                        <div style={{
+                          textAlign: 'center',
+                          color: '#666',
+                          padding: '20px',
+                          fontSize: '14px'
+                        }}>
+                          No search items configured
+                        </div>
+                      ) : (
+                        searchItems.map((item, index) => (
+                          <div key={index} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '8px 12px',
+                            marginBottom: '4px',
+                            backgroundColor: '#f8f9fa',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            fontSize: '14px'
+                          }}>
+                            <span style={{ 
+                              flex: 1,
+                              fontWeight: '500'
+                            }}>
+                              {item}
+                            </span>
+                            <button
+                              onClick={() => removeSearchItem(index)}
+                              style={{
+                                padding: '2px 6px',
+                                backgroundColor: '#dc3545',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '3px',
+                                fontSize: '11px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Logs Section */}
+                  <div style={{ 
+                    width: '50%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      padding: '12px',
+                      backgroundColor: '#e9ecef',
+                      borderBottom: '1px solid #e0e0e0',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span>📝 Activity Log ({searchLogs.length})</span>
+                      <button
+                        onClick={() => setSearchLogs([])}
+                        disabled={searchLogs.length === 0}
+                        style={{
+                          padding: '4px 8px',
+                          backgroundColor: searchLogs.length === 0 ? '#6c757d' : '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          cursor: searchLogs.length === 0 ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    
+                    <div style={{
+                      flex: 1,
+                      overflowY: 'auto',
+                      padding: '8px',
+                      fontFamily: 'monospace',
+                      fontSize: '12px',
+                      lineHeight: '1.4'
+                    }}>
+                      {searchLogs.length === 0 ? (
+                        <div style={{
+                          textAlign: 'center',
+                          color: '#666',
+                          padding: '20px',
+                          fontSize: '14px'
+                        }}>
+                          No activity logs yet
+                        </div>
+                      ) : (
+                        searchLogs.slice(-20).map((log, index) => (
+                          <div key={index} style={{
+                            padding: '4px 8px',
+                            marginBottom: '2px',
+                            backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'transparent',
+                            borderRadius: '2px',
+                            fontSize: '11px',
+                            color: '#333'
+                          }}>
+                            {log}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
                 <div style={{
                   padding: '12px',
                   borderTop: '1px solid #e0e0e0',
                   backgroundColor: '#f8f9fa',
                   display: 'flex',
                   justifyContent: 'center',
-                  gap: '8px'
+                  gap: '12px'
                 }}>
-                  <button
-                    onClick={() => {
-                      setIsMinimized(true)
-                      setShowSearchModal(true)
-                    }}
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: '#007bff',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="11" cy="11" r="8" />
-                      <path d="m21 21-4.35-4.35" />
-                    </svg>
-                    Configure Search ({searchItems.length} items)
-                  </button>
-                  
                   <button
                     onClick={startWorkflow}
                     disabled={searchItems.length === 0}
@@ -479,6 +686,32 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                         Start Workflow
                       </>
                     )}
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      if (searchItems.length === 0) return;
+                      handleSearch(searchItems[0]);
+                    }}
+                    disabled={searchItems.length === 0}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: '#17a2b8',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      cursor: searchItems.length === 0 ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="m21 21-4.35-4.35" />
+                    </svg>
+                    Test Search
                   </button>
                 </div>
               </div>
