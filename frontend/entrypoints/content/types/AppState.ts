@@ -9,9 +9,6 @@ export interface AppState {
     useSearch: boolean;
     useAgent: boolean;
 
-    // File state
-    uploadedFiles: File[];
-    fileContentAsString: string;
 
     // Page state
     pageState: string;

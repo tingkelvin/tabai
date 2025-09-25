@@ -19,7 +19,7 @@ export const PromptBuilder = {
      * Build a complete prompt message based on configuration
      */
     buildMessage: (userMessage: string | "", appState: AppState): string => {
-        const { fileContentAsString, useAgent, actionsExecuted } = appState
+        const { useAgent, actionsExecuted } = appState
         let message = '';
 
         // Add main content (task or user message)
@@ -29,10 +29,6 @@ export const PromptBuilder = {
             message += `<user_message>${userMessage}</user_message>`;
         }
 
-        // Add file context if available
-        if (fileContentAsString) {
-            message += `<context>${fileContentAsString}</context>`;
-        }
 
         // Add page state and instructions for agent mode
         if (useAgent) {
@@ -48,9 +44,8 @@ export const PromptBuilder = {
     /**
      * Build a continuation message for agent mode when page state updates
      */
-    buildContinuationMessage: (task: string, fileContent: string, appState: AppState): string => {
+    buildContinuationMessage: (task: string, appState: AppState): string => {
         let message = `<task>Page updated. Continue with task: ${task}</task>`;
-        message += `<context>${fileContent}</context>`;
         message += `<page_state>${appState.pageStateAsString}</page_state>`;
         message += PromptBuilder.getAgentInstructions();
 

@@ -23,7 +23,6 @@ export const SUPPORTED_FILE_TYPES: SupportedFileTypes = {
     'text/csv': ['.csv'],
     'application/json': ['.json'],
     'text/markdown': ['.md'],
-    'application/pdf': ['.pdf'], // PDF support
     // Images
     'image/jpeg': ['.jpg', '.jpeg'],
     'image/png': ['.png'],

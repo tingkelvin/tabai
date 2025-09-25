@@ -30,13 +30,25 @@ export async function getClickableElementsFromDomTree(
     viewportExpansion = 0,
     debugMode = false,
 ): Promise<DomSnapshot> {
-    // If URL is provided and it's about:blank, return a minimal DOM tree
+    try {
+        // Execute buildDomTree directly in the current context (content script)
+        const result: DomTreeResult = buildDomTree({
+            doHighlightElements: showHighlightElements,
+            focusHighlightIndex: focusElement,
+            viewportExpansion: viewportExpansion,
+            debugMode: debugMode
+        });
+        
+        if (!result || !result.rootId) {
+            throw new Error('Failed to build DOM tree: No result returned or invalid structure');
+        }
 
-    const result: DomTreeResult = buildDomTree();
-    if (!result.rootId) throw new Error('Failed to build DOM tree');
-
-    const [root, selectorMap]: [ElementDomNode, Map<number, ElementDomNode>] = constructDomTree(result);
-    return { root, selectorMap };
+        const [root, selectorMap]: [ElementDomNode, Map<number, ElementDomNode>] = constructDomTree(result);
+        return { root, selectorMap };
+    } catch (error) {
+        console.error('Error in getClickableElementsFromDomTree:', error);
+        throw error;
+    }
 }
 
 export async function removeHighlights(): Promise<void> {

@@ -92,13 +92,6 @@ export const stateManager = {
         await stateManager.updateState(updates);
     },
 
-    updateFileState: async (updates: {
-        uploadedFiles?: File[];
-        fileContentAsString?: string;
-    }): Promise<void> => {
-        console.log('🔄 Updating file state:', updates);
-        await stateManager.updateState(updates);
-    },
 
     updateUIState: async (updates: {
         isMinimized?: boolean;

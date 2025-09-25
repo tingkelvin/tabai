@@ -31,7 +31,7 @@ export const usePage = (config?: UsePageConfig): UsePageReturn => {
     const hasInitialScanRef = useRef<boolean>(false);
     const isUpdatingRef = useRef<boolean>(false);
     const lastUpdateRef = useRef<number>(0);
-    const mutationObserverRef = useRef<MutationObserver | null>(null);
+    // Removed MutationObserver - using simple timeout approach instead
     const stabilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const cachePageStateAsString = useRef<string>("");
 
@@ -141,61 +141,8 @@ export const usePage = (config?: UsePageConfig): UsePageReturn => {
                 clearTimeout(stabilityTimeoutRef.current);
             }
 
-            // Disconnect existing observer
-            if (mutationObserverRef.current) {
-                mutationObserverRef.current.disconnect();
-            }
-
-            // Set up mutation observer to detect DOM changes
-            mutationObserverRef.current = new MutationObserver((mutations) => {
-                // Filter out insignificant mutations
-                const significantMutations = mutations.filter(mutation => {
-                    // Ignore attribute changes for certain attributes
-                    if (mutation.type === 'attributes') {
-                        const ignoredAttributes = ['class', 'style', 'data-highlighted'];
-                        return !ignoredAttributes.includes(mutation.attributeName || '');
-                    }
-
-                    // Ignore text changes in script tags
-                    if (mutation.type === 'childList' && mutation.target.nodeName === 'SCRIPT') {
-                        return false;
-                    }
-
-                    return true;
-                });
-
-                if (significantMutations.length > 0) {
-                    mutationCount += significantMutations.length;
-                    lastMutationTime = Date.now();
-
-                    // console.log(`[usePage] DOM changes detected (${significantMutations.length} mutations, ${mutationCount} total) - resetting stability timer`);
-
-                    // Clear existing stability timeout
-                    if (stabilityTimeoutRef.current) {
-                        clearTimeout(stabilityTimeoutRef.current);
-                    }
-
-                    // Set new stability timeout
-                    stabilityTimeoutRef.current = setTimeout(() => {
-                        isStable = true;
-                        console.log(`[usePage] Page stable after ${mutationCount} mutations - resolving as stable`);
-                        cleanup();
-                        resolve(true);
-                    }, stabilityDelay);
-                }
-            });
-
-            // Start observing DOM changes
-            mutationObserverRef.current.observe(document.body, {
-                childList: true,
-                subtree: true,
-                attributes: true,
-                attributeOldValue: true,
-                characterData: true,
-                characterDataOldValue: true
-            });
-
-            console.log(`[usePage] MutationObserver started - watching for DOM changes`);
+            // Simple timeout approach - no MutationObserver needed
+            console.log(`[usePage] Using simple timeout approach - waiting ${stabilityDelay}ms for page stability`);
 
             // Set initial stability timeout
             stabilityTimeoutRef.current = setTimeout(() => {
@@ -224,10 +171,7 @@ export const usePage = (config?: UsePageConfig): UsePageReturn => {
                     stabilityTimeoutRef.current = null;
                 }
 
-                if (mutationObserverRef.current) {
-                    mutationObserverRef.current.disconnect();
-                    mutationObserverRef.current = null;
-                }
+                // No MutationObserver to disconnect
             };
         });
     }, []);

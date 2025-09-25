@@ -9,8 +9,6 @@ export interface AppState {
     useSearch: boolean;
     useAgent: boolean;
 
-    // File state
-    fileContentAsString: string;
 
     // Page state
     pageStateAsString: string;
@@ -37,7 +35,6 @@ export const defaultAppState: AppState = {
     useSearch: false,
     useAgent: false,
 
-    fileContentAsString: "",
 
     // Page state
     pageStateAsString: "default",
