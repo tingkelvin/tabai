@@ -210,7 +210,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     
     console.log('🔍 Starting login monitoring...');
     setIsMonitoring(true);
-    addAssistantMessage("🔍 開始監控登入狀態");
     
     const interval = setInterval(checkLoginStatus, 1000);
     setMonitoringInterval(interval);
@@ -221,7 +220,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     
     console.log('⏹️ Stopping login monitoring...');
     setIsMonitoring(false);
-    addAssistantMessage("⏹️ 停止監控");
     
     if (monitoringInterval) {
       clearInterval(monitoringInterval);
@@ -297,9 +295,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   // Search items management
   const [searchItems, setSearchItems] = useState<string[]>(['征伐隊戒指'])
   const [newSearchItem, setNewSearchItem] = useState('')
-  const [isSearching, setIsSearching] = useState(false)
-  const [currentSearchIndex, setCurrentSearchIndex] = useState(0)
-  const [searchResults, setSearchResults] = useState<string[]>([])
   const [showSearchModal, setShowSearchModal] = useState(false)
 
   // Search item management functions
@@ -372,6 +367,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     addAssistantMessage("🚀 開始工作流程：監控登入 → 自動搜索");
     
     // Start monitoring
+    setIsMinimized(true)
     startMonitoring();
   }, [searchItems, isMonitoring, startMonitoring, stopMonitoring, autoSearchInterval, addAssistantMessage]);
 
@@ -427,7 +423,10 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                   gap: '8px'
                 }}>
                   <button
-                    onClick={() => setShowSearchModal(true)}
+                    onClick={() => {
+                      setIsMinimized(true)
+                      setShowSearchModal(true)
+                    }}
                     style={{
                       padding: '10px 20px',
                       backgroundColor: '#007bff',
@@ -546,7 +545,10 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                 🔍 Search Configuration
               </h3>
               <button
-                onClick={() => setShowSearchModal(false)}
+                onClick={() => {
+                  setShowSearchModal(false)
+                  setIsMinimized(false)
+                }}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -664,7 +666,10 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                 Clear All
               </button>
               <button
-                onClick={() => setShowSearchModal(false)}
+                onClick={() => {
+                  setShowSearchModal(false)
+                  setIsMinimized(false)
+                }}
                 style={{
                   padding: '10px 16px',
                   backgroundColor: '#6c757d',
