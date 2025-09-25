@@ -6,18 +6,17 @@ import ResizeHandle from './ResizeHandle'
 import Notifications from './Notifications'
 
 // Types import
-import type { ActionButton, ContentAppProps } from '../types/components'
+import type { ContentAppProps } from '../types/components'
 import { WIDGET_CONFIG, RESIZE_TYPES, MESSAGE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
 import { usePage } from '../hooks/usePage'
 import { useAppState } from '../hooks/useAppState'
-import { Position } from '../types/widget'
 import { PlusIcon,  RemoveIcon} from './Icons'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   const widgetRef = useRef<HTMLDivElement>(null)
-  const { state, isInitialized, updateState } = useAppState();
+  const { state, updateState } = useAppState();
   const { chatMessages, isThinking, useSearch, useAgent, task, actionsExecuted } = state;
 
   // Search state management to prevent race conditions
@@ -100,7 +99,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     startResize,
     isMinimized,
     setIsMinimized,
-    setIconPosition,
     isDragging,
     isResizing,
     currentSize,
@@ -162,106 +160,29 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     try {
       console.log('🔍 Checking for login button...');
       
-      // Define button selectors to check
-      const buttonSelectors = [
-        "a[href='history'][id='a_searchBtn']",  // Precise selector
-        "#a_searchBtn",  // By ID
-        "a[href='history']"  // By href
-      ];
+      // Use the working selector
+      const buttonElement = document.querySelector("a[href='history'][id='a_searchBtn']") as HTMLElement;
       
-      let buttonFound = false;
-      let buttonText = '';
-      let buttonElement: HTMLElement | null = null;
-      
-      // Try each selector
-      for (const selector of buttonSelectors) {
-        try {
-          const button = document.querySelector(selector) as HTMLElement;
-          if (button) {
-            buttonFound = true;
-            buttonText = button.textContent?.trim() || '';
-            buttonElement = button;
-            console.log(`✅ Found login button!`);
-            console.log(`   Selector: ${selector}`);
-            console.log(`   Button text: '${buttonText}'`);
-            console.log(`   Button href: ${button.getAttribute('href')}`);
-            console.log(`   Button visible: ${button.offsetParent !== null}`);
-            break;
-          }
-        } catch (error) {
-          console.log(`Selector ${selector} not found: ${error}`);
-          continue;
-        }
-      }
-      
-      if (!buttonFound) {
-        console.log('❌ Login button not found with specified selectors');
-        console.log('Checking all <a> tags on page...');
-        
-        // List all <a> tags
-        const allLinks = document.querySelectorAll('a');
-        console.log(`Page has ${allLinks.length} <a> tags:`);
-        
-        for (let i = 0; i < Math.min(allLinks.length, 10); i++) {
-          const link = allLinks[i] as HTMLElement;
-          const href = link.getAttribute('href');
-          const text = link.textContent?.trim() || '';
-          const linkId = link.getAttribute('id');
-          
-          if (text || href) {
-            console.log(`  ${i + 1}. ID: '${linkId}', Text: '${text}', Href: '${href}'`);
-          }
-        }
+      if (!buttonElement) {
+        console.log('❌ Login button not found');
         return { buttonFound: false, buttonText: '' };
       }
       
-      // Try to click the button
-      try {
-        console.log('🖱️ Clicking login button...');
-        
-        if (buttonElement && buttonElement.offsetParent !== null) {
-          // Scroll to button position
-          buttonElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for scroll
-          
-          // Click the button
-          buttonElement.click();
-          console.log('✅ Successfully clicked login button!');
-          
-          // Wait for page response
-          console.log('⏳ Waiting for page response...');
-          await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 2000));
-          
-          // Check if URL changed
-          const currentUrl = window.location.href;
-          console.log(`   Current URL after click: ${currentUrl}`);
-          
-          // Wait a bit more for form to load
-          await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-          
-          console.log('✅ Page has responded to click operation');
-          
-        } else {
-          console.log('❌ Button not visible or clickable');
-        }
-        
-      } catch (clickError) {
-        console.error(`❌ Error clicking button: ${clickError}`);
-        
-        // Try JavaScript click as fallback
-        try {
-          console.log('🔄 Trying JavaScript click...');
-          if (buttonElement) {
-            buttonElement.click();
-            console.log('✅ JavaScript click successful!');
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          }
-        } catch (jsError) {
-          console.error(`❌ JavaScript click also failed: ${jsError}`);
-        }
-      }
+      const buttonText = buttonElement.textContent?.trim() || '';
+      console.log(`✅ Found login button!`);
+      console.log(`   Button text: '${buttonText}'`);
+      console.log(`   Button href: ${buttonElement.getAttribute('href')}`);
       
-      return { buttonFound, buttonText };
+      // Click the button
+      console.log('🖱️ Clicking login button...');
+    
+      buttonElement.click();
+      console.log('✅ Successfully clicked login button!');
+      
+      const currentUrl = window.location.href;
+      console.log(`   Current URL after click: ${currentUrl}`);
+      
+      return { buttonFound: true, buttonText };
       
     } catch (error) {
       console.error(`❌ Error in checkAndClickLoginButton: ${error}`);
@@ -457,28 +378,8 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       const logMessage = `🔍 Parsing search results for "${searchTerm}" at ${timestamp.toLocaleTimeString()}`;
       setSearchLogs(prev => [...prev, logMessage]);
       
-      // Find result table with multiple selectors
-      const resultTableSelectors = [
-        "table tbody#_tbody",  // By ID
-        "tbody#_tbody",        // Direct by ID
-        "tbody[id='_tbody']"   // CSS selector
-      ];
-      
-      let resultTable: HTMLElement | null = null;
-      
-      for (const selector of resultTableSelectors) {
-        try {
-          const element = document.querySelector(selector) as HTMLElement;
-          if (element) {
-            resultTable = element;
-            console.log(`✅ Found result table: ${selector}`);
-            break;
-          }
-        } catch (error) {
-          console.log(`Selector ${selector} not found: ${error}`);
-          continue;
-        }
-      }
+      // Find result table using the working selector
+      const resultTable = document.querySelector("table tbody#_tbody") as HTMLElement;
       
       if (!resultTable) {
         console.log("❌ Result table not found");
@@ -487,6 +388,8 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         addAssistantMessage("❌ 找不到搜索結果表格");
         return false;
       }
+      
+      console.log(`✅ Found result table: table tbody#_tbody`);
       
       // Parse table rows
       try {
