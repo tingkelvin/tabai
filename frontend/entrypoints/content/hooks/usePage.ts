@@ -106,20 +106,21 @@ export const usePage = (config?: UsePageConfig): UsePageReturn => {
         return document.title;
     }, []);
 
-    const getElementAtCoordinate = useCallback(async (x: number, y: number) => {
-        if (!pageStateRef.current?.domSnapshot?.selectorMap) return;
+  const getElementAtCoordinate = useCallback(async (x: number, y: number) => {
+    if (!pageStateRef.current?.domSnapshot?.selectorMap) return;
 
-        for (const [highlightIndex, node] of pageStateRef.current.domSnapshot.selectorMap.entries()) {
-            const element = await locateElement(node);
-            if (element) {
-                const rect = element.getBoundingClientRect();
-                if (x >= rect.left && x <= rect.right &&
-                    y >= rect.top && y <= rect.bottom) {
-                    highlightElement(highlightIndex, element)
-                }
-            }
+    for (const [highlightIndex, node] of pageStateRef.current.domSnapshot.selectorMap.entries()) {
+      const element = await locateElement(node);
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        if (x >= rect.left && x <= rect.right &&
+          y >= rect.top && y <= rect.bottom) {
+          // Highlighting removed - just return the element without highlighting
+          return;
         }
-    }, [pageStateRef]);
+      }
+    }
+  }, [pageStateRef]);
 
     const waitForPageStable = useCallback(async (options?: {
         timeout?: number;

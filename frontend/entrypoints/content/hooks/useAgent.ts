@@ -192,13 +192,7 @@ export const useAgentActions = (config: UseAgentActionsConfig = {}) => {
             const left = Math.round(rect.left);
             setIconPosition?.({ top, left });
 
-            removeHighlights();
-
-            if (type === 'fill' || type === 'select') {
-                highlightElement(id, element, `${type} with '${value}'`);
-            } else {
-                highlightElement(id, element, 'click');
-            }
+            // Highlighting removed - no visual highlighting of elements
 
             console.log(`🤖 Ready to execute action ${currentIndex + 1}/${actions.length}: ${type} on element ${id}${value ? ` with value "${value}"` : ''}`);
             console.log('🤖 Press Tab to execute this action');

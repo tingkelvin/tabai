@@ -16,7 +16,6 @@ import { useAgentChat } from '../hooks/useAgent'
 import { AgentAction, PROMPT_TEMPLATES } from '../utils/prompMessages'
 import { useAppState } from '../hooks/useAppState'
 import { Position } from '../types/widget'
-import { getClickableElementsFromDomTree, removeHighlights } from '../services/DomTreeService'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   const widgetRef = useRef<HTMLDivElement>(null)
@@ -29,8 +28,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     height: WIDGET_CONFIG.DEFAULT_HEIGHT,
   })
 
-  // Highlight state
-  const [isHighlighting, setIsHighlighting] = useState(false)
 
 
   // Chat refs
@@ -115,144 +112,14 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     }
   }, []);
 
-  useEffect(() => {
-    const handlePageStateChange = async () => {
-      console.log("handlePageState", task, useAgent)
-      const { pageState, isNew } = await updateAndGetPageState()
-      
-      // Search for login prompt button
-      if (pageState.domSnapshot?.selectorMap) {
-        for (const [highlightIndex, element] of pageState.domSnapshot.selectorMap.entries()) {
-        const elementText = element.getAllTextTillNextClickableElement?.() || '';
-        
-        // Check if this element contains the login prompt text
-        if (elementText.includes('請先登入')) {
-          console.log('Found login prompt button:', element);
-          
-          // Add assistant message asking user to log in first
-          addAssistantMessage("請先登入");
-          
-          // Click the login button using agent executeAction
-          try {
-            console.log('Clicking login button using agent...');
-            const clickAction = {
-              id: highlightIndex,
-              type: 'click' as const
-            };
-            
-            const success = await executeAction(clickAction);
-            if (!success) {
-              console.log('Could not click login button via agent');
-            }
-          } catch (error) {
-            console.error('Error clicking login button:', error);
-          }
-          
-          // Break out of loop since we found what we're looking for
-          break;
-        }
-        }
-      }
-    };
-    if (isInitialized)
-      handlePageStateChange();
-  }, [isInitialized])
 
-  // Dynamic login/logout state monitoring
+  // Manual login/logout state monitoring
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [loginStateChecked, setLoginStateChecked] = useState(false);
   const [isConfiguringSearch, setIsConfiguringSearch] = useState(false);
   const [searchConfigured, setSearchConfigured] = useState(false);
-
-  useEffect(() => {
-    const checkLoginStatus = async () => {
-      // Skip login check if search configuration is running
-      if (isConfiguringSearch) {
-        console.log("⏸️ Skipping login check - search configuration in progress");
-        return;
-      }
-      
-      console.log("checkLoginStatus - current state:", isLoggedIn);
-      const { pageState } = await updateAndGetPageState();
-      
-      if (pageState.domSnapshot?.selectorMap) {
-        let foundLoginPrompt = false;
-        let foundLogoutButton = false;
-        
-        for (const [highlightIndex, element] of pageState.domSnapshot.selectorMap.entries()) {
-          const elementText = element.getAllTextTillNextClickableElement?.() || '';
-          
-          // Check for login prompt
-          if (elementText.includes('請先登入')) {
-            foundLoginPrompt = true;
-            console.log('🔐 Found login prompt');
-          }
-          
-          // Check for logout button
-          if (elementText.includes('登出')) {
-            foundLogoutButton = true;
-            console.log('🚪 Found logout button');
-          }
-        }
-        
-        // Determine login status
-        let newLoginStatus: boolean;
-        if (foundLoginPrompt) {
-          newLoginStatus = false; // User needs to login
-        } else if (foundLogoutButton) {
-          newLoginStatus = true; // User is logged in
-        } else {
-          // Neither found - keep current state or assume logged out
-          newLoginStatus = isLoggedIn || false;
-        }
-        
-        // Handle state changes
-        if (isLoggedIn === null) {
-          // Initial state detection
-          setIsLoggedIn(newLoginStatus);
-          setLoginStateChecked(true);
-          console.log('🎯 Initial login status detected:', newLoginStatus);
-          
-          if (newLoginStatus) {
-            addAssistantMessage("✅ 您已經登入，我可以開始幫助您了！");
-            // Configure search after login
-            await configSearchAfterLogin();
-            setSearchConfigured(true);
-          } else {
-            addAssistantMessage("🔐 請先登入以繼續使用服務。");
-          }
-        } else if (isLoggedIn !== newLoginStatus) {
-          // State change detected
-          setIsLoggedIn(newLoginStatus);
-          console.log('🔄 Login status changed:', newLoginStatus);
-          
-          if (newLoginStatus) {
-            // User just logged in
-            addAssistantMessage("🎉 登入成功！我現在可以幫助您了。");
-            
-            // Configure search after login
-            await configSearchAfterLogin();
-            setSearchConfigured(true);
-          } else {
-            // User just logged out
-            addAssistantMessage("👋 您已登出，請重新登入以繼續使用。");
-            setSearchConfigured(false);
-          }
-        } else if (isLoggedIn === true && !searchConfigured) {
-          // User is logged in but search not configured yet - try to configure
-          console.log('🔄 User is logged in but search not configured - attempting configuration');
-          await configSearchAfterLogin();
-          setSearchConfigured(true);
-        }
-      }
-    };
-
-    // Only start monitoring when initialized
-    if (isInitialized) {
-      const interval = setInterval(checkLoginStatus, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [isInitialized, isLoggedIn, updateAndGetPageState, addAssistantMessage, isConfiguringSearch, searchConfigured]);
+  const [isMonitoring, setIsMonitoring] = useState(false);
+  const [monitoringInterval, setMonitoringInterval] = useState<NodeJS.Timeout | null>(null);
 
   // Configure search after login - use direct DOM manipulation for both store type and server
   const configSearchAfterLogin = useCallback(async () => {
@@ -356,6 +223,140 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     }
   }, [addAssistantMessage]);
 
+  const checkLoginStatus = useCallback(async () => {
+    // Skip login check if search configuration is running
+    if (isConfiguringSearch) {
+      console.log("⏸️ Skipping login check - search configuration in progress");
+      return;
+    }
+    
+    console.log("checkLoginStatus - current state:", isLoggedIn);
+    const { pageState } = await updateAndGetPageState();
+    
+    if (pageState.domSnapshot?.selectorMap) {
+      let foundLoginPrompt = false;
+      let foundLogoutButton = false;
+      
+      for (const [highlightIndex, element] of pageState.domSnapshot.selectorMap.entries()) {
+        const elementText = element.getAllTextTillNextClickableElement?.() || '';
+        
+        // Check for login prompt
+        if (elementText.includes('請先登入')) {
+          foundLoginPrompt = true;
+          console.log('🔐 Found login prompt');
+          
+          // Automatically click the login button
+          try {
+            console.log('Clicking login button using agent...');
+            const clickAction = {
+              id: highlightIndex,
+              type: 'click' as const
+            };
+            
+            const success = await executeAction(clickAction);
+            if (!success) {
+              console.log('Could not click login button via agent');
+            }
+          } catch (error) {
+            console.error('Error clicking login button:', error);
+          }
+          
+          // Break out of loop since we found and clicked the login button
+          break;
+        }
+        
+        // Check for logout button
+        if (elementText.includes('登出')) {
+          foundLogoutButton = true;
+          console.log('🚪 Found logout button');
+        }
+      }
+      
+      // Determine login status
+      let newLoginStatus: boolean;
+      if (foundLoginPrompt) {
+        newLoginStatus = false; // User needs to login
+      } else if (foundLogoutButton) {
+        newLoginStatus = true; // User is logged in
+      } else {
+        // Neither found - keep current state or assume logged out
+        newLoginStatus = isLoggedIn || false;
+      }
+      
+      // Handle state changes
+      if (isLoggedIn === null) {
+        // Initial state detection
+        setIsLoggedIn(newLoginStatus);
+        setLoginStateChecked(true);
+        console.log('🎯 Initial login status detected:', newLoginStatus);
+        
+        if (newLoginStatus) {
+          addAssistantMessage("✅ 您已經登入，我可以開始幫助您了！");
+          // Configure search after login
+          await configSearchAfterLogin();
+          setSearchConfigured(true);
+        } else {
+          addAssistantMessage("🔐 請先登入以繼續使用服務。");
+        }
+      } else if (isLoggedIn !== newLoginStatus) {
+        // State change detected
+        setIsLoggedIn(newLoginStatus);
+        console.log('🔄 Login status changed:', newLoginStatus);
+        
+        if (newLoginStatus) {
+          // User just logged in
+          addAssistantMessage("🎉 登入成功！我現在可以幫助您了。");
+          
+          // Configure search after login
+          await configSearchAfterLogin();
+          setSearchConfigured(true);
+        } else {
+          // User just logged out
+          addAssistantMessage("👋 您已登出，請重新登入以繼續使用。");
+          setSearchConfigured(false);
+        }
+      } else if (isLoggedIn === true && !searchConfigured) {
+        // User is logged in but search not configured yet - try to configure
+        console.log('🔄 User is logged in but search not configured - attempting configuration');
+        await configSearchAfterLogin();
+        setSearchConfigured(true);
+      }
+    }
+  }, [isLoggedIn, updateAndGetPageState, addAssistantMessage, isConfiguringSearch, searchConfigured, configSearchAfterLogin, executeAction]);
+
+  const startMonitoring = useCallback(() => {
+    if (isMonitoring) return;
+    
+    console.log('🔍 Starting login monitoring...');
+    setIsMonitoring(true);
+    addAssistantMessage("🔍 開始監控登入狀態...");
+    
+    const interval = setInterval(checkLoginStatus, 1000);
+    setMonitoringInterval(interval);
+  }, [isMonitoring, checkLoginStatus, addAssistantMessage]);
+
+  const stopMonitoring = useCallback(() => {
+    if (!isMonitoring) return;
+    
+    console.log('⏹️ Stopping login monitoring...');
+    setIsMonitoring(false);
+    addAssistantMessage("⏹️ 停止監控登入狀態");
+    
+    if (monitoringInterval) {
+      clearInterval(monitoringInterval);
+      setMonitoringInterval(null);
+    }
+  }, [isMonitoring, monitoringInterval, addAssistantMessage]);
+
+  // Cleanup monitoring on unmount
+  useEffect(() => {
+    return () => {
+      if (monitoringInterval) {
+        clearInterval(monitoringInterval);
+      }
+    };
+  }, [monitoringInterval]);
+
   // Search functionality - direct DOM manipulation
   const handleSearch = useCallback(async (searchTerm: string = "征伐隊戒指") => {
     try {
@@ -451,27 +452,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     }
   }, [addAssistantMessage]);
 
-  // Highlight clickable elements toggle
-  const toggleHighlightClickables = useCallback(async () => {
-    try {
-      if (isHighlighting) {
-        // Remove highlights
-        console.log('Removing highlights...');
-        await removeHighlights();
-        setIsHighlighting(false);
-        console.log('Highlights removed');
-      } else {
-        // Add highlights
-        console.log('Adding highlights...');
-        const result = await getClickableElementsFromDomTree(true, -1, 0, false);
-        console.log('Highlight result:', result);
-        setIsHighlighting(true);
-        console.log('Clickable elements highlighted');
-      }
-    } catch (error) {
-      console.error('Error toggling highlights:', error);
-    }
-  }, [isHighlighting]);
 
 
 
@@ -502,6 +482,11 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   // Execute all searches sequentially
   const executeAllSearches = useCallback(async () => {
     if (searchItems.length === 0) return;
+    
+    // Start monitoring before executing searches
+    if (!isMonitoring) {
+      startMonitoring();
+    }
     
     setIsSearching(true);
     setCurrentSearchIndex(0);
@@ -539,20 +524,8 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     addAssistantMessage(`🎉 All searches completed! Found ${searchResults.length} results.`);
     
     setIsSearching(false);
-  }, [searchItems, handleSearch, searchResults, addAssistantMessage]);
+  }, [searchItems, handleSearch, searchResults, addAssistantMessage, isMonitoring, startMonitoring]);
 
-  const highlightButton: ActionButton = {
-    id: 'highlight',
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-      </svg>
-    ),
-    label: 'Highlight',
-    onClick: toggleHighlightClickables,
-    title: isHighlighting ? 'Remove clickable highlights' : 'Highlight clickable elements',
-    className: isHighlighting ? 'active' : '',
-  }
 
   return (
     <>
@@ -647,6 +620,52 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                     </svg>
                     {isSearching ? `Searching... (${currentSearchIndex + 1}/${searchItems.length})` : 'Run Searches'}
                   </button>
+                  
+                  {!isMonitoring ? (
+                    <button
+                      onClick={startMonitoring}
+                      style={{
+                        padding: '10px 20px',
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <polygon points="10,8 16,12 10,16 10,8" />
+                      </svg>
+                      Start Monitoring
+                    </button>
+                  ) : (
+                    <button
+                      onClick={stopMonitoring}
+                      style={{
+                        padding: '10px 20px',
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="6" y="4" width="4" height="16" />
+                        <rect x="14" y="4" width="4" height="16" />
+                      </svg>
+                      Stop Monitoring
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -25,7 +25,7 @@ export interface ReadabilityResult {
  * @returns A DomSnapshot object containing the clickable elements for the current page.
  */
 export async function getClickableElementsFromDomTree(
-    showHighlightElements = true,
+    showHighlightElements = false,
     focusElement = -1,
     viewportExpansion = 0,
     debugMode = false,
