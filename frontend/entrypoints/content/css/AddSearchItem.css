@@ -1,0 +1,77 @@
+/* AddSearchItem Component Styles */
+.add-search-item {
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  margin-bottom: 4px;
+  background-color: #f8f9fa;
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  font-size: 12px;
+  gap: 4px;
+  opacity: 0.7;
+}
+
+.add-search-item-name-input {
+  width: 80px;
+  padding: 4px 6px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  font-size: 12px;
+  background-color: #fff;
+}
+
+.add-search-item-name-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  opacity: 1;
+}
+
+.add-search-item-note-input {
+  width: 60px;
+  padding: 4px 6px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  font-size: 12px;
+  background-color: #fff;
+}
+
+.add-search-item-note-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  opacity: 1;
+}
+
+.add-search-item-btn {
+  padding: 4px 6px;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  cursor: pointer;
+}
+
+.add-search-item-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.add-search-item-btn:not(:disabled) {
+  background-color: #28a745;
+}
+
+.add-search-item-btn:not(:disabled):hover {
+  background-color: #218838;
+  transform: scale(1.05);
+}
+
+.add-search-item-btn:not(:disabled):active {
+  transform: scale(0.95);
+}

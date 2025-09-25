@@ -4,6 +4,8 @@ import TerminalIcon from './TerminalIcon'
 import TerminalHeader from './TerminalHeader'
 import ResizeHandle from './ResizeHandle'
 import Notifications from './Notifications'
+import SearchItemsList from './SearchItemsList'
+import ActionButtons from './ActionButtons'
 
 // Types import
 import type { ContentAppProps } from '../types/components'
@@ -12,7 +14,6 @@ import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
 import { usePage } from '../hooks/usePage'
 import { useAppState } from '../hooks/useAppState'
-import { PlusIcon,  RemoveIcon} from './Icons'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   const widgetRef = useRef<HTMLDivElement>(null)
@@ -180,9 +181,10 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         // If user needs to login, check and click login button
         if (elementText.includes('請先登入')) {
           try {
+            addAssistantMessage(`🔐 檢測到登入提示，已自動點擊登入按鈕"`);
             const { buttonFound, buttonText } = await checkAndClickLoginButton();
             if (buttonFound) {
-              addAssistantMessage(`🔐 檢測到登入提示，已自動點擊登入按鈕: "${buttonText}"`);
+              addAssistantMessage(`🔐 請登入`);
             } 
           } catch (error) {
             // Error clicking login button
@@ -758,358 +760,40 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
               title={title}
             />
             <div className='terminal-content'>
-                <div style={{
-                  display: 'flex',
-                flexDirection: 'column', 
-                height: '100%',
-                overflow: 'hidden'
-              }}>
+                <div className="content-app-main">
+                  <div className="content-app-main-content">
+                    <SearchItemsList
+                      searchItems={searchItems}
+                      newSearchItem={newSearchItem}
+                      onUpdateItemName={(index, name) => {
+                        const newItems = [...searchItems];
+                        newItems[index] = { ...newItems[index], name };
+                        setSearchItems(newItems);
+                      }}
+                      onUpdateItemNote={updateItemNote}
+                      onRemoveItem={removeSearchItem}
+                      onUpdateNewItemName={(name) => setNewSearchItem(prev => ({ ...prev, name }))}
+                      onUpdateNewItemNote={updateNewItemNote}
+                      onAddItem={addSearchItem}
+                    />
+                  </div>
 
-                {/* Main Content Area */}
-        <div style={{
-                  flex: 1, 
-          display: 'flex',
-                  overflow: 'hidden'
-        }}>
-                  {/* Search Items Section */}
-           <div style={{
-                     width: '100%', 
-                     display: 'flex',
-                     flexDirection: 'column',
-                     overflow: 'hidden'
-                   }}>
-            <div style={{
-                      padding: '12px',
-                      backgroundColor: '#e9ecef',
-                      borderBottom: '1px solid #e0e0e0',
-                      fontSize: '14px',
-                      fontWeight: 'bold'
-                    }}>
-                      🔍 Search Items ({searchItems.length})
-                    </div>
-                    
-                    <div style={{
-                      flex: 1,
-                      overflowY: 'auto',
-                      padding: '8px'
-                    }}>
-                      {searchItems.length === 0 ? (
-                        <div style={{
-                          textAlign: 'center',
-                          color: '#666',
-                          padding: '20px',
-                          fontSize: '14px'
-                        }}>
-                          No search items configured
-                        </div>
-                      ) : (
-                        <>
-                          {searchItems.map((item, index) => (
-                            <div key={index} style={{ marginBottom: '8px' }}>
-                              {/* Item Configuration Row */}
-                              <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                                padding: '6px',
-                                backgroundColor: '#f8f9fa',
-                                border: '1px solid #ddd',
-                                borderRadius: '4px',
-                                fontSize: '12px',
-                                gap: '4px'
-                              }}>
-                                {/* Name field */}
-                                <input
-                                  type="text"
-                                  value={item.name}
-                                  onChange={(e) => {
-                                    const newItems = [...searchItems];
-                                    newItems[index] = { ...newItems[index], name: e.target.value };
-                                    setSearchItems(newItems);
-                                  }}
-                                  placeholder="名稱"
-                                  style={{
-                                    width: '80px',
-                                    padding: '4px 6px',
-                                    border: '1px solid #ddd',
-                                    borderRadius: '3px',
-                                    fontSize: '12px',
-                                    backgroundColor: '#fff'
-                                  }}
-                                />
-                                
-                                {/* Notes fields */}
-                                {item.notes.map((note, noteIndex) => (
-                                  <input
-                                    key={noteIndex}
-                                    type="text"
-                                    value={note}
-                                    onChange={(e) => updateItemNote(index, noteIndex, e.target.value)}
-                                    placeholder={`字條${noteIndex + 1}`}
-                                    style={{
-                                      width: '60px',
-                                      padding: '4px 6px',
-                                      border: '1px solid #ddd',
-                                      borderRadius: '3px',
-                                      fontSize: '12px',
-                                      backgroundColor: '#fff'
-                                    }}
-                                  />
-                                ))}
-
-                                {/* Remove button */}
-                  <button
-                                  onClick={() => removeSearchItem(index)}
-                    style={{
-                                    padding: '4px 6px',
-                                    backgroundColor: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                                    justifyContent: 'center',
-                                    transition: 'all 0.2s ease',
-                                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = '#c82333';
-                                    e.currentTarget.style.transform = 'scale(1.05)';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = '#dc3545';
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                  }}
-                                  title="Remove item"
-                                >
-                                  <RemoveIcon />
-                  </button>
-                </div>
-                              
-                              {/* Search Results for this item */}
-                              {item.results.length > 0 && (
-                                <div style={{
-                                  marginTop: '4px',
-                                  marginLeft: '20px',
-                                  padding: '8px',
-                                  backgroundColor: '#e8f5e8',
-                                  border: '1px solid #28a745',
-                                  borderRadius: '4px',
-                                  fontSize: '11px'
-                                }}>
-                                  <div style={{
-                                    fontWeight: 'bold',
-                                    marginBottom: '4px',
-                                    color: '#155724'
-                                  }}>
-                                    🎯 Latest Result ({item.lastSearchTime?.toLocaleTimeString()})
-              </div>
-                                  {item.results.slice(0, 1).map((result: any, resultIndex: number) => (
-                                    <div key={resultIndex} style={{
-                                      display: 'grid',
-                                      gridTemplateColumns: '1fr 1fr',
-                                      gap: '4px',
-                                      fontSize: '10px'
-                                    }}>
-                                      <div><strong>Item:</strong> {result.itemName}</div>
-                                      <div><strong>Price:</strong> {result.price}</div>
-                                      <div><strong>Shop:</strong> {result.shopName}</div>
-                                      <div><strong>Qty:</strong> {result.quantity}</div>
-            </div>
-                                  ))}
-          </div>
-        )}
-      </div>
-                          ))}
-
-                          {/* Add new item box */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-                            padding: '6px',
-                            marginBottom: '4px',
-                            backgroundColor: '#f8f9fa',
-                            border: '1px dashed #ccc',
-                            borderRadius: '4px',
-                            fontSize: '12px',
-                            gap: '4px',
-                            opacity: 0.7
-                          }}>
-                <input
-                  type="text"
-                              value={newSearchItem.name}
-                              onChange={(e) => setNewSearchItem(prev => ({ ...prev, name: e.target.value }))}
-                              placeholder="名稱"
-                              onKeyPress={(e) => e.key === 'Enter' && addSearchItem()}
-                style={{
-                                width: '80px',
-                                padding: '4px 6px',
-                                border: '1px solid #ddd',
-                                borderRadius: '3px',
-                                fontSize: '12px',
-                                backgroundColor: '#fff'
-                              }}
-                            />
-                            {newSearchItem.notes.map((note, noteIndex) => (
-                <input
-                                key={noteIndex}
-                  type="text"
-                                value={note}
-                                onChange={(e) => updateNewItemNote(noteIndex, e.target.value)}
-                                placeholder={`字條${noteIndex + 1}`}
-                  onKeyPress={(e) => e.key === 'Enter' && addSearchItem()}
-                  style={{
-                                  width: '60px',
-                                  padding: '4px 6px',
-                                  border: '1px solid #ddd',
-                                  borderRadius: '3px',
-                                  fontSize: '12px',
-                                  backgroundColor: '#fff'
-                                }}
-                              />
-                            ))}
-                <button
-                  onClick={addSearchItem}
-                              disabled={!newSearchItem.name.trim()}
-                  style={{
-                                padding: '4px 6px',
-                                backgroundColor: newSearchItem.name.trim() ? '#28a745' : '#ccc',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                                cursor: newSearchItem.name.trim() ? 'pointer' : 'not-allowed',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transition: 'all 0.2s ease',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                                opacity: newSearchItem.name.trim() ? 1 : 0.6
-                              }}
-                              onMouseEnter={(e) => {
-                                if (newSearchItem.name.trim()) {
-                                  e.currentTarget.style.backgroundColor = '#218838';
-                                  e.currentTarget.style.transform = 'scale(1.05)';
-                                }
-                              }}
-                              onMouseLeave={(e) => {
-                                if (newSearchItem.name.trim()) {
-                                  e.currentTarget.style.backgroundColor = '#28a745';
-                                  e.currentTarget.style.transform = 'scale(1)';
-                                }
-                              }}
-                              title="Add new item"
-                            >
-                              <PlusIcon />
-                </button>
-                          </div>
-                        </>
-                      )}
-              </div>
-            </div>
-
-              </div>
-
-                {/* Action Buttons */}
-                <div style={{
-                  padding: '12px',
-                  borderTop: '1px solid #e0e0e0',
-                  backgroundColor: '#f8f9fa',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  gap: '12px'
-                }}>
-              <button
-                    onClick={startWorkflow}
-                disabled={searchItems.length === 0}
-                style={{
-                      padding: '10px 20px',
-                      backgroundColor: isMonitoring ? '#dc3545' : '#28a745',
-                  color: 'white',
-                  border: 'none',
-                      borderRadius: '6px',
-                  fontSize: '14px',
-                      cursor: searchItems.length === 0 ? 'not-allowed' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    {isMonitoring ? (
-                      <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="6" y="4" width="4" height="16" />
-                          <rect x="14" y="4" width="4" height="16" />
-                        </svg>
-                        Stop Workflow
-                      </>
-                    ) : (
-                      <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                        </svg>
-                        Start Workflow
-                      </>
-                    )}
-              </button>
-                  
-              <button
-                    onClick={() => {
+                  <ActionButtons
+                    isMonitoring={isMonitoring}
+                    searchItemsCount={searchItems.length}
+                    onStartWorkflow={startWorkflow}
+                    onTestSearch={() => {
                       if (searchItems.length === 0) return;
                       const firstItem = searchItems[0];
                       handleSearch(firstItem.name, firstItem.notes, 0);
                     }}
-                    disabled={searchItems.length === 0}
-                style={{
-                      padding: '10px 20px',
-                      backgroundColor: '#17a2b8',
-                  color: 'white',
-                  border: 'none',
-                      borderRadius: '6px',
-                  fontSize: '14px',
-                      cursor: searchItems.length === 0 ? 'not-allowed' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="11" cy="11" r="8" />
-                      <path d="m21 21-4.35-4.35" />
-                    </svg>
-                    Test Search
-                  </button>
-                  
-                  <button
-                    onClick={() => {
+                    onParseResults={() => {
                       if (searchItems.length === 0) return;
                       const firstItem = searchItems[0];
                       parseSearchResults(firstItem.name, firstItem.notes, 0);
                     }}
-                    disabled={searchItems.length === 0}
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: '#6f42c1',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      cursor: searchItems.length === 0 ? 'not-allowed' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14,2 14,8 20,8" />
-                      <line x1="16" y1="13" x2="8" y2="13" />
-                      <line x1="16" y1="17" x2="8" y2="17" />
-                      <polyline points="10,9 9,9 8,9" />
-                    </svg>
-                    Parse Results
-              </button>
-            </div>
-          </div>
+                  />
+                </div>
             </div>
             {/* Resize handles */}
             <ResizeHandle

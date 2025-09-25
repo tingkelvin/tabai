@@ -10,3 +10,8 @@
 @import './resize.css';
 @import './notifications.css';
 @import './responsive.css';
+@import './ContentApp.css';
+@import './SearchItemsList.css';
+@import './SearchItem.css';
+@import './AddSearchItem.css';
+@import './ActionButtons.css';

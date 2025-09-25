@@ -1,0 +1,68 @@
+/* ActionButtons Component Styles */
+.action-buttons {
+  padding: 12px;
+  border-top: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.action-btn {
+  padding: 10px 20px;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.action-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.action-btn:not(:disabled):active {
+  transform: translateY(0);
+}
+
+.workflow-btn.start {
+  background-color: #28a745;
+}
+
+.workflow-btn.start:not(:disabled):hover {
+  background-color: #218838;
+}
+
+.workflow-btn.stop {
+  background-color: #dc3545;
+}
+
+.workflow-btn.stop:not(:disabled):hover {
+  background-color: #c82333;
+}
+
+.test-search-btn {
+  background-color: #17a2b8;
+}
+
+.test-search-btn:not(:disabled):hover {
+  background-color: #138496;
+}
+
+.parse-results-btn {
+  background-color: #6f42c1;
+}
+
+.parse-results-btn:not(:disabled):hover {
+  background-color: #5a32a3;
+}

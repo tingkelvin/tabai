@@ -1,0 +1,13 @@
+/* ContentApp Component Styles */
+.content-app-main {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.content-app-main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
