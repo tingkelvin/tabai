@@ -2,26 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 // Components import
 import TerminalIcon from './TerminalIcon'
 import TerminalHeader from './TerminalHeader'
-import ChatHistory from './ChatHistory'
 import ResizeHandle from './ResizeHandle'
 import Notifications from './Notifications'
-
-// Modern Icons
-const PlusIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-    <line x1="12" y1="5" x2="12" y2="19"></line>
-    <line x1="5" y1="12" x2="19" y2="12"></line>
-  </svg>
-)
-
-const TrashIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-    <polyline points="3,6 5,6 21,6"></polyline>
-    <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
-    <line x1="10" y1="11" x2="10" y2="17"></line>
-    <line x1="14" y1="11" x2="14" y2="17"></line>
-  </svg>
-)
 
 // Types import
 import type { ActionButton, ContentAppProps } from '../types/components'
@@ -29,14 +11,12 @@ import { WIDGET_CONFIG, RESIZE_TYPES, MESSAGE_TYPES } from '../utils/constant'
 import { useDragAndResize } from '../hooks/useDragAndResize'
 import { useChat } from '../hooks/useChat'
 import { usePage } from '../hooks/usePage'
-import { useAgentChat } from '../hooks/useAgent'
-import { AgentAction, PROMPT_TEMPLATES } from '../utils/prompMessages'
 import { useAppState } from '../hooks/useAppState'
 import { Position } from '../types/widget'
+import { PlusIcon,  RemoveIcon} from './Icons'
 
 const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) => {
   const widgetRef = useRef<HTMLDivElement>(null)
-  const isSendingMessage = useRef<boolean>(false);
   const { state, isInitialized, updateState } = useAppState();
   const { chatMessages, isThinking, useSearch, useAgent, task, actionsExecuted } = state;
 
@@ -130,35 +110,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     onSizeChange: setWidgetSize
   })
 
-  // And update your agent hook to handle undefined pageState
-  const { processAgentReply, setSelectorMap, isExecuting, cleanup, executeAction } = useAgentChat(chatHook, {
-    setIconPosition: (position: Position) => {
-      setIconPosition(position)
-    },
-    onActionExecuted: async (action: AgentAction) => {
-      // actionsExecuted.push(action)
-      updateState({ actionsExecuted })
-    },
-    onFinish: async () => {
-      console.log("on finish")
-
-      const { pageState, isNew } = await updateAndGetPageState()
-      const reply = await sendMessage(task);
-      if (!reply) {
-        addAssistantMessage(PROMPT_TEMPLATES.PARSING_ERROR);
-      } else {
-        console.log('🤖 Processing agent response:', reply);
-
-        if (!pageState) {
-          console.error("Empty page state")
-          return
-        }
-        processAgentReply(reply);
-      }
-
-    }
-  });
-
   const { updateAndGetPageState } = usePage();
 
   // Simple workflow state
@@ -206,6 +157,118 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   }, [addAssistantMessage]);
 
 
+  // Check and click login button function
+  const checkAndClickLoginButton = useCallback(async () => {
+    try {
+      console.log('🔍 Checking for login button...');
+      
+      // Define button selectors to check
+      const buttonSelectors = [
+        "a[href='history'][id='a_searchBtn']",  // Precise selector
+        "#a_searchBtn",  // By ID
+        "a[href='history']"  // By href
+      ];
+      
+      let buttonFound = false;
+      let buttonText = '';
+      let buttonElement: HTMLElement | null = null;
+      
+      // Try each selector
+      for (const selector of buttonSelectors) {
+        try {
+          const button = document.querySelector(selector) as HTMLElement;
+          if (button) {
+            buttonFound = true;
+            buttonText = button.textContent?.trim() || '';
+            buttonElement = button;
+            console.log(`✅ Found login button!`);
+            console.log(`   Selector: ${selector}`);
+            console.log(`   Button text: '${buttonText}'`);
+            console.log(`   Button href: ${button.getAttribute('href')}`);
+            console.log(`   Button visible: ${button.offsetParent !== null}`);
+            break;
+          }
+        } catch (error) {
+          console.log(`Selector ${selector} not found: ${error}`);
+          continue;
+        }
+      }
+      
+      if (!buttonFound) {
+        console.log('❌ Login button not found with specified selectors');
+        console.log('Checking all <a> tags on page...');
+        
+        // List all <a> tags
+        const allLinks = document.querySelectorAll('a');
+        console.log(`Page has ${allLinks.length} <a> tags:`);
+        
+        for (let i = 0; i < Math.min(allLinks.length, 10); i++) {
+          const link = allLinks[i] as HTMLElement;
+          const href = link.getAttribute('href');
+          const text = link.textContent?.trim() || '';
+          const linkId = link.getAttribute('id');
+          
+          if (text || href) {
+            console.log(`  ${i + 1}. ID: '${linkId}', Text: '${text}', Href: '${href}'`);
+          }
+        }
+        return { buttonFound: false, buttonText: '' };
+      }
+      
+      // Try to click the button
+      try {
+        console.log('🖱️ Clicking login button...');
+        
+        if (buttonElement && buttonElement.offsetParent !== null) {
+          // Scroll to button position
+          buttonElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for scroll
+          
+          // Click the button
+          buttonElement.click();
+          console.log('✅ Successfully clicked login button!');
+          
+          // Wait for page response
+          console.log('⏳ Waiting for page response...');
+          await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 2000));
+          
+          // Check if URL changed
+          const currentUrl = window.location.href;
+          console.log(`   Current URL after click: ${currentUrl}`);
+          
+          // Wait a bit more for form to load
+          await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+          
+          console.log('✅ Page has responded to click operation');
+          
+        } else {
+          console.log('❌ Button not visible or clickable');
+        }
+        
+      } catch (clickError) {
+        console.error(`❌ Error clicking button: ${clickError}`);
+        
+        // Try JavaScript click as fallback
+        try {
+          console.log('🔄 Trying JavaScript click...');
+          if (buttonElement) {
+            buttonElement.click();
+            console.log('✅ JavaScript click successful!');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        } catch (jsError) {
+          console.error(`❌ JavaScript click also failed: ${jsError}`);
+        }
+      }
+      
+      return { buttonFound, buttonText };
+      
+    } catch (error) {
+      console.error(`❌ Error in checkAndClickLoginButton: ${error}`);
+      return { buttonFound: false, buttonText: '' };
+    }
+  }, []);
+
   // Simple monitoring function
   const checkLoginStatus = useCallback(async () => {
     const { pageState } = await updateAndGetPageState();
@@ -214,13 +277,14 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       for (const [highlightIndex, element] of pageState.domSnapshot.selectorMap.entries()) {
         const elementText = element.getAllTextTillNextClickableElement?.() || '';
         
-        // If user needs to login, click login button
+        // If user needs to login, check and click login button
         if (elementText.includes('請先登入')) {
-          console.log('🔐 Found login prompt, clicking login button');
+          console.log('🔐 Found login prompt, checking for login button');
           try {
-            const clickAction = { id: highlightIndex, type: 'click' as const };
-            await executeAction(clickAction);
-            addAssistantMessage("🔐 檢測到登入提示，已自動點擊登入按鈕");
+            const { buttonFound, buttonText } = await checkAndClickLoginButton();
+            if (buttonFound) {
+              addAssistantMessage(`🔐 檢測到登入提示，已自動點擊登入按鈕: "${buttonText}"`);
+            } 
           } catch (error) {
             console.error('Error clicking login button:', error);
           }
@@ -241,7 +305,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         }
       }
     }
-  }, [updateAndGetPageState, executeAction, addAssistantMessage, configSearchAfterLogin, isAutoSearching]);
+  }, [updateAndGetPageState, addAssistantMessage, configSearchAfterLogin, isAutoSearching, checkAndClickLoginButton]);
 
   const startMonitoring = useCallback(() => {
     if (isMonitoring) return;
@@ -683,6 +747,13 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     }>
     lastSearchTime: Date | null
   }>>([
+
+    { 
+      name: '征伐隊戒指', 
+      notes: ['STR+2', '', ''], 
+      results: [],
+      lastSearchTime: null
+    },
     { 
       name: '征伐隊戒指', 
       notes: ['', '', ''], 
@@ -1040,7 +1111,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                                   }}
                                   title="Remove item"
                                 >
-                                  <TrashIcon />
+                                  <RemoveIcon />
                   </button>
                 </div>
                               
