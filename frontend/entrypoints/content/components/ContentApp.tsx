@@ -40,6 +40,36 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   const { state, isInitialized, updateState } = useAppState();
   const { chatMessages, isThinking, useSearch, useAgent, task, actionsExecuted } = state;
 
+  // Search state management to prevent race conditions
+  const currentSearchRef = useRef<{
+    searchTerm: string;
+    notes: [string, string, string];
+    searchItemIndex?: number;
+    cancelled: boolean;
+    timeoutId?: NodeJS.Timeout;
+  } | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Function to cancel current search
+  const cancelCurrentSearch = useCallback(() => {
+    if (currentSearchRef.current) {
+      console.log(`🚫 Cancelling previous search: "${currentSearchRef.current.searchTerm}"`);
+      currentSearchRef.current.cancelled = true;
+      
+      // Clear any pending timeouts (legacy cleanup)
+      if (currentSearchRef.current.timeoutId) {
+        clearTimeout(currentSearchRef.current.timeoutId);
+      }
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
+      }
+      
+      // Note: Don't set currentSearchRef.current = null here
+      // Let the search function handle cleanup when it detects cancellation
+    }
+  }, []);
+
   const [widgetSize, setWidgetSize] = useState({
     width: WIDGET_CONFIG.DEFAULT_WIDTH,
     height: WIDGET_CONFIG.DEFAULT_HEIGHT,
@@ -129,16 +159,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     }
   });
 
-  const { updateAndGetPageState } = usePage({
-    onPageChanged: async (newPageState) => {
-      if (!isInitialized) return; // Don't update if not initialized
-      const pageStateAsString = newPageState.domSnapshot?.root.clickableElementsToString() || ""
-      await updateState({ pageStateAsString })
-      if (newPageState.domSnapshot?.selectorMap)
-        setSelectorMap(newPageState.domSnapshot?.selectorMap)
-      // Handle the page change here
-    }
-  });
+  const { updateAndGetPageState } = usePage();
 
   // Simple workflow state
   const [isMonitoring, setIsMonitoring] = useState(false);
@@ -264,6 +285,17 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       const timestamp = new Date();
       setLastSearchTime(timestamp);
       
+      // Cancel any existing search
+      cancelCurrentSearch();
+      
+      // Set up new search state
+      currentSearchRef.current = {
+        searchTerm,
+        notes,
+        searchItemIndex,
+        cancelled: false
+      };
+      
       // Log the search attempt
       const logMessage = `🔍 Searching for: "${searchTerm}" at ${timestamp.toLocaleTimeString()}`;
       setSearchLogs(prev => [...prev, logMessage]);
@@ -275,6 +307,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         const errorLog = `❌ Search input not found at ${timestamp.toLocaleTimeString()}`;
         setSearchLogs(prev => [...prev, errorLog]);
         addAssistantMessage("❌ 找不到搜索輸入框");
+        currentSearchRef.current = null;
         return false;
       }
       
@@ -311,26 +344,35 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       setSearchLogs(prev => [...prev, successLog]);
       addAssistantMessage(`🔍 已搜索: ${searchTerm}`);
       
-      // Wait a bit for results to load, then parse them with pagination
-      setTimeout(async () => {
-        // Use the passed notes directly
-        console.log(`🔍 Search details:`);
-        console.log(`   Original search term: "${searchTerm}"`);
-        console.log(`   Notes: [${notes.join(', ')}]`);
-        
-        // Construct the full search term with notes if available
-        let fullSearchTerm = searchTerm;
-        if (notes.some(note => note.trim())) {
-          const activeNotes = notes.filter(note => note.trim()).join(' ');
-          fullSearchTerm = `${searchTerm} ${activeNotes}`.trim();
-        }
-        
-        console.log(`   Full search term: "${fullSearchTerm}"`);
-        
-        await searchWithPagination(fullSearchTerm, notes, searchItemIndex);
-      }, 2000);
+      // Wait for results to load, then parse them with pagination
+      console.log('⏳ Waiting for search results to load...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      return true;
+      // Check if search was cancelled during the wait
+      if (!currentSearchRef.current || currentSearchRef.current.cancelled) {
+        console.log(`🚫 Search cancelled for: "${searchTerm}"`);
+        return false;
+      }
+      
+      // Use the passed notes directly
+      console.log(`🔍 Search details:`);
+      console.log(`   Original search term: "${searchTerm}"`);
+      console.log(`   Notes: [${notes.join(', ')}]`);
+      
+      // Construct the full search term with notes if available
+      let fullSearchTerm = searchTerm;
+      if (notes.some(note => note.trim())) {
+        const activeNotes = notes.filter(note => note.trim()).join(' ');
+        fullSearchTerm = `${searchTerm} ${activeNotes}`.trim();
+      }
+      
+      console.log(`   Full search term: "${fullSearchTerm}"`);
+      
+      // Execute pagination and wait for completion
+      const searchResult = await searchWithPagination(fullSearchTerm, notes, searchItemIndex);
+      
+      console.log(`✅ Search completed for: "${searchTerm}"`);
+      return searchResult;
       
     } catch (error) {
       console.error('Error executing search:', error);
@@ -439,21 +481,16 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
             const additionalTerms = searchParts.slice(1); // Get additional terms (e.g., ["STR+1"])
             
             console.log(`🔍 Checking item: "${itemName}" against search: "${searchTerm}"`);
-            console.log(`   Base name: "${baseName}", Additional terms: [${additionalTerms.join(', ')}]`);
-            
+   
             // First check if the item name contains the base name
             const hasBaseName = itemName.includes(baseName);
-            console.log(`   Has base name "${baseName}": ${hasBaseName}`);
             
             if (hasBaseName) {
               if (additionalTerms.length > 0) {
                 // If we have additional terms (like "STR+1"), check if ALL terms are present
                 const hasAllTerms = additionalTerms.every(term => itemName.includes(term));
-                console.log(`   Has all additional terms: ${hasAllTerms}`);
                 matchFound = hasAllTerms;
               } else {
-                // If no additional terms, just check base name
-                console.log(`   No additional terms, matching base name only`);
                 matchFound = true;
               }
             }
@@ -552,6 +589,12 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     console.log(`🔍 Starting paginated search for: ${searchTerm}`);
     
     while (currentPage <= maxPages && !firstItemFound) {
+      // Check if search was cancelled
+      if (!currentSearchRef.current || currentSearchRef.current.cancelled) {
+        console.log(`🚫 Search cancelled during pagination for: "${searchTerm}"`);
+        return false;
+      }
+      
       console.log(`📄 Searching page ${currentPage}...`);
       
       // Parse current page results
@@ -565,6 +608,12 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       
       // If no item found, try to go to next page
       try {
+        // Check if search was cancelled before pagination
+        if (!currentSearchRef.current || currentSearchRef.current.cancelled) {
+          console.log(`🚫 Search cancelled before pagination for: "${searchTerm}"`);
+          return false;
+        }
+        
         console.log(`⏭️ No match on page ${currentPage}, looking for next page...`);
         
         // Find pagination element
@@ -608,6 +657,11 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
       const noMatchLog = `⚠️ No matching items found for "${searchTerm}" across ${currentPage - 1} pages at ${new Date().toLocaleTimeString()}`;
       // Note: setSearchLogs will be available in the component scope
       addAssistantMessage(`⚠️ 在 ${currentPage - 1} 頁中未找到匹配 "${searchTerm}" 的項目`);
+    }
+    
+    // Clear search state when done
+    if (currentSearchRef.current && !currentSearchRef.current.cancelled) {
+      currentSearchRef.current = null;
     }
     
     return firstItemFound;

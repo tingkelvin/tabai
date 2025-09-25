@@ -82,9 +82,6 @@ export const useAppState = () => {
                 return newState;
             });
         });
-
-        // State is now synchronously updated, newState is guaranteed to be defined
-        console.log("new state", newState!);
         await saveState(newState!);
     }, []);
 
