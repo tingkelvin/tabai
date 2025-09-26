@@ -1,68 +1,99 @@
 /* ActionButtons Component Styles */
 .action-buttons {
-  padding: 12px;
-  border-top: 1px solid #e0e0e0;
-  background-color: #f8f9fa;
+  padding: 24px;
+  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+  border-top: 2px solid #e2e8f0;
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 16px;
+  border-radius: 0 0 16px 16px;
 }
 
 .action-btn {
-  padding: 10px 20px;
+  padding: 14px 24px;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 12px;
   font-size: 14px;
+  font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  min-width: 140px;
+  justify-content: center;
+}
+
+.action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.action-btn:hover::before {
+  left: 100%;
 }
 
 .action-btn:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.5;
+  transform: none !important;
 }
 
 .action-btn:not(:disabled):hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
 }
 
 .action-btn:not(:disabled):active {
-  transform: translateY(0);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
 .workflow-btn.start {
-  background-color: #28a745;
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
 }
 
 .workflow-btn.start:not(:disabled):hover {
-  background-color: #218838;
+  background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+  box-shadow: 0 8px 25px rgba(72, 187, 120, 0.4);
 }
 
 .workflow-btn.stop {
-  background-color: #dc3545;
+  background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
+  box-shadow: 0 4px 15px rgba(245, 101, 101, 0.3);
 }
 
 .workflow-btn.stop:not(:disabled):hover {
-  background-color: #c82333;
+  background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+  box-shadow: 0 8px 25px rgba(245, 101, 101, 0.4);
 }
 
 .test-search-btn {
-  background-color: #17a2b8;
+  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+  box-shadow: 0 4px 15px rgba(66, 153, 225, 0.3);
 }
 
 .test-search-btn:not(:disabled):hover {
-  background-color: #138496;
+  background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
+  box-shadow: 0 8px 25px rgba(66, 153, 225, 0.4);
 }
 
 .parse-results-btn {
-  background-color: #6f42c1;
+  background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%);
+  box-shadow: 0 4px 15px rgba(159, 122, 234, 0.3);
 }
 
 .parse-results-btn:not(:disabled):hover {
-  background-color: #5a32a3;
+  background: linear-gradient(135deg, #805ad5 0%, #6b46c1 100%);
+  box-shadow: 0 8px 25px rgba(159, 122, 234, 0.4);
 }

@@ -70,9 +70,9 @@ const SearchItem: React.FC<SearchItemProps> = ({
       {/* Search Results for this item */}
       {item.results.length > 0 && (
         <div className="search-item-results">
-          <div className="search-item-results-header">
-            🎯 Latest Result ({item.lastSearchTime?.toLocaleTimeString()})
-          </div>
+        <div className="search-item-results-header">
+          Latest Result ({item.lastSearchTime?.toLocaleTimeString()})
+        </div>
           {item.results.slice(0, 1).map((result: SearchResult, resultIndex: number) => (
             <div key={resultIndex} className="search-item-result-grid">
               <div><strong>Item:</strong> {result.itemName}</div>

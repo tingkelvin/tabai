@@ -782,16 +782,6 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                     isMonitoring={isMonitoring}
                     searchItemsCount={searchItems.length}
                     onStartWorkflow={startWorkflow}
-                    onTestSearch={() => {
-                      if (searchItems.length === 0) return;
-                      const firstItem = searchItems[0];
-                      handleSearch(firstItem.name, firstItem.notes, 0);
-                    }}
-                    onParseResults={() => {
-                      if (searchItems.length === 0) return;
-                      const firstItem = searchItems[0];
-                      parseSearchResults(firstItem.name, firstItem.notes, 0);
-                    }}
                   />
                 </div>
             </div>

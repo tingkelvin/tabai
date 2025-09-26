@@ -46,10 +46,6 @@ const SearchItemsList: React.FC<SearchItemsListProps> = ({
 }) => {
   return (
     <div className="search-items-list">
-      <div className="search-items-header">
-        🔍 Search Items ({searchItems.length})
-      </div>
-      
       <div className="search-items-content">
         {searchItems.length === 0 ? (
           <div className="search-items-empty">
