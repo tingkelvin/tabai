@@ -6,6 +6,7 @@ import ResizeHandle from './ResizeHandle'
 import Notifications from './Notifications'
 import SearchItemsList from './SearchItemsList'
 import ActionButtons from './ActionButtons'
+import StatusBar from './StatusBar'
 
 // Types import
 import type { ContentAppProps } from '../types/components'
@@ -220,6 +221,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     if (!isMonitoring) return;
     
     setIsMonitoring(false);
+    setCurrentSearchingItem(null);
     
     if (monitoringInterval) {
       clearInterval(monitoringInterval);
@@ -245,6 +247,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     try {
       const timestamp = new Date();
       setLastSearchTime(timestamp);
+      setCurrentSearchingItem(searchTerm);
       
       // Cancel any existing search
       cancelCurrentSearch();
@@ -268,6 +271,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
         setSearchLogs(prev => [...prev, errorLog]);
         addAssistantMessage("❌ 找不到搜索輸入框");
         currentSearchRef.current = null;
+        setCurrentSearchingItem(null);
         return false;
       }
       
@@ -537,6 +541,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
     // Clear search state when done
     if (currentSearchRef.current && !currentSearchRef.current.cancelled) {
       currentSearchRef.current = null;
+      setCurrentSearchingItem(null);
     }
     
     return firstItemFound;
@@ -580,6 +585,7 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
   // Logging state
   const [searchLogs, setSearchLogs] = useState<string[]>([])
   const [lastSearchTime, setLastSearchTime] = useState<Date | null>(null)
+  const [currentSearchingItem, setCurrentSearchingItem] = useState<string | null>(null)
   
   // Search results are now stored within each search item
   
@@ -784,6 +790,12 @@ const ContentApp: React.FC<ContentAppProps> = ({ customChatHook, title = '' }) =
                     onStartWorkflow={startWorkflow}
                   />
                 </div>
+                
+                <StatusBar
+                  currentSearchingItem={currentSearchingItem}
+                  lastSearchTime={lastSearchTime}
+                  isMonitoring={isMonitoring}
+                />
             </div>
             {/* Resize handles */}
             <ResizeHandle

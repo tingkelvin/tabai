@@ -75,10 +75,10 @@ const SearchItem: React.FC<SearchItemProps> = ({
         </div>
           {item.results.slice(0, 1).map((result: SearchResult, resultIndex: number) => (
             <div key={resultIndex} className="search-item-result-grid">
-              <div><strong>Item:</strong> {result.itemName}</div>
-              <div><strong>Price:</strong> {result.price}</div>
-              <div><strong>Shop:</strong> {result.shopName}</div>
-              <div><strong>Qty:</strong> {result.quantity}</div>
+              <div><strong></strong> {result.itemName}</div>
+              <div><strong>$:</strong> {result.price}</div>
+              <div><strong>商店:</strong> {result.shopName}</div>
+              <div><strong>數量:</strong> {result.quantity}</div>
             </div>
           ))}
         </div>

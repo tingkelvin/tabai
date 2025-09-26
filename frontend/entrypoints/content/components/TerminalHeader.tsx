@@ -22,7 +22,7 @@ const TerminalHeader: React.FC<TerminalHeaderProps> = ({
                     title="Minimize"
                 />
             </div>
-            <h3>{title || (currentUrl ? new URL(currentUrl).hostname : 'Terminal')}</h3>
+            <h3>{title || (currentUrl ? new URL(currentUrl).hostname : '樂園露天商店查詢')}</h3>
         </div>
     );
 };
