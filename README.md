@@ -1,7 +1,7 @@
 # TabAI - AI-Powered Browser Extension
 
 <div align="center">
-  <img src="intro.gif" alt="TabAI Demo" width="800"/>
+  <img src="tabai.gif" alt="TabAI Demo" width="800"/>
 </div>
 
 TabAI is an intelligent browser extension that brings AI capabilities directly to your web browsing experience. It combines a Chrome extension frontend with a FastAPI backend to provide seamless AI-powered interactions, file processing, and web automation.
